@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Features Test - POS ร้านกุ้งแซ่บ</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/pwa.css">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #0f766e;
+        }
+        .test-button {
+            background: #0f766e;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 600;
+        }
+        .test-button:hover {
+            background: #14b8a6;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        .info {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #dbeafe;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 PWA Features Test</h1>
+        <p>ทดสอบฟีเจอร์ PWA ของระบบ POS</p>
+
+        <!-- Installation Test -->
+        <div class="test-section">
+            <h3>📱 การติดตั้งแอป</h3>
+            <p>ทดสอบการติดตั้งแอปและ install prompt</p>
+            <button class="test-button" onclick="testInstallation()">ทดสอบการติดตั้ง</button>
+            <button class="test-button" onclick="showInstallInstructions()">แสดงคำแนะนำการติดตั้ง</button>
+            <div id="install-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <!-- Notification Test -->
+        <div class="test-section">
+            <h3>🔔 การแจ้งเตือน</h3>
+            <p>ทดสอบระบบการแจ้งเตือนและการตั้งค่า</p>
+            <button class="test-button" onclick="testNotificationPermission()">ขอสิทธิ์การแจ้งเตือน</button>
+            <button class="test-button" onclick="testLocalNotification()">ทดสอบการแจ้งเตือนท้องถิ่น</button>
+            <button class="test-button" onclick="showNotificationPanel()">แสดงแผงการตั้งค่า</button>
+            <button class="test-button" onclick="testCriticalAlert()">ทดสอบแจ้งเตือนสำคัญ</button>
+            <div id="notification-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <!-- Service Worker Test -->
+        <div class="test-section">
+            <h3>⚙️ Service Worker</h3>
+            <p>ทดสอบ Service Worker และการทำงานออฟไลน์</p>
+            <button class="test-button" onclick="testServiceWorker()">ตรวจสอบ Service Worker</button>
+            <button class="test-button" onclick="testCacheStatus()">ตรวจสอบ Cache</button>
+            <button class="test-button" onclick="testOfflineMode()">ทดสอบโหมดออฟไลน์</button>
+            <div id="sw-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <!-- PWA Features Test -->
+        <div class="test-section">
+            <h3>🚀 PWA Features</h3>
+            <p>ทดสอบฟีเจอร์ PWA อื่นๆ</p>
+            <button class="test-button" onclick="testManifest()">ตรวจสอบ Manifest</button>
+            <button class="test-button" onclick="testStandaloneMode()">ตรวจสอบโหมด Standalone</button>
+            <button class="test-button" onclick="testAppShortcuts()">ทดสอบ App Shortcuts</button>
+            <div id="pwa-result" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Load PWA Scripts -->
+    <script src="js/core/PWAInstaller.js"></script>
+    <script src="js/core/NotificationManager.js"></script>
+
+    <script>
+        // Initialize PWA components
+        let pwaInstaller, notificationManager;
+
+        window.addEventListener('load', () => {
+            pwaInstaller = new PWAInstaller();
+            notificationManager = new NotificationManager();
+            
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service worker registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service worker registration failed:', error);
+                    });
+            }
+        });
+
+        // Test functions
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `test-result ${type}`;
+            element.style.display = 'block';
+        }
+
+        function testInstallation() {
+            const isInstalled = pwaInstaller.isInstalled;
+            const hasPrompt = !!pwaInstaller.deferredPrompt;
+            
+            let message = `สถานะการติดตั้ง: ${isInstalled ? 'ติดตั้งแล้ว' : 'ยังไม่ติดตั้ง'}\n`;
+            message += `Install Prompt: ${hasPrompt ? 'พร้อมใช้งาน' : 'ไม่พร้อม'}`;
+            
+            showResult('install-result', message, isInstalled ? 'success' : 'info');
+        }
+
+        function showInstallInstructions() {
+            pwaInstaller.showInstallPrompt();
+            showResult('install-result', 'แสดงคำแนะนำการติดตั้งแล้ว', 'success');
+        }
+
+        async function testNotificationPermission() {
+            const granted = await notificationManager.requestPermission();
+            showResult('notification-result', 
+                `สิทธิ์การแจ้งเตือน: ${granted ? 'อนุญาต' : 'ปฏิเสธ'}`, 
+                granted ? 'success' : 'error'
+            );
+        }
+
+        async function testLocalNotification() {
+            await notificationManager.showNotification('🧪 ทดสอบการแจ้งเตือน', {
+                body: 'นี่คือการทดสอบการแจ้งเตือนท้องถิ่น',
+                tag: 'test-notification'
+            });
+            showResult('notification-result', 'ส่งการแจ้งเตือนทดสอบแล้ว', 'success');
+        }
+
+        function showNotificationPanel() {
+            notificationManager.showNotificationPanel();
+            showResult('notification-result', 'เปิดแผงการตั้งค่าการแจ้งเตือนแล้ว', 'success');
+        }
+
+        async function testCriticalAlert() {
+            await notificationManager.showCriticalAlert('นี่คือการแจ้งเตือนสำคัญสำหรับทดสอบ');
+            showResult('notification-result', 'ส่งการแจ้งเตือนสำคัญแล้ว', 'success');
+        }
+
+        async function testServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.ready;
+                const isActive = !!registration.active;
+                showResult('sw-result', 
+                    `Service Worker: ${isActive ? 'ทำงานปกติ' : 'ไม่ทำงาน'}`, 
+                    isActive ? 'success' : 'error'
+                );
+            } else {
+                showResult('sw-result', 'เบราว์เซอร์ไม่รองรับ Service Worker', 'error');
+            }
+        }
+
+        async function testCacheStatus() {
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                const totalCaches = cacheNames.length;
+                showResult('sw-result', 
+                    `พบ Cache ${totalCaches} รายการ: ${cacheNames.join(', ')}`, 
+                    totalCaches > 0 ? 'success' : 'info'
+                );
+            } else {
+                showResult('sw-result', 'เบราว์เซอร์ไม่รองรับ Cache API', 'error');
+            }
+        }
+
+        function testOfflineMode() {
+            const isOnline = navigator.onLine;
+            showResult('sw-result', 
+                `สถานะเครือข่าย: ${isOnline ? 'ออนไลน์' : 'ออฟไลน์'}`, 
+                isOnline ? 'success' : 'info'
+            );
+        }
+
+        async function testManifest() {
+            try {
+                const response = await fetch('/manifest.json');
+                const manifest = await response.json();
+                showResult('pwa-result', 
+                    `Manifest โหลดสำเร็จ: ${manifest.name} (${manifest.short_name})`, 
+                    'success'
+                );
+            } catch (error) {
+                showResult('pwa-result', `ไม่สามารถโหลด Manifest: ${error.message}`, 'error');
+            }
+        }
+
+        function testStandaloneMode() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                window.navigator.standalone === true;
+            showResult('pwa-result', 
+                `โหมด Standalone: ${isStandalone ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}`, 
+                isStandalone ? 'success' : 'info'
+            );
+        }
+
+        function testAppShortcuts() {
+            // Test if shortcuts are working by checking manifest
+            fetch('/manifest.json')
+                .then(response => response.json())
+                .then(manifest => {
+                    const shortcuts = manifest.shortcuts || [];
+                    showResult('pwa-result', 
+                        `App Shortcuts: พบ ${shortcuts.length} รายการ`, 
+                        shortcuts.length > 0 ? 'success' : 'info'
+                    );
+                })
+                .catch(error => {
+                    showResult('pwa-result', `ไม่สามารถตรวจสอบ Shortcuts: ${error.message}`, 'error');
+                });
+        }
+
+        // Listen for PWA events
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('Install prompt available');
+            showResult('install-result', 'Install prompt พร้อมใช้งาน!', 'success');
+        });
+
+        window.addEventListener('appinstalled', (e) => {
+            console.log('App installed');
+            showResult('install-result', 'แอปติดตั้งสำเร็จ!', 'success');
+        });
+    </script>
+</body>
+</html>

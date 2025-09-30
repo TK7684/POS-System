@@ -1,0 +1,1276 @@
+/**
+ * Error Handling Styles for POS Application
+ * Provides user-friendly error notification styling
+ * Supports different severity levels and responsive design
+ */
+
+/* Error Notifications Container */
+.error-notifications {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  max-width: 400px;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Individual Error Notification */
+.error-notification {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 12px;
+  overflow: hidden;
+  pointer-events: auto;
+  transform: translateX(100%);
+  animation: slideIn 0.3s ease-out forwards;
+  border-left: 4px solid #6b7280;
+}
+
+/* Slide in animation */
+@keyframes slideIn {
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Severity-based styling */
+.error-notification.severity-low {
+  border-left-color: #3b82f6; /* Blue */
+}
+
+.error-notification.severity-medium {
+  border-left-color: #f59e0b; /* Amber */
+}
+
+.error-notification.severity-high {
+  border-left-color: #ef4444; /* Red */
+}
+
+.error-notification.severity-critical {
+  border-left-color: #dc2626; /* Dark red */
+  background: #fef2f2;
+  animation: slideIn 0.3s ease-out forwards, pulse 2s infinite;
+}
+
+/* Pulse animation for critical errors */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+}
+
+/* Error Content */
+.error-content {
+  padding: 16px;
+}
+
+/* Error Header */
+.error-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.error-icon {
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+.error-time {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.error-close:hover {
+  background-color: #f3f4f6;
+}
+
+/* Error Message */
+.error-message {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+  font-family: 'Sarabun', sans-serif;
+  margin-bottom: 8px;
+}
+
+.severity-critical .error-message {
+  color: #991b1b;
+  font-weight: 500;
+}
+
+/* Error Actions */
+.error-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.error-actions button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.error-actions button:hover {
+  background: #2563eb;
+}
+
+.severity-critical .error-actions button {
+  background: #dc2626;
+}
+
+.severity-critical .error-actions button:hover {
+  background: #b91c1c;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .error-notifications {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .error-notification {
+    margin-bottom: 8px;
+  }
+  
+  .error-content {
+    padding: 12px;
+  }
+  
+  .error-message {
+    font-size: 13px;
+  }
+  
+  .error-actions button {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .error-notification {
+    border: 2px solid #000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .error-message {
+    color: #000;
+  }
+  
+  .error-close {
+    color: #000;
+    border: 1px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .error-notification {
+    animation: none;
+    transform: translateX(0);
+  }
+  
+  .error-notification.severity-critical {
+    animation: none;
+  }
+}
+
+/* Form Validation Error Styles */
+.form-error {
+  color: #dc2626;
+  font-size: 12px;
+  font-family: 'Sarabun', sans-serif;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-error::before {
+  content: '⚠️';
+  font-size: 14px;
+}
+
+.form-field.has-error input,
+.form-field.has-error select,
+.form-field.has-error textarea {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.form-field.has-error label {
+  color: #dc2626;
+}
+
+/* Success state for validation */
+.form-field.has-success input,
+.form-field.has-success select,
+.form-field.has-success textarea {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-success {
+  color: #059669;
+  font-size: 12px;
+  font-family: 'Sarabun', sans-serif;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-success::before {
+  content: '✅';
+  font-size: 14px;
+}
+
+/* Loading state for error recovery */
+.error-recovering {
+  position: relative;
+  opacity: 0.7;
+}
+
+.error-recovering::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #3b82f6;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Offline indicator */
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #f59e0b;
+  color: white;
+  text-align: center;
+  padding: 8px;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+  z-index: 10001;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+
+.offline-indicator.show {
+  transform: translateY(0);
+}
+
+.offline-indicator::before {
+  content: '📶';
+  margin-right: 8px;
+}
+
+/* Error boundary fallback */
+.error-boundary {
+  padding: 20px;
+  text-align: center;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.error-boundary h2 {
+  color: #dc2626;
+  margin-bottom: 16px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.error-boundary p {
+  color: #6b7280;
+  margin-bottom: 16px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.error-boundary button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.error-boundary button:hover {
+  background: #2563eb;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .error-notification {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .error-message {
+    color: #f3f4f6;
+  }
+  
+  .error-time {
+    color: #9ca3af;
+  }
+  
+  .error-close {
+    color: #9ca3af;
+  }
+  
+  .error-close:hover {
+    background-color: #374151;
+  }
+  
+  .severity-critical {
+    background: #431a1a;
+  }
+  
+  .severity-critical .error-message {
+    color: #fca5a5;
+  }
+}
+/* Con
+flict Resolution Modal Styles */
+.conflict-resolution-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  padding: 20px;
+}
+
+.conflict-resolution-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.conflict-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.conflict-header h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #dc2626;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.conflict-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.conflict-fields {
+  padding: 16px 24px;
+}
+
+.conflict-field {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.conflict-field:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.conflict-field-name {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.conflict-field-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conflict-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.conflict-option:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.conflict-option input[type="radio"] {
+  margin-top: 2px;
+}
+
+.conflict-option label {
+  flex: 1;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.conflict-option label strong {
+  color: #374151;
+}
+
+.conflict-option input[type="radio"]:checked + label {
+  color: #3b82f6;
+}
+
+.conflict-option input[type="radio"]:checked {
+  accent-color: #3b82f6;
+}
+
+.conflict-actions {
+  padding: 16px 24px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.conflict-actions button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 120px;
+}
+
+.btn-resolve-auto {
+  background: #10b981;
+  color: white;
+}
+
+.btn-resolve-auto:hover {
+  background: #059669;
+}
+
+.btn-resolve-local {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-resolve-local:hover {
+  background: #2563eb;
+}
+
+.btn-resolve-remote {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-resolve-remote:hover {
+  background: #7c3aed;
+}
+
+.btn-resolve-manual {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-resolve-manual:hover {
+  background: #4b5563;
+}
+
+/* Mobile responsive for conflict resolution */
+@media (max-width: 768px) {
+  .conflict-resolution-modal {
+    padding: 10px;
+  }
+  
+  .conflict-resolution-content {
+    max-height: 90vh;
+  }
+  
+  .conflict-header {
+    padding: 16px 16px 12px;
+  }
+  
+  .conflict-header h3 {
+    font-size: 18px;
+  }
+  
+  .conflict-fields {
+    padding: 12px 16px;
+  }
+  
+  .conflict-field {
+    margin-bottom: 16px;
+  }
+  
+  .conflict-field-selection {
+    gap: 6px;
+  }
+  
+  .conflict-option {
+    padding: 8px;
+  }
+  
+  .conflict-option label {
+    font-size: 13px;
+  }
+  
+  .conflict-actions {
+    padding: 12px 16px 16px;
+    flex-direction: column;
+  }
+  
+  .conflict-actions button {
+    min-width: auto;
+    padding: 12px 16px;
+  }
+}
+
+/* Data integrity repair notification */
+.integrity-repair-notification {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.integrity-repair-notification::before {
+  content: '🔧';
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.integrity-repair-content {
+  flex: 1;
+}
+
+.integrity-repair-title {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 4px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.integrity-repair-message {
+  color: #78350f;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.integrity-repair-list {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  color: #78350f;
+  font-size: 13px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+/* Validation summary styles */
+.validation-summary {
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.validation-summary-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.validation-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.validation-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.validation-stat.valid {
+  color: #059669;
+}
+
+.validation-stat.invalid {
+  color: #dc2626;
+}
+
+.validation-stat.warning {
+  color: #d97706;
+}
+
+.validation-errors {
+  margin-top: 12px;
+}
+
+.validation-error-item {
+  background: #fef2f2;
+  border-left: 4px solid #dc2626;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 0 4px 4px 0;
+}
+
+.validation-error-entity {
+  font-weight: 600;
+  color: #991b1b;
+  font-size: 12px;
+  margin-bottom: 4px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.validation-error-message {
+  color: #dc2626;
+  font-size: 13px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+/* Dark mode support for conflict resolution */
+@media (prefers-color-scheme: dark) {
+  .conflict-resolution-content {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .conflict-header {
+    border-bottom-color: #374151;
+  }
+  
+  .conflict-header h3 {
+    color: #fca5a5;
+  }
+  
+  .conflict-header p {
+    color: #9ca3af;
+  }
+  
+  .conflict-field {
+    border-bottom-color: #374151;
+  }
+  
+  .conflict-field-name {
+    color: #f3f4f6;
+  }
+  
+  .conflict-option {
+    border-color: #4b5563;
+    background: #374151;
+  }
+  
+  .conflict-option:hover {
+    border-color: #60a5fa;
+    background: #4b5563;
+  }
+  
+  .conflict-option label {
+    color: #e5e7eb;
+  }
+  
+  .conflict-option label strong {
+    color: #f3f4f6;
+  }
+  
+  .conflict-actions {
+    border-top-color: #374151;
+  }
+  
+  .integrity-repair-notification {
+    background: #451a03;
+    border-color: #92400e;
+  }
+  
+  .integrity-repair-title {
+    color: #fbbf24;
+  }
+  
+  .integrity-repair-message,
+  .integrity-repair-list {
+    color: #fcd34d;
+  }
+  
+  .validation-summary {
+    background: #374151;
+  }
+  
+  .validation-summary-title {
+    color: #f3f4f6;
+  }
+  
+  .validation-error-item {
+    background: #431a1a;
+  }
+  
+  .validation-error-entity {
+    color: #fca5a5;
+  }
+  
+  .validation-error-message {
+    color: #f87171;
+  }
+}/* Sy
+nc Conflict Resolution Styles */
+.sync-conflict-notifications {
+  position: fixed;
+  top: 80px;
+  right: 2}  }
+2);
+85, 129, 0.rgba(16, 1: nd-color   backgrou
+ :hover {t .btn-closeention-contnc-comple
+  .sy
+  }
+  7;r: #6ee7b colo{
+   ose nt .btn-clon-contempleti  .sync-co
+  
+f3d0;
+  }  color: #a7ge p {
+  letion-messa  
+  .comp }
+
+  #6ee7b7;lor: co
+    {trongage stion-mess  .comple;
+  }
+  
+59669lor: #0-co border
+   ;#064e3background: 
+    bon {atinotificompletion-
+  .sync-c;
+  }
+  4151#37color: order-top-ons {
+    blict-actiatch-conf
+  .b
+  }
+  af;: #9ca3
+    colorict-count {
+  .confl }
+ #f3f4f6;
+  
+    color: {ng roo stict-inf 
+  .confl
+ 5563;
+  } #4ber-color:
+    bord4151;d: #37oun
+    backgrm {-itenflictch-co
+  .bat
+  }
+  a3af;  color: #9cader p {
+  ct-heconfli
+  .batch- 
+  }
+ ;a5a5 color: #fcer h3 {
+   nflict-headch-co 
+  .bat }
+ 1;
+ lor: #37415corder-bottom-    boheader {
+-conflict-.batch  }
+  
+  ;
+afb: #f9folor2937;
+    cd: #1fbackgrountent {
+    t-conh-conflicbatc
+  
+  . }cd34d;
+ or: #f    colsage p {
+onflict-mes.c  }
+  
+  ;
+or: #fbbf24  col
+   strong {messagelict-
+  
+  .conf
+  }00e;color: #924r-   borde51a03;
+ nd: #4   backgrouation {
+ ict-notificnflnc-co {
+  .sy: dark)-schemerefers-color@media (p
+*/tion ict resoluc conflor synport fe supodrk m Da
+}
+
+/*x;
+  }10p: ;
+    left 10px
+    right:px;: 10{
+    topification pletion-not-com  
+  .sync  }
+;
+Y(0)slateorm: tran transf
+   ator.show {icgress-ind  .sync-pro
+  }
+  
+Y(-100%);m: translateansfor  tr 10px;
+  
+    right:t: 10px;   lef10px;
+ top: tor {
+    icas-indsync-progres  .  
+
+o;
+  }autth:   min-widutton {
+  ns bctioonflict-aatch-c.b
+  ;
+  }
+  mn coluon:ti-direcflex6px;
+    2px 16px 1  padding: 1
+  actions {h-conflict-atc.b  
+    }
+nd;
+ flex-efy-content:  justi
+  idth: 100%;
+    w {ionsonflict-actitem .ct-icatch-confl
+  .b}
+  p: 8px;
+  
+    gart;ta: flex-stemsn-iigmn;
+    altion: coluex-direc{
+    flct-item atch-confli 
+  .bpx;
+  }
+ : 12px 16dding
+    pact-list {conflitch-  
+  .ba }
+;
+ px18size:    font-
+ er h3 {onflict-head.batch-c   
+;
+  }
+ x 16px 12pxdding: 16p  pa
+  ader {-henflictatch-co .b
+  
+ 
+  }eight: 90vh;   max-hnt {
+ ct-contebatch-confli .}
+  
+ ;
+  ing: 10px{
+    paddl dact-moconflih-.batc  }
+  
+  px;
+e: 11 font-siz
+   x;: 4px 8p
+    paddingutton {actions bconflict-}
+  
+  .4px;
+  
+    gap: tions {-acictnfl
+  .co }
+  e: 13px;
+ font-siz   p {
+  -messagect 
+  .confli}
+ 
+   8px;
+    gap:px;ing: 12    paddntent {
+ification-coict-notconfl
+  
+  .none;
+  }ax-width:     m;
+px10  left:   ht: 10px;
+rig   60px;
+   top:ons {
+   icatitift-noonflicnc-c.sy
+  68px) {: 7widthedia (max-@molution */
+onflict res for sync civeile respons}
+
+/* Mob;
+5, 129, 0.1), 18: rgba(16ound-color backgr
+ e:hover {ost .btn-clion-contensync-complet
+
+..2s;
+}nd-color 0n: backgrouioitx;
+  transr-radius: 4pborde  ter;
+content: cen
+  justify-ms: center;teign-i;
+  alflexplay: is24px;
+  dht: 
+  heigidth: 24px;: 0;
+  wingadd
+  pr: pointer;  curso065f46;
+ #color:: 18px;
+  nt-sizene;
+  foorder: noe;
+  b nonound:ackgr
+  bse {t .btn-clontenn-coetionc-compl0;
+}
+
+.syn: 
+  margi;ifn', sans-ser'Sarabufamily:  font-px;
+ ize: 147;
+  font-s785: #04p {
+  colorn-message .completio;
+}
+
+-bottom: 4pxin;
+  margocksplay: blerif;
+  di', sans-srabunamily: 'Sa;
+  font-f #065f46{
+  color:ge strong tion-messa
+.comple}
+1;
+flex: sage {
+  tion-mes
+.comple: 0;
+}
+ flex-shrink20px;
+ ize: 
+  font-son-icon {completi
+}
+
+.2px; gap: 1
+ x-start;items: flelign- flex;
+  asplay:  dipx;
+adding: 16nt {
+  p-contec-completion}
+
+.synease-out;
+s ight 0.3: slideInR
+  animationdex: 10001;1);
+  z-in, 0, 0.ba(0, 0 rg: 0 4px 12pxox-shadow  bius: 8px;
+-rad
+  borderd #10b981;px soli  border: 1ae5;
+1fkground: #d bac 20px;
+ ;
+  right:p: 20px
+  toxed;osition: fi p
+ ation {otificion-nsync-completn */
+.tioon Notificapleti Comnc
+/* Synite;
+}
+ear infi linn: spin 1sanimatio 50%;
+  der-radius:;
+  bor whitetop-color:rder- 0.3);
+  bo55, 255,5, 2a(25solid rgber: 2px x;
+  bord16pht: x;
+  heig6pdth: 1 wispinner {
+ 
+.sync-
+
+}size: 14px;font-;
+  if', sans-ser'Sarabun-family: ont  fp: 12px;
+ ganter;
+ ms: cen-ite
+  alig: flex; displaynt {
+ ss-conteprogreync-;
+}
+
+.sranslateY(0) tslateX(-50%)orm: tran {
+  transfdicator.show-inrogresssync-pse;
+}
+
+.rm 0.3s eaforans tion:it trans001;
+ ex: 10;
+  z-ind0, 0, 0.15)x rgba(0, 0 4px 12pshadow:  box-us: 8px;
+ rder-radi0px;
+  bopx 2adding: 12
+  polor: white;3b82f6;
+  c #round:ckg00%);
+  ba(-1 translateYX(-50%)ranslatensform: t%;
+  traeft: 50 l;
+  20pxd;
+  top:on: fixe {
+  positiatoress-indicprogr
+.sync-dicator */ InProgress
+/* Sync 3;
+}
+56ound: #4b5backgrhover {
+  
+.btn-close:e;
+}
+or: whit280;
+  colround: #6b7 {
+  backgtn-close
+}
+
+.b7c3aed;nd: #  backgrouover {
+ll-remote:hn-resolve-a
+.btwhite;
+}
+lor: ;
+  cound: #8b5cf6
+  backgroall-remote {lve-.btn-reso
+}
+
+563eb;und: #2
+  backgroer {ovl-local:hsolve-aln-re}
+
+.btte;
+whior: f6;
+  col: #3b82round {
+  backgcalloresolve-all-btn-
+.px;
+}
+50 1 min-width:flex: 1;
+ s;
+  l 0.2: alsitionter;
+  tranor: poinf;
+  cursserians-Sarabun', s-family: 'x;
+  fontt-size: 14p6px;
+  fonder-radius:  borne;
+ r: noorde
+  bx;16ppx ding: 10pad
+  button {tions act-onflic.batch-cap;
+}
+
+lex-wrap: wr;
+  f  gap: 12pxay: flex;
+spldie5e7eb;
+  olid #top: 1px srder-
+  bopx 24px; 24ng: 16px  paddis {
+actionconflict-}
+
+.batch-ze: 11px;
+nt-si
+  fo: 4px 8px;ddingn {
+  patoutions bt-actnflicict-item .cobatch-confl
+
+.ow;
+}irection: rx;
+  flex-d 6p
+  gap:ex;play: flisons {
+  dct-actiitem .confli-conflict-batch8px;
+}
+
+.in-left: ;
+  margerifbun', sans-smily: 'Sarafant-;
+  fo12px font-size: ;
+ b7280  color: #6count {
+ct-
+.conflirif;
+}
+-serabun', sansmily: 'Sa-faont
+  f151; #374{
+  color: strong flict-info
+.con}
+1;
+x:  {
+  flet-info
+.conflic;
+}
+9fafb #fnd:kgroubac: 8px;
+  bottom  margin-dius: 8px;
+border-ra#e5e7eb;
+  x solid der: 1p  borpx;
+padding: 12en;
+  e-betwet: spactify-contenus jcenter;
+ ems: align-itlex;
+    display: fm {
+nflict-itecoatch-
+}
+
+.bw-y: auto;erfloov00px;
+  height: 4 max-;
+ 4px6px 2adding: 1t {
+  ponflict-lisch-c.batif;
+}
+
+ns-serbun', say: 'Sarafamil
+  font-: 14px;-size  fontb7280;
+or: #6: 0;
+  colinarg  meader p {
+t-htch-conflicba}
+
+.f;
+ns-seri, say: 'Sarabun'nt-famil;
+  fo#dc2626
+  color: : 600;font-weight
+  ize: 20px;ont-s
+  fn: 0 0 8px; {
+  margieader h3t-hch-conflicat
+.bb;
+}
+e7elid #e5som: 1px ttor-borde6px;
+  bo 14px 24pxing: 2r {
+  padd-headeconflictch-
+.bat, 0.2);
+}
+a(0, 0, 0px 32px rgbw: 0 8  box-shado
+y: auto;flow-;
+  overght: 80vh;
+  max-heih: 100%;
+  widt0pxwidth: 70;
+  max-2pxs: 1-radiu
+  bordere;itwhd: roun
+  backgent {-contch-conflict
+
+.bat
+}ding: 20px;;
+  pad 10003dex:
+  z-in center;ontent:-c  justifys: center;
+n-itemlex;
+  aligsplay: f0.5);
+  dia(0, 0, 0, gbground: rack  b;
+ttom: 0ht: 0;
+  bo: 0;
+  rigleft: 0;
+  xed;
+  topn: fipositiomodal {
+  ct-ch-conflial */
+.batolution Modct Resonfli
+/* Batch C63;
+}
+round: #4b55kgbac
+  :hover {ss
+.btn-dismiite;
+}
+color: whb7280;
+  ckground: #6  basmiss {
+n-di
+}
+
+.bt: #2563eb;kgroundbac
+  over {resolve:hn-e;
+}
+
+.bthitr: w6;
+  colo2found: #3b8
+  backgrsolve {tn-re
+
+.b2s;
+}lor 0.nd-corouackgtion: b;
+  transir: pointersourrif;
+  cs-seabun', san'Sart-family: ;
+  fon: 12pxsizent-;
+  fo-radius: 4pxborder none;
+    border:x;
+ 6px 12ping:padd{
+  utton ctions b
+.conflict-a: 6px;
+}
+n;
+  gap: columrectionex-diflex;
+  fllay: {
+  disptions flict-ac;
+}
+
+.con margin: 0
+ ;if, sans-serrabun'ly: 'Sa
+  font-famix;nt-size: 14p8350f;
+  fo  color: #7ge p {
+lict-messanf}
+
+.co;
+4pxbottom: 
+  margin-block; display: 
+ sans-serif;n', : 'Sarabu font-family
+ r: #92400e;g {
+  colostronict-message 
+
+.confllex: 1;
+}ge {
+  fessaonflict-m;
+}
+
+.cink: 0hrx;
+  flex-sze: 20p{
+  font-sinflict-icon ;
+}
+
+.coap: 12px
+  gart;-sts: flexem
+  align-itplay: flex;;
+  dispxg: 16ddin  pat {
+contenation-ificnotlict-
+
+.conf }
+}city: 1;
+  opa(0);
+   anslateX tr transform:
+   
+  to { 0;
+  }city: opa;
+   teX(100%)m: translafor
+    transfrom {nRight {
+  mes slideIyfra
+
+@ke;
+}-out.3s easeInRight 0ideimation: slan  0, 0.1);
+ba(0, 0, rgpx  12: 0 4pxshadowpx;
+  box-tom: 12rgin-bot8px;
+  maer-radius: ;
+  borde0bolid #f59px sr: 1;
+  borded: #fef3c7kgrounacon {
+  btificatinflict-no
+
+.sync-co 100%;
+}  width:th: 400px;
+ax-wid001;
+  mindex: 100px;
+  z-

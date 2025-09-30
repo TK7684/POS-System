@@ -1,0 +1,496 @@
+/**
+ * Sync Conflict Resolution Styles for POS Application
+ * Provides UI styling for data synchronization conflict resolution
+ * Supports batch conflict resolution and progress indicators
+ */
+
+/* Sync Conflict Notifications */
+.sync-conflict-notifications {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 10001;
+  max-width: 400px;
+  width: 100%;
+}
+
+.sync-conflict-notification {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.conflict-notification-content {
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.conflict-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.conflict-message {
+  flex: 1;
+}
+
+.conflict-message strong {
+  color: #92400e;
+  font-family: 'Sarabun', sans-serif;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.conflict-message p {
+  color: #78350f;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+  margin: 0;
+}
+
+.conflict-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conflict-actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-resolve {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-resolve:hover {
+  background: #2563eb;
+}
+
+.btn-dismiss {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-dismiss:hover {
+  background: #4b5563;
+}
+
+/* Batch Conflict Resolution Modal */
+.batch-conflict-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10003;
+  padding: 20px;
+}
+
+.batch-conflict-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.batch-conflict-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.batch-conflict-header h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #dc2626;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.batch-conflict-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.batch-conflict-list {
+  padding: 16px 24px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.batch-conflict-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #f9fafb;
+}
+
+.conflict-info {
+  flex: 1;
+}
+
+.conflict-info strong {
+  color: #374151;
+  font-family: 'Sarabun', sans-serif;
+}
+
+.conflict-count {
+  color: #6b7280;
+  font-size: 12px;
+  font-family: 'Sarabun', sans-serif;
+  margin-left: 8px;
+}
+
+.batch-conflict-item .conflict-actions {
+  display: flex;
+  gap: 6px;
+  flex-direction: row;
+}
+
+.batch-conflict-item .conflict-actions button {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.batch-conflict-actions {
+  padding: 16px 24px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.batch-conflict-actions button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 150px;
+}
+
+.btn-resolve-all-local {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-resolve-all-local:hover {
+  background: #2563eb;
+}
+
+.btn-resolve-all-remote {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-resolve-all-remote:hover {
+  background: #7c3aed;
+}
+
+.btn-close {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-close:hover {
+  background: #4b5563;
+}
+
+/* Sync Progress Indicator */
+.sync-progress-indicator {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  background: #3b82f6;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10001;
+  transition: transform 0.3s ease;
+}
+
+.sync-progress-indicator.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.sync-progress-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 14px;
+}
+
+.sync-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Sync Completion Notification */
+.sync-completion-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #d1fae5;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10001;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.sync-completion-content {
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.completion-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.completion-message {
+  flex: 1;
+}
+
+.completion-message strong {
+  color: #065f46;
+  font-family: 'Sarabun', sans-serif;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.completion-message p {
+  color: #047857;
+  font-size: 14px;
+  font-family: 'Sarabun', sans-serif;
+  margin: 0;
+}
+
+.sync-completion-content .btn-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #065f46;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.sync-completion-content .btn-close:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+/* Mobile responsive for sync conflict resolution */
+@media (max-width: 768px) {
+  .sync-conflict-notifications {
+    top: 60px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .conflict-notification-content {
+    padding: 12px;
+    gap: 8px;
+  }
+  
+  .conflict-message p {
+    font-size: 13px;
+  }
+  
+  .conflict-actions {
+    gap: 4px;
+  }
+  
+  .conflict-actions button {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  
+  .batch-conflict-modal {
+    padding: 10px;
+  }
+  
+  .batch-conflict-content {
+    max-height: 90vh;
+  }
+  
+  .batch-conflict-header {
+    padding: 16px 16px 12px;
+  }
+  
+  .batch-conflict-header h3 {
+    font-size: 18px;
+  }
+  
+  .batch-conflict-list {
+    padding: 12px 16px;
+  }
+  
+  .batch-conflict-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .batch-conflict-item .conflict-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .batch-conflict-actions {
+    padding: 12px 16px 16px;
+    flex-direction: column;
+  }
+  
+  .batch-conflict-actions button {
+    min-width: auto;
+  }
+  
+  .sync-progress-indicator {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    transform: translateY(-100%);
+  }
+  
+  .sync-progress-indicator.show {
+    transform: translateY(0);
+  }
+  
+  .sync-completion-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+}
+
+/* Dark mode support for sync conflict resolution */
+@media (prefers-color-scheme: dark) {
+  .sync-conflict-notification {
+    background: #451a03;
+    border-color: #92400e;
+  }
+  
+  .conflict-message strong {
+    color: #fbbf24;
+  }
+  
+  .conflict-message p {
+    color: #fcd34d;
+  }
+  
+  .batch-conflict-content {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .batch-conflict-header {
+    border-bottom-color: #374151;
+  }
+  
+  .batch-conflict-header h3 {
+    color: #fca5a5;
+  }
+  
+  .batch-conflict-header p {
+    color: #9ca3af;
+  }
+  
+  .batch-conflict-item {
+    background: #374151;
+    border-color: #4b5563;
+  }
+  
+  .conflict-info strong {
+    color: #f3f4f6;
+  }
+  
+  .conflict-count {
+    color: #9ca3af;
+  }
+  
+  .batch-conflict-actions {
+    border-top-color: #374151;
+  }
+  
+  .sync-completion-notification {
+    background: #064e3b;
+    border-color: #059669;
+  }
+  
+  .completion-message strong {
+    color: #6ee7b7;
+  }
+  
+  .completion-message p {
+    color: #a7f3d0;
+  }
+  
+  .sync-completion-content .btn-close {
+    color: #6ee7b7;
+  }
+  
+  .sync-completion-content .btn-close:hover {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+}

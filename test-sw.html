@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Worker Test - POS System</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .online { background: #d4edda; color: #155724; }
+        .offline { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Service Worker Test - POS System</h1>
+    
+    <div id="sw-status" class="status info">
+        🔄 Checking service worker status...
+    </div>
+    
+    <div id="network-status" class="status">
+        🌐 Network Status: <span id="network-indicator">Checking...</span>
+    </div>
+    
+    <div>
+        <h3>🧪 Test Actions</h3>
+        <button onclick="testCaching()">Test Caching</button>
+        <button onclick="testOfflineMode()">Simulate Offline</button>
+        <button onclick="testUpdate()">Test Update</button>
+        <button onclick="clearCache()">Clear Cache</button>
+        <button onclick="getVersion()">Get SW Version</button>
+    </div>
+    
+    <div>
+        <h3>📋 Test Log</h3>
+        <div id="log" class="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        let swManager = null;
+        
+        // Initialize test
+        async function init() {
+            log('🚀 Initializing service worker test...');
+            
+            // Check if service worker is supported
+            if (!('serviceWorker' in navigator)) {
+                log('❌ Service workers not supported in this browser');
+                updateSWStatus('❌ Service workers not supported', 'offline');
+                return;
+            }
+            
+            // Load service worker manager
+            try {
+                const ServiceWorkerManager = await import('./js/core/ServiceWorkerManager.js');
+                swManager = new (ServiceWorkerManager.default || ServiceWorkerManager)();
+                
+                // Setup event listeners
+                swManager.onOffline(() => {
+                    log('📴 Switched to offline mode');
+                    updateNetworkStatus(false);
+                });
+                
+                swManager.onOnline(() => {
+                    log('🌐 Back online');
+                    updateNetworkStatus(true);
+                });
+                
+                swManager.onUpdate(() => {
+                    log('🔄 Service worker update available');
+                    updateSWStatus('🔄 Update available', 'info');
+                });
+                
+                log('✅ Service worker manager initialized');
+                updateSWStatus('✅ Service worker active', 'online');
+                
+                // Get initial version
+                const version = await swManager.getVersion();
+                if (version) {
+                    log(`📦 Service worker version: ${version}`);
+                }
+                
+            } catch (error) {
+                log(`❌ Failed to initialize service worker manager: ${error.message}`);
+                updateSWStatus('❌ Failed to initialize', 'offline');
+            }
+            
+            // Update network status
+            updateNetworkStatus(navigator.onLine);
+            
+            // Listen for network changes
+            window.addEventListener('online', () => updateNetworkStatus(true));
+            window.addEventListener('offline', () => updateNetworkStatus(false));
+        }
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateSWStatus(message, type) {
+            const statusElement = document.getElementById('sw-status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+        }
+        
+        function updateNetworkStatus(isOnline) {
+            const indicator = document.getElementById('network-indicator');
+            const statusElement = document.getElementById('network-status');
+            
+            if (isOnline) {
+                indicator.textContent = 'Online 🟢';
+                statusElement.className = 'status online';
+            } else {
+                indicator.textContent = 'Offline 🔴';
+                statusElement.className = 'status offline';
+            }
+        }
+        
+        async function testCaching() {
+            log('🧪 Testing caching functionality...');
+            
+            try {
+                // Test caching some URLs
+                const testUrls = ['/js/critical.js', '/css/components.css'];
+                
+                if (swManager) {
+                    await swManager.cacheUrls(testUrls);
+                    log('✅ URLs cached successfully');
+                } else {
+                    log('❌ Service worker manager not available');
+                }
+            } catch (error) {
+                log(`❌ Caching test failed: ${error.message}`);
+            }
+        }
+        
+        function testOfflineMode() {
+            log('🧪 Simulating offline mode...');
+            
+            // Simulate offline by dispatching offline event
+            window.dispatchEvent(new Event('offline'));
+            
+            setTimeout(() => {
+                log('🧪 Simulating back online...');
+                window.dispatchEvent(new Event('online'));
+            }, 5000);
+        }
+        
+        function testUpdate() {
+            log('🧪 Testing service worker update...');
+            
+            if (swManager && swManager.hasUpdate) {
+                swManager.applyUpdate();
+                log('🔄 Applying service worker update...');
+            } else {
+                log('ℹ️ No update available');
+            }
+        }
+        
+        async function clearCache() {
+            log('🧪 Clearing cache...');
+            
+            try {
+                if (swManager) {
+                    await swManager.clearCache();
+                    log('✅ Cache cleared successfully');
+                } else {
+                    log('❌ Service worker manager not available');
+                }
+            } catch (error) {
+                log(`❌ Clear cache failed: ${error.message}`);
+            }
+        }
+        
+        async function getVersion() {
+            log('🧪 Getting service worker version...');
+            
+            try {
+                if (swManager) {
+                    const version = await swManager.getVersion();
+                    log(`📦 Service worker version: ${version || 'Unknown'}`);
+                } else {
+                    log('❌ Service worker manager not available');
+                }
+            } catch (error) {
+                log(`❌ Get version failed: ${error.message}`);
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Initialize when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

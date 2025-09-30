@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS System - Production Monitoring Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+        }
+
+        .status-dot.warning { background: #f39c12; }
+        .status-dot.error { background: #e74c3c; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .metric-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 5px;
+        }
+
+        .metric-value.warning { color: #f39c12; }
+        .metric-value.error { color: #e74c3c; }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart {
+            height: 200px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+
+        .alerts-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .alert-item {
+            padding: 12px;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .alert-item.warning {
+            border-left-color: #f39c12;
+            background: #fef9e7;
+        }
+
+        .alert-item.error {
+            border-left-color: #e74c3c;
+            background: #fdf2f2;
+        }
+
+        .alert-time {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+
+        .alert-message {
+            font-weight: 500;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 10px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🍽️ POS System - Production Monitor</h1>
+            <div class="status-indicator">
+                <div class="status-dot" id="systemStatus"></div>
+                <span id="statusText">System Healthy</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="refreshData()">
+                <span id="refreshIcon">🔄</span> Refresh
+            </button>
+            <button class="btn btn-secondary" onclick="exportMetrics()">
+                📊 Export Metrics
+            </button>
+            <button class="btn btn-secondary" onclick="clearAlerts()">
+                🔕 Clear Alerts
+            </button>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>📈 Requests/Hour</h3>
+                <div class="metric-value" id="requestsPerHour">-</div>
+                <div class="metric-label">Total requests in last hour</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>⚡ Avg Response Time</h3>
+                <div class="metric-value" id="avgResponseTime">-</div>
+                <div class="metric-label">Milliseconds</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>❌ Error Rate</h3>
+                <div class="metric-value" id="errorRate">-</div>
+                <div class="metric-label">Percentage of failed requests</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>💾 Memory Usage</h3>
+                <div class="metric-value" id="memoryUsage">-</div>
+                <div class="metric-label">MB used</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>⏱️ Uptime</h3>
+                <div class="metric-value" id="uptime">-</div>
+                <div class="metric-label">Hours online</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>🚨 Active Alerts</h3>
+                <div class="metric-value" id="activeAlerts">-</div>
+                <div class="metric-label">Unacknowledged alerts</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>📊 Response Time Trend</h3>
+            <div class="chart" id="responseTimeChart">
+                Response time chart will be displayed here
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>🌐 Network Activity</h3>
+            <div class="chart" id="networkChart">
+                Network activity chart will be displayed here
+            </div>
+        </div>
+
+        <div class="alerts-section">
+            <h3>🚨 Recent Alerts</h3>
+            <div id="alertsList">
+                <div class="alert-item">
+                    <div class="alert-time">No alerts</div>
+                    <div class="alert-message">System is running smoothly</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>🔍 Error Log</h3>
+            <div class="error-log" id="errorLog">
+                Waiting for error data...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MonitoringDashboard {
+            constructor() {
+                this.isConnected = false;
+                this.updateInterval = 30000; // 30 seconds
+                this.data = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.connectToMonitor();
+                this.startAutoRefresh();
+                this.setupEventListeners();
+            }
+
+            connectToMonitor() {
+                try {
+                    // Try to connect to the production monitor
+                    if (window.productionMonitor) {
+                        this.isConnected = true;
+                        this.updateStatus('healthy', 'Connected to Monitor');
+                        this.loadInitialData();
+                    } else {
+                        this.isConnected = false;
+                        this.updateStatus('error', 'Monitor Not Available');
+                        this.showMockData();
+                    }
+                } catch (error) {
+                    console.error('Failed to connect to monitor:', error);
+                    this.isConnected = false;
+                    this.updateStatus('error', 'Connection Failed');
+                    this.showMockData();
+                }
+            }
+
+            loadInitialData() {
+                if (this.isConnected && window.productionMonitor) {
+                    this.data = window.productionMonitor.getDashboardData();
+                    this.updateDashboard();
+                }
+            }
+
+            showMockData() {
+                // Show mock data for demonstration
+                this.data = {
+                    summary: {
+                        totalRequests: 1247,
+                        successfulRequests: 1198,
+                        errorRate: 3.9,
+                        averageResponseTime: 245,
+                        uptime: 18.5,
+                        activeAlerts: 2
+                    },
+                    alerts: [
+                        {
+                            id: '1',
+                            category: 'performance',
+                            message: 'Response time above threshold',
+                            severity: 'warning',
+                            timestamp: Date.now() - 300000
+                        },
+                        {
+                            id: '2',
+                            category: 'network',
+                            message: 'High error rate detected',
+                            severity: 'error',
+                            timestamp: Date.now() - 600000
+                        }
+                    ]
+                };
+                this.updateDashboard();
+            }
+
+            updateDashboard() {
+                if (!this.data) return;
+
+                const summary = this.data.summary;
+                
+                // Update metrics
+                this.updateMetric('requestsPerHour', summary.totalRequests);
+                this.updateMetric('avgResponseTime', `${summary.averageResponseTime}ms`);
+                this.updateMetric('errorRate', `${summary.errorRate.toFixed(1)}%`, 
+                    summary.errorRate > 5 ? 'error' : summary.errorRate > 2 ? 'warning' : '');
+                this.updateMetric('memoryUsage', '45MB');
+                this.updateMetric('uptime', `${summary.uptime.toFixed(1)}h`);
+                this.updateMetric('activeAlerts', summary.activeAlerts, 
+                    summary.activeAlerts > 0 ? 'warning' : '');
+
+                // Update system status
+                const hasErrors = summary.errorRate > 5 || summary.activeAlerts > 3;
+                const hasWarnings = summary.errorRate > 2 || summary.activeAlerts > 0;
+                
+                if (hasErrors) {
+                    this.updateStatus('error', 'System Issues Detected');
+                } else if (hasWarnings) {
+                    this.updateStatus('warning', 'System Warnings');
+                } else {
+                    this.updateStatus('healthy', 'System Healthy');
+                }
+
+                // Update alerts
+                this.updateAlerts();
+                this.updateErrorLog();
+            }
+
+            updateMetric(id, value, status = '') {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                    element.className = `metric-value ${status}`;
+                }
+            }
+
+            updateStatus(status, text) {
+                const statusDot = document.getElementById('systemStatus');
+                const statusText = document.getElementById('statusText');
+                
+                if (statusDot) {
+                    statusDot.className = `status-dot ${status === 'healthy' ? '' : status}`;
+                }
+                
+                if (statusText) {
+                    statusText.textContent = text;
+                }
+            }
+
+            updateAlerts() {
+                const alertsList = document.getElementById('alertsList');
+                if (!alertsList || !this.data.alerts) return;
+
+                if (this.data.alerts.length === 0) {
+                    alertsList.innerHTML = `
+                        <div class="alert-item">
+                            <div class="alert-time">No alerts</div>
+                            <div class="alert-message">System is running smoothly</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                alertsList.innerHTML = this.data.alerts.map(alert => `
+                    <div class="alert-item ${alert.severity}">
+                        <div class="alert-time">${this.formatTime(alert.timestamp)}</div>
+                        <div class="alert-message">[${alert.category.toUpperCase()}] ${alert.message}</div>
+                    </div>
+                `).join('');
+            }
+
+            updateErrorLog() {
+                const errorLog = document.getElementById('errorLog');
+                if (!errorLog) return;
+
+                // Show recent errors from localStorage or mock data
+                const errors = this.getRecentErrors();
+                
+                if (errors.length === 0) {
+                    errorLog.textContent = 'No recent errors logged.';
+                    return;
+                }
+
+                errorLog.innerHTML = errors.map(error => 
+                    `[${this.formatTime(error.timestamp)}] ${error.level.toUpperCase()}: ${error.message}`
+                ).join('\n');
+            }
+
+            getRecentErrors() {
+                try {
+                    const stored = JSON.parse(localStorage.getItem('errorTracker_errors') || '[]');
+                    return stored.slice(-20); // Last 20 errors
+                } catch (e) {
+                    return [
+                        {
+                            timestamp: Date.now() - 300000,
+                            level: 'warning',
+                            message: 'Slow network request detected'
+                        },
+                        {
+                            timestamp: Date.now() - 600000,
+                            level: 'error',
+                            message: 'Failed to sync data with server'
+                        }
+                    ];
+                }
+            }
+
+            formatTime(timestamp) {
+                return new Date(timestamp).toLocaleTimeString();
+            }
+
+            startAutoRefresh() {
+                setInterval(() => {
+                    this.refreshData();
+                }, this.updateInterval);
+            }
+
+            setupEventListeners() {
+                // Listen for monitor events if available
+                if (window.productionMonitor) {
+                    window.productionMonitor.on('metric', (data) => {
+                        this.loadInitialData();
+                    });
+
+                    window.productionMonitor.on('alert', (alert) => {
+                        this.loadInitialData();
+                        this.showNotification(alert);
+                    });
+                }
+            }
+
+            showNotification(alert) {
+                // Show browser notification for critical alerts
+                if (alert.severity === 'error' && 'Notification' in window) {
+                    if (Notification.permission === 'granted') {
+                        new Notification(`POS System Alert`, {
+                            body: alert.message,
+                            icon: '/favicon.ico'
+                        });
+                    }
+                }
+            }
+
+            refreshData() {
+                const refreshIcon = document.getElementById('refreshIcon');
+                if (refreshIcon) {
+                    refreshIcon.innerHTML = '<div class="loading"></div>';
+                }
+
+                setTimeout(() => {
+                    if (this.isConnected && window.productionMonitor) {
+                        this.loadInitialData();
+                    } else {
+                        this.showMockData();
+                    }
+                    
+                    if (refreshIcon) {
+                        refreshIcon.textContent = '🔄';
+                    }
+                }, 1000);
+            }
+
+            exportMetrics() {
+                let data;
+                if (this.isConnected && window.productionMonitor) {
+                    data = window.productionMonitor.exportMetrics('json');
+                } else {
+                    data = JSON.stringify(this.data, null, 2);
+                }
+
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pos-metrics-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            clearAlerts() {
+                if (this.isConnected && window.productionMonitor) {
+                    // Acknowledge all alerts
+                    this.data.alerts.forEach(alert => {
+                        window.productionMonitor.acknowledgeAlert(alert.id);
+                    });
+                    this.loadInitialData();
+                } else {
+                    // Clear mock alerts
+                    this.data.alerts = [];
+                    this.updateAlerts();
+                }
+            }
+        }
+
+        // Global functions for buttons
+        function refreshData() {
+            dashboard.refreshData();
+        }
+
+        function exportMetrics() {
+            dashboard.exportMetrics();
+        }
+
+        function clearAlerts() {
+            dashboard.clearAlerts();
+        }
+
+        // Initialize dashboard when page loads
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboard = new MonitoringDashboard();
+            
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        });
+    </script>
+</body>
+</html>

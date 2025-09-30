@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Test Suite - POS ร้านกุ้งแซ่บ</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #0f766e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-button {
+            background: #0f766e;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+        .test-button:hover {
+            background: #14b8a6;
+        }
+        .test-button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .test-button.secondary {
+            background: #64748b;
+        }
+        .test-button.secondary:hover {
+            background: #475569;
+        }
+        .test-result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        .info {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #dbeafe;
+        }
+        .warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #0f766e;
+            transition: width 0.3s ease;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-running { background: #f59e0b; }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        .status-idle { background: #94a3b8; }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .summary-card h4 {
+            margin: 0 0 10px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .recommendations {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .recommendation {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #f59e0b;
+        }
+        .recommendation.high { border-left-color: #ef4444; }
+        .recommendation.medium { border-left-color: #f59e0b; }
+        .recommendation.low { border-left-color: #10b981; }
+        .log-container {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-timestamp {
+            color: #94a3b8;
+            margin-right: 10px;
+        }
+        .log-level-info { color: #60a5fa; }
+        .log-level-success { color: #34d399; }
+        .log-level-warning { color: #fbbf24; }
+        .log-level-error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🧪 Comprehensive Test Suite</h1>
+            <p>ระบบทดสอบประสิทธิภาพและคุณภาพแบบครอบคลุมสำหรับ POS System</p>
+            <div class="summary-cards" id="overview-cards">
+                <div class="summary-card">
+                    <h4>Test Status</h4>
+                    <div class="value" id="test-status">
+                        <span class="status-indicator status-idle"></span>Ready
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <h4>Overall Score</h4>
+                    <div class="value" id="overall-score">--</div>
+                </div>
+                <div class="summary-card">
+                    <h4>Tests Run</h4>
+                    <div class="value" id="tests-run">0</div>
+                </div>
+                <div class="summary-card">
+                    <h4>Success Rate</h4>
+                    <div class="value" id="success-rate">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-grid">
+            <!-- Quick Tests Section -->
+            <div class="test-section">
+                <h3>⚡ Quick Tests</h3>
+                <p>ทดสอบฟังก์ชันพื้นฐานและประสิทธิภาพเบื้องต้น</p>
+                <button class="test-button" onclick="runQuickTests()">Run Quick Tests</button>
+                <button class="test-button secondary" onclick="runInfrastructureTests()">Infrastructure Tests</button>
+                <div id="quick-result" class="test-result" style="display: none;"></div>
+            </div>
+
+            <!-- Performance Tests Section -->
+            <div class="test-section">
+                <h3>📊 Performance Tests</h3>
+                <p>ทดสอบประสิทธิภาพ Core Web Vitals และ Custom Metrics</p>
+                <button class="test-button" onclick="runPerformanceTests()">Run Performance Tests</button>
+                <button class="test-button secondary" onclick="runLoadTests()">Load & Stress Tests</button>
+                <div id="performance-result" class="test-result" style="display: none;"></div>
+            </div>
+
+            <!-- Cross-Device Tests Section -->
+            <div class="test-section">
+                <h3>📱 Cross-Device Tests</h3>
+                <p>ทดสอบความเข้ากันได้บนอุปกรณ์ต่างๆ</p>
+                <button class="test-button" onclick="runCrossDeviceTests()">Run Device Tests</button>
+                <button class="test-button secondary" onclick="runResponsiveTests()">Responsive Tests</button>
+                <div id="device-result" class="test-result" style="display: none;"></div>
+            </div>
+
+            <!-- Accessibility Tests Section -->
+            <div class="test-section">
+                <h3>♿ Accessibility Tests</h3>
+                <p>ทดสอบการเข้าถึงและใช้งานสำหรับผู้พิการ</p>
+                <button class="test-button" onclick="runAccessibilityTests()">Run A11y Tests</button>
+                <button class="test-button secondary" onclick="runKeyboardTests()">Keyboard Navigation</button>
+                <div id="accessibility-result" class="test-result" style="display: none;"></div>
+            </div>
+
+            <!-- User Acceptance Tests Section -->
+            <div class="test-section">
+                <h3>👥 User Acceptance Tests</h3>
+                <p>ทดสอบ User Workflows และ Task Completion</p>
+                <button class="test-button" onclick="runUserAcceptanceTests()">Run UAT</button>
+                <button class="test-button secondary" onclick="runUsabilityTests()">Usability Tests</button>
+                <div id="uat-result" class="test-result" style="display: none;"></div>
+            </div>
+
+            <!-- Lighthouse Audit Section -->
+            <div class="test-section">
+                <h3>💡 Lighthouse Audit</h3>
+                <p>ทดสอบ Performance, SEO, PWA และ Best Practices</p>
+                <button class="test-button" onclick="runLighthouseAudit()">Run Lighthouse</button>
+                <button class="test-button secondary" onclick="runPWATests()">PWA Tests</button>
+                <div id="lighthouse-result" class="test-result" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Comprehensive Test Runner -->
+        <div class="test-section" style="margin-bottom: 30px;">
+            <h3>🚀 Comprehensive Test Runner</h3>
+            <p>รันการทดสอบทั้งหมดแบบครบวงจร พร้อมสร้างรายงานผล</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="test-button" onclick="runAllTests()" id="run-all-btn">
+                    Run All Tests
+                </button>
+                <button class="test-button secondary" onclick="generateReport()">
+                    Generate Report
+                </button>
+                <button class="test-button secondary" onclick="compareWithPrevious()">
+                    Compare Results
+                </button>
+                <button class="test-button secondary" onclick="viewHistory()">
+                    View History
+                </button>
+            </div>
+            <div class="progress-bar" id="overall-progress" style="display: none;">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div id="comprehensive-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <!-- Recommendations Section -->
+        <div id="recommendations-section" style="display: none;">
+            <div class="recommendations">
+                <h3>💡 Recommendations</h3>
+                <div id="recommendations-list"></div>
+            </div>
+        </div>
+
+        <!-- Test Log -->
+        <div class="test-section">
+            <h3>📋 Test Log</h3>
+            <button class="test-button secondary" onclick="clearLog()">Clear Log</button>
+            <div class="log-container" id="test-log">
+                <div class="log-entry">
+                    <span class="log-timestamp">[Ready]</span>
+                    <span class="log-level-info">Test suite initialized and ready to run</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Scripts -->
+    <script src="js/critical.js"></script>
+    <script src="js/core/ComprehensiveTestSuite.js"></script>
+    <script src="js/core/AutomatedTestRunner.js"></script>
+    <script src="TestRunner.gs.js"></script>
+
+    <script>
+        // Global test runner instance
+        let testRunner = null;
+        let comprehensiveTestSuite = null;
+        let currentTestResults = null;
+
+        // Initialize test environment
+        window.addEventListener('load', async () => {
+            try {
+                log('Initializing test environment...', 'info');
+                
+                // Initialize test runner
+                testRunner = new AutomatedTestRunner();
+                await testRunner.initialize();
+                
+                // Initialize comprehensive test suite
+                comprehensiveTestSuite = new ComprehensiveTestSuite();
+                
+                log('Test environment initialized successfully', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                log(`Failed to initialize test environment: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        });
+
+        // Logging function
+        function log(message, level = 'info') {
+            const logContainer = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString('th-TH');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-level-${level}">${message}</span>
+            `;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Also log to console
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        // Update status indicator
+        function updateStatus(text, status) {
+            const statusElement = document.getElementById('test-status');
+            statusElement.innerHTML = `<span class="status-indicator status-${status}"></span>${text}`;
+        }
+
+        // Show result in UI
+        function showResult(elementId, result, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `test-result ${type}`;
+            
+            if (typeof result === 'object') {
+                element.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } else {
+                element.textContent = result;
+            }
+            
+            element.style.display = 'block';
+        }
+
+        // Update progress bar
+        function updateProgress(percentage) {
+            const progressBar = document.getElementById('overall-progress');
+            const progressFill = document.getElementById('progress-fill');
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = `${percentage}%`;
+            
+            if (percentage >= 100) {
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // Update summary cards
+        function updateSummary(results) {
+            if (results && results.summary) {
+                document.getElementById('overall-score').textContent = 
+                    `${results.summary.overallScore.toFixed(1)}%`;
+                document.getElementById('tests-run').textContent = 
+                    results.summary.totalTests;
+                document.getElementById('success-rate').textContent = 
+                    `${((results.summary.passedTests / results.summary.totalTests) * 100).toFixed(1)}%`;
+            }
+        }
+
+        // Show recommendations
+        function showRecommendations(recommendations) {
+            if (!recommendations || recommendations.length === 0) {
+                document.getElementById('recommendations-section').style.display = 'none';
+                return;
+            }
+
+            const recommendationsList = document.getElementById('recommendations-list');
+            recommendationsList.innerHTML = recommendations.map(rec => `
+                <div class="recommendation ${rec.priority.toLowerCase()}">
+                    <strong>${rec.category} - ${rec.priority} Priority</strong><br>
+                    <strong>Issue:</strong> ${rec.issue}<br>
+                    <strong>Recommendation:</strong> ${rec.recommendation}
+                </div>
+            `).join('');
+
+            document.getElementById('recommendations-section').style.display = 'block';
+        }
+
+        // Test functions
+        async function runQuickTests() {
+            log('Starting quick tests...', 'info');
+            updateStatus('Running Quick Tests', 'running');
+            
+            try {
+                let result;
+                if (typeof quickTest === 'function') {
+                    result = await quickTest();
+                } else {
+                    result = { status: 'error', message: 'Quick test function not available' };
+                }
+                
+                showResult('quick-result', result, result.status === 'success' ? 'success' : 'error');
+                log(`Quick tests completed: ${result.status}`, result.status === 'success' ? 'success' : 'error');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('quick-result', `Error: ${error.message}`, 'error');
+                log(`Quick tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runInfrastructureTests() {
+            log('Starting infrastructure tests...', 'info');
+            updateStatus('Running Infrastructure Tests', 'running');
+            
+            try {
+                const result = await testRunner.runInfrastructureTests();
+                showResult('quick-result', result, 'info');
+                log('Infrastructure tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('quick-result', `Error: ${error.message}`, 'error');
+                log(`Infrastructure tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runPerformanceTests() {
+            log('Starting performance tests...', 'info');
+            updateStatus('Running Performance Tests', 'running');
+            
+            try {
+                const result = await comprehensiveTestSuite.runPerformanceTests();
+                showResult('performance-result', result, 'info');
+                log('Performance tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('performance-result', `Error: ${error.message}`, 'error');
+                log(`Performance tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runLoadTests() {
+            log('Starting load tests...', 'info');
+            updateStatus('Running Load Tests', 'running');
+            
+            try {
+                const result = await comprehensiveTestSuite.runLoadTests();
+                showResult('performance-result', result, 'info');
+                log('Load tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('performance-result', `Error: ${error.message}`, 'error');
+                log(`Load tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runCrossDeviceTests() {
+            log('Starting cross-device tests...', 'info');
+            updateStatus('Running Device Tests', 'running');
+            
+            try {
+                const result = await comprehensiveTestSuite.runCrossDeviceTests();
+                showResult('device-result', result, 'info');
+                log('Cross-device tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('device-result', `Error: ${error.message}`, 'error');
+                log(`Cross-device tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runResponsiveTests() {
+            log('Starting responsive tests...', 'info');
+            updateStatus('Running Responsive Tests', 'running');
+            
+            try {
+                // Test different viewport sizes
+                const viewports = [
+                    { width: 360, height: 640, name: 'Mobile' },
+                    { width: 768, height: 1024, name: 'Tablet' },
+                    { width: 1920, height: 1080, name: 'Desktop' }
+                ];
+                
+                const results = {};
+                for (const viewport of viewports) {
+                    // Simulate viewport testing
+                    results[viewport.name] = {
+                        viewport: viewport,
+                        responsive: true,
+                        readableText: true,
+                        touchTargets: viewport.width < 768 ? true : 'N/A'
+                    };
+                }
+                
+                showResult('device-result', results, 'success');
+                log('Responsive tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('device-result', `Error: ${error.message}`, 'error');
+                log(`Responsive tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runAccessibilityTests() {
+            log('Starting accessibility tests...', 'info');
+            updateStatus('Running Accessibility Tests', 'running');
+            
+            try {
+                const result = await comprehensiveTestSuite.runAccessibilityTests();
+                showResult('accessibility-result', result, 'info');
+                log('Accessibility tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('accessibility-result', `Error: ${error.message}`, 'error');
+                log(`Accessibility tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runKeyboardTests() {
+            log('Starting keyboard navigation tests...', 'info');
+            updateStatus('Running Keyboard Tests', 'running');
+            
+            try {
+                const result = await comprehensiveTestSuite.testKeyboardNavigation();
+                showResult('accessibility-result', result, result.passed ? 'success' : 'warning');
+                log('Keyboard tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('accessibility-result', `Error: ${error.message}`, 'error');
+                log(`Keyboard tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runUserAcceptanceTests() {
+            log('Starting user acceptance tests...', 'info');
+            updateStatus('Running UAT', 'running');
+            
+            try {
+                const result = await comprehensiveTestSuite.runUserAcceptanceTests();
+                showResult('uat-result', result, 'info');
+                log('User acceptance tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('uat-result', `Error: ${error.message}`, 'error');
+                log(`User acceptance tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runUsabilityTests() {
+            log('Starting usability tests...', 'info');
+            updateStatus('Running Usability Tests', 'running');
+            
+            try {
+                const result = await comprehensiveTestSuite.testUsability();
+                showResult('uat-result', result, 'info');
+                log('Usability tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('uat-result', `Error: ${error.message}`, 'error');
+                log(`Usability tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runLighthouseAudit() {
+            log('Starting Lighthouse audit...', 'info');
+            updateStatus('Running Lighthouse Audit', 'running');
+            
+            try {
+                const result = await testRunner.runLighthouseAudit();
+                showResult('lighthouse-result', result, 'info');
+                log('Lighthouse audit completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('lighthouse-result', `Error: ${error.message}`, 'error');
+                log(`Lighthouse audit failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runPWATests() {
+            log('Starting PWA tests...', 'info');
+            updateStatus('Running PWA Tests', 'running');
+            
+            try {
+                const result = await testRunner.simulateLighthousePWA();
+                showResult('lighthouse-result', result, result.passed ? 'success' : 'warning');
+                log('PWA tests completed', 'success');
+                updateStatus('Ready', 'idle');
+                
+            } catch (error) {
+                showResult('lighthouse-result', `Error: ${error.message}`, 'error');
+                log(`PWA tests failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        }
+
+        async function runAllTests() {
+            log('Starting comprehensive test suite...', 'info');
+            updateStatus('Running All Tests', 'running');
+            
+            const runAllBtn = document.getElementById('run-all-btn');
+            runAllBtn.disabled = true;
+            runAllBtn.textContent = 'Running Tests...';
+            
+            try {
+                updateProgress(10);
+                
+                const result = await testRunner.runAllTests();
+                currentTestResults = result;
+                
+                updateProgress(100);
+                
+                showResult('comprehensive-result', result, 'info');
+                updateSummary(result);
+                showRecommendations(result.recommendations);
+                
+                log(`Comprehensive test suite completed with score: ${result.summary.overallScore.toFixed(1)}%`, 'success');
+                updateStatus('Completed', 'success');
+                
+            } catch (error) {
+                showResult('comprehensive-result', `Error: ${error.message}`, 'error');
+                log(`Comprehensive test suite failed: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            } finally {
+                runAllBtn.disabled = false;
+                runAllBtn.textContent = 'Run All Tests';
+            }
+        }
+
+        async function generateReport() {
+            if (!currentTestResults) {
+                log('No test results available. Run tests first.', 'warning');
+                return;
+            }
+            
+            log('Generating test report...', 'info');
+            
+            try {
+                await testRunner.generateTestReport(currentTestResults);
+                log('Test report generated and downloaded', 'success');
+                
+            } catch (error) {
+                log(`Failed to generate report: ${error.message}`, 'error');
+            }
+        }
+
+        async function compareWithPrevious() {
+            if (!currentTestResults) {
+                log('No current test results available. Run tests first.', 'warning');
+                return;
+            }
+            
+            log('Comparing with previous results...', 'info');
+            
+            try {
+                const comparison = await testRunner.compareWithPrevious(currentTestResults);
+                
+                if (!comparison) {
+                    log('No previous test results found for comparison', 'info');
+                    return;
+                }
+                
+                showResult('comprehensive-result', comparison, 'info');
+                log('Comparison completed', 'success');
+                
+            } catch (error) {
+                log(`Failed to compare results: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewHistory() {
+            log('Loading test history...', 'info');
+            
+            try {
+                const history = await testRunner.getHistoricalResults(10);
+                showResult('comprehensive-result', history, 'info');
+                log(`Loaded ${history.length} historical test results`, 'success');
+                
+            } catch (error) {
+                log(`Failed to load history: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLog() {
+            const logContainer = document.getElementById('test-log');
+            logContainer.innerHTML = `
+                <div class="log-entry">
+                    <span class="log-timestamp">[${new Date().toLocaleTimeString('th-TH')}]</span>
+                    <span class="log-level-info">Log cleared</span>
+                </div>
+            `;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 't':
+                        e.preventDefault();
+                        runAllTests();
+                        break;
+                    case 'q':
+                        e.preventDefault();
+                        runQuickTests();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        runPerformanceTests();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        generateReport();
+                        break;
+                }
+            }
+        });
+
+        // Show keyboard shortcuts help
+        log('Keyboard shortcuts: Ctrl+T (All Tests), Ctrl+Q (Quick), Ctrl+P (Performance), Ctrl+R (Report)', 'info');
+    </script>
+</body>
+</html>

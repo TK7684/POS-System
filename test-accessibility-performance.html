@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="POS System Automated Testing - Accessibility and Performance Testing">
+    <title>POS System - Automated Testing Suite</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        .test-controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-controls h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn.accessibility {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .btn.performance {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .btn.cross-browser {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+        
+        .btn.monitor {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+        
+        .results-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            min-height: 200px;
+        }
+        
+        .results-container h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        .loading::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #bdc3c7;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .test-result {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .test-result.passed {
+            border-left-color: #27ae60;
+            background: #d5f4e6;
+        }
+        
+        .test-result.failed {
+            border-left-color: #e74c3c;
+            background: #fdeaea;
+        }
+        
+        .test-result h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .test-result .score {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .test-result .details {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            transition: width 0.3s ease;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.passed {
+            background: #27ae60;
+        }
+        
+        .status-indicator.failed {
+            background: #e74c3c;
+        }
+        
+        .status-indicator.running {
+            background: #f39c12;
+            animation: pulse 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { opacity: 1; }
+            to { opacity: 0.5; }
+        }
+        
+        .recommendations {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .recommendations h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+        
+        .recommendations ul {
+            margin-left: 20px;
+        }
+        
+        .recommendations li {
+            margin: 5px 0;
+            color: #155724;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            body {
+                background: #000;
+                color: #fff;
+            }
+            
+            .header, .test-controls, .results-container {
+                background: #fff;
+                color: #000;
+                border: 2px solid #000;
+            }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🧪 POS System Testing Suite</h1>
+            <p>Automated Accessibility, Performance, and Cross-Browser Testing</p>
+        </header>
+        
+        <main>
+            <section class="test-controls">
+                <h2>🚀 Test Controls</h2>
+                <div class="button-group">
+                    <button class="btn accessibility" id="runAccessibilityBtn" aria-describedby="accessibility-desc">
+                        ♿ Run Accessibility Tests
+                    </button>
+                    <button class="btn performance" id="runPerformanceBtn" aria-describedby="performance-desc">
+                        ⚡ Run Performance Tests
+                    </button>
+                    <button class="btn cross-browser" id="runCrossBrowserBtn" aria-describedby="cross-browser-desc">
+                        🌐 Run Cross-Browser Tests
+                    </button>
+                    <button class="btn" id="runAllTestsBtn" aria-describedby="all-tests-desc">
+                        🎯 Run All Tests
+                    </button>
+                    <button class="btn monitor" id="startMonitoringBtn" aria-describedby="monitoring-desc">
+                        🔄 Start Monitoring
+                    </button>
+                    <button class="btn" id="generateReportBtn" aria-describedby="report-desc">
+                        📊 Generate Report
+                    </button>
+                </div>
+                
+                <!-- Screen reader descriptions -->
+                <div id="accessibility-desc" class="sr-only">Run WCAG 2.1 AA accessibility compliance tests</div>
+                <div id="performance-desc" class="sr-only">Run Lighthouse performance audit tests</div>
+                <div id="cross-browser-desc" class="sr-only">Run cross-browser compatibility tests</div>
+                <div id="all-tests-desc" class="sr-only">Run all automated tests including accessibility, performance, and cross-browser</div>
+                <div id="monitoring-desc" class="sr-only">Start continuous monitoring of all test metrics</div>
+                <div id="report-desc" class="sr-only">Generate comprehensive HTML report of test results</div>
+            </section>
+            
+            <section class="results-container" role="region" aria-label="Test Results">
+                <h2>📋 Test Results</h2>
+                <div id="testResults">
+                    <p>Click a test button above to start testing...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Load test modules -->
+    <script src="test/accessibility/axe-accessibility.test.js"></script>
+    <script src="test/performance/lighthouse-ci.test.js"></script>
+    <script src="test/cross-browser/browser-automation.test.js"></script>
+    <script src="test/automated-testing-suite.js"></script>
+    <script src="test/run-tests.js"></script>
+    
+    <script>
+        // Initialize test runner
+        const testRunner = new TestRunner();
+        let isMonitoring = false;
+        let monitoringInstance = null;
+        
+        // DOM elements
+        const testResults = document.getElementById('testResults');
+        const runAccessibilityBtn = document.getElementById('runAccessibilityBtn');
+        const runPerformanceBtn = document.getElementById('runPerformanceBtn');
+        const runCrossBrowserBtn = document.getElementById('runCrossBrowserBtn');
+        const runAllTestsBtn = document.getElementById('runAllTestsBtn');
+        const startMonitoringBtn = document.getElementById('startMonitoringBtn');
+        const generateReportBtn = document.getElementById('generateReportBtn');
+        
+        // Utility functions
+        function showLoading(message = 'Running tests...') {
+            testResults.innerHTML = `<div class="loading">${message}</div>`;
+        }
+        
+        function showError(error) {
+            testResults.innerHTML = `
+                <div class="test-result failed">
+                    <h3>❌ Error</h3>
+                    <p>${error.message || error}</p>
+                </div>
+            `;
+        }
+        
+        function formatTestResult(result, testType) {
+            let html = '';
+            let status = 'failed';
+            let score = 0;
+            
+            switch (testType) {
+                case 'accessibility':
+                    status = result.overallPassed ? 'passed' : 'failed';
+                    score = result.axeAudit?.summary?.overallScore || 0;
+                    html = `
+                        <div class="test-result ${status}">
+                            <h3>
+                                <span class="status-indicator ${status}"></span>
+                                ♿ Accessibility Test Results
+                            </h3>
+                            <div class="score">Score: ${score}%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${score}%"></div>
+                            </div>
+                            <div class="details">
+                                <p><strong>Violations:</strong> ${result.axeAudit?.summary?.totalViolations || 0}</p>
+                                <p><strong>Passes:</strong> ${result.axeAudit?.summary?.totalPasses || 0}</p>
+                                <p><strong>Keyboard Navigation:</strong> ${result.keyboardNavigation?.passed ? '✅' : '❌'}</p>
+                                <p><strong>Screen Reader:</strong> ${result.screenReader?.passed ? '✅' : '❌'}</p>
+                                <p><strong>Color Contrast:</strong> ${result.colorContrast?.passed ? '✅' : '❌'}</p>
+                                <p><strong>Touch Targets:</strong> ${result.touchTargets?.passed ? '✅' : '❌'}</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'performance':
+                    status = result.summary?.passed ? 'passed' : 'failed';
+                    score = result.summary?.overallScore || 0;
+                    html = `
+                        <div class="test-result ${status}">
+                            <h3>
+                                <span class="status-indicator ${status}"></span>
+                                ⚡ Performance Test Results
+                            </h3>
+                            <div class="score">Score: ${score}%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${score}%"></div>
+                            </div>
+                            <div class="details">
+                                <p><strong>Performance:</strong> ${result.performance || 0}%</p>
+                                <p><strong>Accessibility:</strong> ${result.accessibility || 0}%</p>
+                                <p><strong>Best Practices:</strong> ${result.bestPractices || 0}%</p>
+                                <p><strong>SEO:</strong> ${result.seo || 0}%</p>
+                                <p><strong>PWA:</strong> ${result.pwa || 0}%</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'crossBrowser':
+                    status = result.summary?.successRate >= 90 ? 'passed' : 'failed';
+                    score = result.summary?.successRate || 0;
+                    html = `
+                        <div class="test-result ${status}">
+                            <h3>
+                                <span class="status-indicator ${status}"></span>
+                                🌐 Cross-Browser Test Results
+                            </h3>
+                            <div class="score">Success Rate: ${score}%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${score}%"></div>
+                            </div>
+                            <div class="details">
+                                <p><strong>Browsers Tested:</strong> ${result.summary?.totalBrowsers || 0}</p>
+                                <p><strong>Devices Tested:</strong> ${result.summary?.totalDevices || 0}</p>
+                                <p><strong>Passed Browsers:</strong> ${result.summary?.passedBrowsers || 0}</p>
+                                <p><strong>Passed Devices:</strong> ${result.summary?.passedDevices || 0}</p>
+                                ${result.summary?.failedBrowsers?.length > 0 ? 
+                                    `<p><strong>Failed Browsers:</strong> ${result.summary.failedBrowsers.join(', ')}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            return html;
+        }
+        
+        function formatComprehensiveResults(results) {
+            let html = '<div class="comprehensive-results">';
+            
+            // Overall summary
+            const overallStatus = results.summary?.overallPassed ? 'passed' : 'failed';
+            html += `
+                <div class="test-result ${overallStatus}">
+                    <h3>
+                        <span class="status-indicator ${overallStatus}"></span>
+                        🏆 Overall Test Results
+                    </h3>
+                    <div class="score">Status: ${results.summary?.overallPassed ? 'PASSED' : 'FAILED'}</div>
+                    <div class="details">
+                        <p><strong>Execution Time:</strong> ${results.summary?.totalExecutionTime?.toFixed(2) || 0}ms</p>
+                        <p><strong>Tests Run:</strong> ${results.summary?.testsRun?.join(', ') || 'None'}</p>
+                        <p><strong>Timestamp:</strong> ${new Date(results.timestamp).toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Individual test results
+            if (results.accessibility && !results.accessibility.error) {
+                html += formatTestResult(results.accessibility, 'accessibility');
+            }
+            
+            if (results.performance && !results.performance.error) {
+                html += formatTestResult(results.performance, 'performance');
+            }
+            
+            if (results.crossBrowser && !results.crossBrowser.error) {
+                html += formatTestResult(results.crossBrowser, 'crossBrowser');
+            }
+            
+            // Recommendations
+            if (results.summary?.recommendations?.length > 0) {
+                html += `
+                    <div class="recommendations">
+                        <h4>💡 Recommendations</h4>
+                        <ul>
+                            ${results.summary.recommendations.slice(0, 5).map(rec => 
+                                `<li><strong>[${rec.priority?.toUpperCase()}]</strong> ${rec.issue} - ${rec.solution}</li>`
+                            ).join('')}
+                        </ul>
+                        ${results.summary.recommendations.length > 5 ? 
+                            `<p><em>... and ${results.summary.recommendations.length - 5} more recommendations</em></p>` : ''}
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // Event handlers
+        runAccessibilityBtn.addEventListener('click', async () => {
+            try {
+                showLoading('Running accessibility tests...');
+                runAccessibilityBtn.disabled = true;
+                
+                const result = await testRunner.runAccessibilityTests();
+                testResults.innerHTML = formatTestResult(result, 'accessibility');
+                
+            } catch (error) {
+                showError(error);
+            } finally {
+                runAccessibilityBtn.disabled = false;
+            }
+        });
+        
+        runPerformanceBtn.addEventListener('click', async () => {
+            try {
+                showLoading('Running performance tests...');
+                runPerformanceBtn.disabled = true;
+                
+                const result = await testRunner.runPerformanceTests();
+                testResults.innerHTML = formatTestResult(result, 'performance');
+                
+            } catch (error) {
+                showError(error);
+            } finally {
+                runPerformanceBtn.disabled = false;
+            }
+        });
+        
+        runCrossBrowserBtn.addEventListener('click', async () => {
+            try {
+                showLoading('Running cross-browser tests...');
+                runCrossBrowserBtn.disabled = true;
+                
+                const result = await testRunner.runCrossBrowserTests();
+                testResults.innerHTML = formatTestResult(result, 'crossBrowser');
+                
+            } catch (error) {
+                showError(error);
+            } finally {
+                runCrossBrowserBtn.disabled = false;
+            }
+        });
+        
+        runAllTestsBtn.addEventListener('click', async () => {
+            try {
+                showLoading('Running comprehensive test suite...');
+                runAllTestsBtn.disabled = true;
+                
+                const results = await testRunner.runAllTests();
+                testResults.innerHTML = formatComprehensiveResults(results);
+                
+            } catch (error) {
+                showError(error);
+            } finally {
+                runAllTestsBtn.disabled = false;
+            }
+        });
+        
+        startMonitoringBtn.addEventListener('click', async () => {
+            try {
+                if (!isMonitoring) {
+                    showLoading('Starting continuous monitoring...');
+                    monitoringInstance = await testRunner.startMonitoring(300000); // 5 minutes
+                    isMonitoring = true;
+                    startMonitoringBtn.textContent = '🛑 Stop Monitoring';
+                    startMonitoringBtn.classList.add('monitor');
+                    
+                    testResults.innerHTML = `
+                        <div class="test-result">
+                            <h3>
+                                <span class="status-indicator running"></span>
+                                🔄 Continuous Monitoring Active
+                            </h3>
+                            <p>Tests will run every 5 minutes. Check console for updates.</p>
+                            <div class="details">
+                                <p><strong>Started:</strong> ${new Date().toLocaleString()}</p>
+                                <p><strong>Interval:</strong> 5 minutes</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    if (monitoringInstance) {
+                        monitoringInstance.stop();
+                    }
+                    isMonitoring = false;
+                    startMonitoringBtn.textContent = '🔄 Start Monitoring';
+                    startMonitoringBtn.classList.remove('monitor');
+                    
+                    testResults.innerHTML = `
+                        <div class="test-result">
+                            <h3>🛑 Monitoring Stopped</h3>
+                            <p>Continuous monitoring has been stopped.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showError(error);
+            }
+        });
+        
+        generateReportBtn.addEventListener('click', async () => {
+            try {
+                showLoading('Generating comprehensive report...');
+                generateReportBtn.disabled = true;
+                
+                const reports = await testRunner.generateReports();
+                
+                if (reports && reports.html) {
+                    // Open report in new window
+                    const reportWindow = window.open('', '_blank');
+                    reportWindow.document.write(reports.html);
+                    reportWindow.document.close();
+                    
+                    testResults.innerHTML = `
+                        <div class="test-result passed">
+                            <h3>✅ Report Generated</h3>
+                            <p>Comprehensive test report has been generated and opened in a new window.</p>
+                            <div class="details">
+                                <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                                <p><strong>Format:</strong> HTML</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('No test results available for report generation');
+                }
+                
+            } catch (error) {
+                showError(error);
+            } finally {
+                generateReportBtn.disabled = false;
+            }
+        });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 POS System Testing Suite initialized');
+            console.log('Available test modules:', {
+                accessibility: typeof AxeAccessibilityTester !== 'undefined',
+                performance: typeof LighthouseCITester !== 'undefined',
+                crossBrowser: typeof CrossBrowserTester !== 'undefined',
+                testSuite: typeof AutomatedTestingSuite !== 'undefined',
+                testRunner: typeof TestRunner !== 'undefined'
+            });
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case '1':
+                        e.preventDefault();
+                        runAccessibilityBtn.click();
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        runPerformanceBtn.click();
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        runCrossBrowserBtn.click();
+                        break;
+                    case 'a':
+                        e.preventDefault();
+                        runAllTestsBtn.click();
+                        break;
+                    case 'm':
+                        e.preventDefault();
+                        startMonitoringBtn.click();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        generateReportBtn.click();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

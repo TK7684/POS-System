@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS ร้านกุ้งแซ่บ - Hybrid PWA</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Meta tags for PWA -->
+    <meta name="theme-color" content="#0f766e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="POS กุ้งแซ่บ">
+    
+    <!-- Critical CSS -->
+    <link rel="stylesheet" href="css/critical.css">
+    
+    <!-- Connection Status Styles -->
+    <style>
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .connection-status.online {
+            background: #10b981;
+            color: white;
+        }
+        
+        .connection-status.offline {
+            background: #ef4444;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .offline-counter {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            background: #f59e0b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+        }
+        
+        .setup-banner {
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            color: white;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .setup-banner h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+        
+        .setup-banner p {
+            margin: 0;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status offline">📴 กำลังเชื่อมต่อ...</div>
+    <div id="offline-counter" class="offline-counter"></div>
+    
+    <!-- Setup Banner (shown on first visit) -->
+    <div id="setup-banner" class="setup-banner" style="display: none;">
+        <h3>🚀 ยินดีต้อนรับสู่ POS ร้านกุ้งแซ่บ</h3>
+        <p>ระบบ PWA พร้อมการทำงานออฟไลน์และซิงค์อัตโนมัติ</p>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- Your existing POS interface here -->
+        
+        <!-- Header -->
+        <header class="appbar">
+            <div class="appbar-content">
+                <h1>POS ร้านกุ้งแซ่บ</h1>
+                <div class="appbar-actions">
+                    <button id="sync-btn" class="btn ghost" title="ซิงค์ข้อมูล">🔄</button>
+                    <button id="settings-btn" class="btn ghost" title="ตั้งค่า">⚙️</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <button class="nav-item active" data-route="home">🏠 หน้าหลัก</button>
+            <button class="nav-item" data-route="purchase">📦 ซื้อ</button>
+            <button class="nav-item" data-route="sale">💰 ขาย</button>
+            <button class="nav-item" data-route="reports">📊 รายงาน</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="main-content">
+            <!-- Content will be loaded here -->
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ ตั้งค่าระบบ</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>🔗 API URL (Google Apps Script):</label>
+                    <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+                    <small>URL ของ Google Apps Script ที่ deploy แล้ว</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>📴 โหมดออฟไลน์:</label>
+                    <label class="checkbox">
+                        <input type="checkbox" id="offline-mode" checked>
+                        เปิดใช้งานโหมดออฟไลน์
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>🔄 ช่วงเวลาซิงค์ (วินาที):</label>
+                    <input type="number" id="sync-interval" value="30" min="10" max="300">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings" class="btn brand">💾 บันทึก</button>
+                <button id="test-connection" class="btn">🧪 ทดสอบการเชื่อมต่อ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="js/critical.js"></script>
+    <script src="js/api/PosApiClient.js"></script>
+    <script src="js/pos-hybrid-integration.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('✅ Service Worker registered:', registration);
+                })
+                .catch(error => {
+                    console.error('❌ Service Worker registration failed:', error);
+                });
+        }
+    </script>
+
+    <!-- App Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Show setup banner for first-time users
+            if (!localStorage.getItem('pos-api-url')) {
+                document.getElementById('setup-banner').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('setup-banner').style.display = 'none';
+                }, 5000);
+            }
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Initialize routing
+            initializeRouting();
+        });
+
+        function setupEventListeners() {
+            // Sync button
+            document.getElementById('sync-btn').addEventListener('click', async () => {
+                if (window.posHybridSystem) {
+                    await window.posHybridSystem.syncOfflineQueue();
+                }
+            });
+
+            // Settings button
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                showSettingsModal();
+            });
+
+            // Settings modal
+            document.getElementById('save-settings').addEventListener('click', saveSettings);
+            document.getElementById('test-connection').addEventListener('click', testConnection);
+            document.querySelector('.modal-close').addEventListener('click', hideSettingsModal);
+
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const route = e.target.dataset.route;
+                    navigateTo(route);
+                });
+            });
+        }
+
+        function showSettingsModal() {
+            // Load current settings
+            const apiUrl = localStorage.getItem('pos-api-url') || '';
+            const offlineMode = localStorage.getItem('pos-offline-mode') !== 'false';
+            const syncInterval = localStorage.getItem('pos-sync-interval') || '30';
+
+            document.getElementById('api-url-input').value = apiUrl;
+            document.getElementById('offline-mode').checked = offlineMode;
+            document.getElementById('sync-interval').value = syncInterval;
+
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function hideSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        async function saveSettings() {
+            const apiUrl = document.getElementById('api-url-input').value;
+            const offlineMode = document.getElementById('offline-mode').checked;
+            const syncInterval = document.getElementById('sync-interval').value;
+
+            // Save settings
+            localStorage.setItem('pos-api-url', apiUrl);
+            localStorage.setItem('pos-offline-mode', offlineMode);
+            localStorage.setItem('pos-sync-interval', syncInterval);
+
+            // Update system config
+            if (window.posHybridSystem) {
+                window.posHybridSystem.config.apiUrl = apiUrl;
+                window.posHybridSystem.config.enableOffline = offlineMode;
+                window.posHybridSystem.config.syncInterval = parseInt(syncInterval) * 1000;
+                window.posHybridSystem.saveConfig();
+            }
+
+            hideSettingsModal();
+            
+            // Show success message
+            if (window.POS && window.POS.critical && window.POS.critical.toast) {
+                window.POS.critical.toast('✅ บันทึกการตั้งค่าแล้ว');
+            }
+
+            // Reload page to apply new settings
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+
+        async function testConnection() {
+            const apiUrl = document.getElementById('api-url-input').value;
+            
+            if (!apiUrl) {
+                alert('กรุณาใส่ API URL ก่อน');
+                return;
+            }
+
+            try {
+                const testClient = new PosApiClient(apiUrl);
+                const result = await testClient.testConnection();
+                
+                if (result.status === 'success') {
+                    alert('✅ การเชื่อมต่อสำเร็จ!\n' + 
+                          'เซิร์ฟเวอร์เวลา: ' + result.serverTime);
+                } else {
+                    alert('❌ การเชื่อมต่อล้มเหลว:\n' + result.message);
+                }
+            } catch (error) {
+                alert('❌ ไม่สามารถเชื่อมต่อได้:\n' + error.message);
+            }
+        }
+
+        function initializeRouting() {
+            // Simple routing system
+            navigateTo('home');
+        }
+
+        function navigateTo(route) {
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.route === route);
+            });
+
+            // Load route content
+            loadRouteContent(route);
+        }
+
+        function loadRouteContent(route) {
+            const content = document.getElementById('main-content');
+            
+            switch (route) {
+                case 'home':
+                    content.innerHTML = '<h2>🏠 หน้าหลัก</h2><p>ยินดีต้อนรับสู่ระบบ POS</p>';
+                    break;
+                case 'purchase':
+                    content.innerHTML = '<h2>📦 บันทึกการซื้อ</h2><p>ฟอร์มบันทึกการซื้อจะแสดงที่นี่</p>';
+                    break;
+                case 'sale':
+                    content.innerHTML = '<h2>💰 บันทึกการขาย</h2><p>ฟอร์มบันทึกการขายจะแสดงที่นี่</p>';
+                    break;
+                case 'reports':
+                    content.innerHTML = '<h2>📊 รายงาน</h2><p>รายงานต่างๆ จะแสดงที่นี่</p>';
+                    break;
+                default:
+                    content.innerHTML = '<h2>❓ ไม่พบหน้า</h2>';
+            }
+        }
+    </script>
+</body>
+</html>

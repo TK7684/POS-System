@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desktop Enhancements Test - POS System</title>
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive-layout.css">
+    <link rel="stylesheet" href="css/desktop-enhancements.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: system-ui, sans-serif;
+            background: var(--bg, #f8fafc);
+            color: var(--text, #1e293b);
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: var(--card, white);
+            border: 1px solid var(--line, #e2e8f0);
+            border-radius: 12px;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--brand, #0f766e);
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+        
+        .test-tile {
+            background: var(--card, white);
+            border: 1px solid var(--line, #e2e8f0);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        
+        .test-table th,
+        .test-table td {
+            padding: 12px;
+            border: 1px solid var(--line, #e2e8f0);
+            text-align: left;
+        }
+        
+        .test-table th {
+            background: var(--bg, #f8fafc);
+            font-weight: 600;
+        }
+        
+        .test-form {
+            display: grid;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        
+        .test-field {
+            display: grid;
+            gap: 4px;
+        }
+        
+        .test-label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .test-input {
+            padding: 8px 12px;
+            border: 1px solid var(--line, #e2e8f0);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .test-btn {
+            padding: 8px 16px;
+            background: var(--brand, #0f766e);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .keyboard-shortcuts {
+            background: var(--bg, #f8fafc);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: var(--ok, #059669);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-indicator.error {
+            background: var(--danger, #dc2626);
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator" id="status">Loading...</div>
+    
+    <h1>Desktop Enhancements Test</h1>
+    <p>This page tests the desktop enhancement features. Open on a desktop browser (width > 1024px) to see desktop-specific features.</p>
+    
+    <div class="test-section">
+        <div class="test-title">🖱️ Context Menus</div>
+        <p>Right-click on the elements below to see context menus:</p>
+        
+        <div class="test-grid">
+            <div class="tile test-tile" data-route="test1">
+                <div class="title">Test Tile 1</div>
+                <div class="muted">Right-click for context menu</div>
+            </div>
+            
+            <div class="tile test-tile" data-route="test2">
+                <div class="title">Test Tile 2</div>
+                <div class="muted">Try middle-click to open in new window</div>
+            </div>
+            
+            <button class="btn test-btn">Test Button</button>
+        </div>
+        
+        <table class="table test-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-label="Name">Test Item 1</td>
+                    <td data-label="Value">100</td>
+                    <td data-label="Action">Right-click for menu</td>
+                </tr>
+                <tr>
+                    <td data-label="Name">Test Item 2</td>
+                    <td data-label="Value">200</td>
+                    <td data-label="Action">Right-click for menu</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">⌨️ Keyboard Shortcuts</div>
+        <p>Try these keyboard shortcuts:</p>
+        
+        <div class="keyboard-shortcuts">
+            <strong>Navigation:</strong><br>
+            Ctrl + 1-5: Navigate between tabs<br>
+            Ctrl + F: Focus search field<br>
+            Ctrl + R: Refresh data<br>
+            <br>
+            <strong>Actions:</strong><br>
+            Ctrl + N: New item<br>
+            Ctrl + S: Save form<br>
+            Ctrl + P: Print<br>
+            <br>
+            <strong>Quick Entry:</strong><br>
+            Alt + P: Quick purchase entry<br>
+            Alt + S: Quick sale entry<br>
+            Alt + M: Quick menu entry<br>
+            <br>
+            <strong>Help:</strong><br>
+            F1 or Ctrl + /: Show keyboard shortcuts help<br>
+            Escape: Close modal/cancel<br>
+        </div>
+        
+        <button class="test-btn" onclick="showKeyboardHelp()">Show Keyboard Shortcuts Help (F1)</button>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">📝 Form Enhancements</div>
+        <p>Test enhanced form interactions:</p>
+        
+        <form class="test-form">
+            <div class="test-field">
+                <label class="test-label">Test Input (try Ctrl+A, Ctrl+C, Ctrl+V)</label>
+                <input class="test-input" type="text" placeholder="Type something here..." value="Sample text">
+            </div>
+            
+            <div class="test-field">
+                <label class="test-label">Number Input</label>
+                <input class="test-input" type="number" placeholder="Enter a number...">
+            </div>
+            
+            <div class="test-field">
+                <label class="test-label">Select Dropdown</label>
+                <select class="test-input">
+                    <option value="">Choose an option...</option>
+                    <option value="1">Option 1</option>
+                    <option value="2">Option 2</option>
+                    <option value="3">Option 3</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button type="button" class="test-btn" onclick="resetForm()">Reset Form</button>
+                <button type="submit" class="test-btn">Submit (Ctrl+Enter)</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">🖥️ Desktop Features</div>
+        <p>Desktop-specific features:</p>
+        
+        <div class="test-grid">
+            <div class="card test-tile">
+                <div class="title">Hover Effects</div>
+                <div class="muted">Hover over this card to see enhanced effects</div>
+            </div>
+            
+            <div class="card test-tile">
+                <div class="title">Multi-Window Support</div>
+                <div class="muted">Look for new window buttons on cards</div>
+            </div>
+            
+            <div class="card test-tile">
+                <div class="title">Enhanced Navigation</div>
+                <div class="muted">Use arrow keys to navigate between elements</div>
+            </div>
+        </div>
+        
+        <button class="test-btn" onclick="testMultiWindow()">Open Test Window</button>
+        <button class="test-btn" onclick="testToast()">Test Toast Notification</button>
+    </div>
+    
+    <!-- Load JavaScript -->
+    <script src="js/core/DeviceManager.js"></script>
+    <script src="js/core/DesktopEnhancementManager.js"></script>
+    <script src="js/core/KeyboardShortcutsHelp.js"></script>
+    <script src="js/core/ResponsiveLayoutManager.js"></script>
+    
+    <script>
+        // Initialize managers
+        let deviceManager, desktopManager, responsiveManager;
+        
+        function initializeManagers() {
+            try {
+                // Initialize device manager
+                deviceManager = new DeviceManager();
+                console.log('Device Manager initialized:', deviceManager.getDevice());
+                
+                // Initialize responsive layout manager
+                responsiveManager = new ResponsiveLayoutManager();
+                console.log('Responsive Layout Manager initialized');
+                
+                // Desktop enhancements will be initialized automatically by ResponsiveLayoutManager
+                // if we're on desktop
+                
+                updateStatus('✅ Desktop Enhancements Ready');
+                
+                // Test desktop detection
+                if (deviceManager.isDesktop()) {
+                    console.log('Desktop detected - enhancements should be active');
+                    document.body.classList.add('test-desktop-detected');
+                } else {
+                    console.log('Non-desktop device detected');
+                    updateStatus('ℹ️ Non-Desktop Device', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Failed to initialize managers:', error);
+                updateStatus('❌ Initialization Failed', 'error');
+            }
+        }
+        
+        function updateStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status-indicator';
+            if (type === 'error') {
+                status.classList.add('error');
+            }
+        }
+        
+        function showKeyboardHelp() {
+            if (window.KeyboardShortcutsHelp) {
+                KeyboardShortcutsHelp.show();
+            } else {
+                alert('Keyboard shortcuts help not available');
+            }
+        }
+        
+        function resetForm() {
+            const form = document.querySelector('.test-form');
+            form.reset();
+            showToast('Form reset');
+        }
+        
+        function testMultiWindow() {
+            const newWindow = window.open('', 'test-window', 'width=600,height=400');
+            newWindow.document.write(`
+                <html>
+                    <head><title>Test Window</title></head>
+                    <body style="padding: 20px; font-family: system-ui;">
+                        <h2>Multi-Window Test</h2>
+                        <p>This is a test window opened by the desktop enhancement system.</p>
+                        <button onclick="window.close()">Close Window</button>
+                    </body>
+                </html>
+            `);
+            newWindow.document.close();
+            showToast('Test window opened');
+        }
+        
+        function testToast() {
+            showToast('This is a test toast notification! 🎉');
+        }
+        
+        function showToast(message) {
+            // Create a simple toast for testing
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                z-index: 1000;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: fadeIn 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+                to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+            
+            @keyframes fadeOut {
+                from { opacity: 1; transform: translateX(-50%) translateY(0); }
+                to { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            }
+            
+            .test-desktop-detected .test-title::before {
+                content: '🖥️ ';
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeManagers);
+        } else {
+            initializeManagers();
+        }
+        
+        // Test form submission
+        document.querySelector('.test-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showToast('Form submitted! (Ctrl+Enter also works)');
+        });
+        
+        // Add some test data to localStorage for favorites testing
+        localStorage.setItem('pos-favorites', JSON.stringify([
+            { id: '1', route: 'home', title: 'หน้าหลัก', timestamp: Date.now() }
+        ]));
+        
+        console.log('Desktop Enhancement Test Page Loaded');
+        console.log('Device width:', window.innerWidth);
+        console.log('Expected desktop features:', window.innerWidth > 1024);
+    </script>
+</body>
+</html>

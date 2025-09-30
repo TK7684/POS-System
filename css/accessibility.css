@@ -1,0 +1,1063 @@
+/* Accessibility Styles - Comprehensive accessibility support */
+
+/* --------- Skip Links --------- */
+.skip-links {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: 9999;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--brand);
+  color: white;
+  padding: 12px 16px;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 0 0 8px 0;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* --------- Screen Reader Only Content --------- */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* --------- Focus Management --------- */
+:focus {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
+}
+
+/* Enhanced focus outlines when enabled */
+.show-focus-outlines :focus,
+.show-focus-outlines :focus-visible {
+  outline: 3px solid var(--brand-2);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px white, 0 0 0 4px var(--brand-2);
+}
+
+/* --------- Accessibility Toolbar --------- */
+.accessibility-toolbar {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1000;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.accessibility-toolbar:hover {
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.a11y-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.a11y-btn:hover {
+  background: var(--brand);
+  color: white;
+  transform: scale(1.05);
+}
+
+.a11y-btn:focus {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
+}
+
+.a11y-btn:active {
+  transform: scale(0.95);
+}
+
+/* --------- Font Size Controls --------- */
+[data-font-size="large"] {
+  --fs-xs: clamp(16px, 1.2rem + 0.3vw, 18px);
+  --fs-sm: clamp(17px, 1.25rem + 0.4vw, 20px);
+  --fs-md: clamp(18px, 1.4rem + 0.6vw, 22px);
+  --fs-lg: clamp(20px, 1.5rem + 0.9vw, 24px);
+  --fs-xl: clamp(22px, 1.6rem + 1.2vw, 28px);
+}
+
+[data-font-size="extra-large"] {
+  --fs-xs: clamp(18px, 1.4rem + 0.4vw, 20px);
+  --fs-sm: clamp(19px, 1.45rem + 0.5vw, 22px);
+  --fs-md: clamp(20px, 1.6rem + 0.7vw, 24px);
+  --fs-lg: clamp(22px, 1.7rem + 1vw, 26px);
+  --fs-xl: clamp(24px, 1.8rem + 1.3vw, 30px);
+}
+
+/* --------- High Contrast Mode --------- */
+.high-contrast {
+  --bg: #000000;
+  --card: #000000;
+  --text: #ffffff;
+  --muted: #cccccc;
+  --brand: #00ff00;
+  --brand-2: #00cc00;
+  --danger: #ff0000;
+  --ok: #00ff00;
+  --line: #ffffff;
+}
+
+.high-contrast .btn {
+  border: 2px solid var(--text);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.high-contrast .btn.brand {
+  background: var(--brand);
+  color: var(--bg);
+  border-color: var(--brand);
+}
+
+.high-contrast .input,
+.high-contrast .select {
+  border: 2px solid var(--text);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.high-contrast .card {
+  border: 2px solid var(--text);
+  background: var(--bg);
+}
+
+.high-contrast .tile {
+  border: 2px solid var(--text);
+}
+
+.high-contrast .tile:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* --------- Reduced Motion --------- */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.reduced-motion .fab-main:hover {
+  transform: none;
+}
+
+.reduced-motion .tile:hover {
+  transform: none;
+}
+
+.reduced-motion .btn:hover {
+  transform: none;
+}
+
+/* --------- Keyboard Navigation Indicators --------- */
+.keyboard-navigation .tabbtn:focus {
+  background: rgba(15, 118, 110, 0.1);
+  outline: 2px solid var(--brand-2);
+  outline-offset: -2px;
+}
+
+.keyboard-navigation .fab-action:focus {
+  background: var(--brand);
+  color: white;
+  outline: 2px solid white;
+  outline-offset: -2px;
+}
+
+/* --------- ARIA Live Regions --------- */
+#live-region,
+#assertive-live-region {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* --------- Form Validation States --------- */
+.input[aria-invalid="true"],
+.select[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+.input[aria-invalid="true"]:focus,
+.select[aria-invalid="true"]:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3);
+}
+
+/* Error message styling */
+.field-error {
+  color: var(--danger);
+  font-size: var(--fs-xs);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-error::before {
+  content: '⚠️';
+  font-size: 12px;
+}
+
+/* --------- Required Field Indicators --------- */
+.label[for] .required::after,
+.input[aria-required="true"] + .label::after {
+  content: ' *';
+  color: var(--danger);
+  font-weight: bold;
+}
+
+/* --------- Loading States for Screen Readers --------- */
+.loading[aria-hidden="false"]::before {
+  content: 'กำลังโหลด';
+  position: absolute;
+  left: -10000px;
+}
+
+/* --------- Button States --------- */
+.btn[aria-pressed="true"] {
+  background: var(--brand);
+  color: white;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn[aria-expanded="true"] {
+  background: var(--brand);
+  color: white;
+}
+
+/* --------- Table Accessibility --------- */
+.table th {
+  position: relative;
+}
+
+.table th[aria-sort="ascending"]::after {
+  content: ' ↑';
+  position: absolute;
+  right: 4px;
+}
+
+.table th[aria-sort="descending"]::after {
+  content: ' ↓';
+  position: absolute;
+  right: 4px;
+}
+
+/* --------- Mobile Accessibility --------- */
+@media (max-width: 480px) {
+  .accessibility-toolbar {
+    position: fixed;
+    top: auto;
+    bottom: calc(var(--tabbar-h) + 80px + max(var(--sa-b), 0px));
+    right: 8px;
+    transform: none;
+    flex-direction: row;
+    border-radius: 20px;
+    padding: 4px;
+  }
+
+  .accessibility-toolbar:hover {
+    transform: none;
+  }
+
+  .a11y-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  /* Larger touch targets */
+  .btn,
+  .input,
+  .select,
+  .tabbtn {
+    min-height: 48px;
+  }
+
+  .fab-main {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* --------- Tablet Accessibility --------- */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .accessibility-toolbar {
+    right: 8px;
+  }
+
+  /* Optimize for touch and mouse */
+  .btn:hover,
+  .tile:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* --------- Desktop Accessibility --------- */
+@media (min-width: 1025px) {
+  /* Enhanced keyboard navigation */
+  .keyboard-navigation .btn:focus,
+  .keyboard-navigation .input:focus,
+  .keyboard-navigation .select:focus {
+    box-shadow: 0 0 0 3px var(--brand-2);
+  }
+
+  /* Hover states for mouse users */
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .tile:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* --------- Print Accessibility --------- */
+@media print {
+  .accessibility-toolbar,
+  .skip-links,
+  .fab-container {
+    display: none !important;
+  }
+
+  /* Ensure good contrast for printing */
+  * {
+    background: white !important;
+    color: black !important;
+  }
+
+  .btn {
+    border: 1px solid black !important;
+  }
+}
+
+/* --------- Windows High Contrast Mode --------- */
+@media (prefers-contrast: high) {
+  .btn {
+    border: 2px solid ButtonText;
+  }
+
+  .btn:focus {
+    outline: 2px solid Highlight;
+  }
+
+  .input,
+  .select {
+    border: 2px solid ButtonText;
+  }
+
+  .card {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* --------- Forced Colors Mode (Windows) --------- */
+@media (forced-colors: active) {
+  .fab-main {
+    background: ButtonFace;
+    border: 1px solid ButtonText;
+    color: ButtonText;
+  }
+
+  .fab-action {
+    background: ButtonFace;
+    border: 1px solid ButtonText;
+    color: ButtonText;
+  }
+
+  .fab-action:hover,
+  .fab-action:focus {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+/* --------- Voice Control Support --------- */
+[data-voice-command] {
+  position: relative;
+}
+
+[data-voice-command]::after {
+  content: attr(data-voice-command);
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 2px 4px;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.show-voice-commands [data-voice-command]::after {
+  opacity: 1;
+}
+
+/* --------- Error States --------- */
+.error-summary {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.error-summary h3 {
+  color: var(--danger);
+  margin: 0 0 8px 0;
+  font-size: var(--fs-md);
+}
+
+.error-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.error-list li {
+  color: var(--danger);
+  margin-bottom: 4px;
+}
+
+.error-list a {
+  color: var(--danger);
+  text-decoration: underline;
+}
+
+.error-list a:hover,
+.error-list a:focus {
+  text-decoration: none;
+}
+
+/* --------- Success States --------- */
+.success-message {
+  background: rgba(5, 150, 105, 0.1);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  color: var(--ok);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.success-message::before {
+  content: '✅';
+  font-size: 16px;
+}
+
+/* --------- Responsive Text --------- */
+@media (max-width: 360px) {
+  [data-font-size="large"] {
+    --fs-xs: 15px;
+    --fs-sm: 16px;
+    --fs-md: 17px;
+    --fs-lg: 18px;
+    --fs-xl: 20px;
+  }
+
+  [data-font-size="extra-large"] {
+    --fs-xs: 16px;
+    --fs-sm: 17px;
+    --fs-md: 18px;
+    --fs-lg: 19px;
+    --fs-xl: 22px;
+  }
+}
+
+/* --------- Focus Trap --------- */
+.focus-trap {
+  position: relative;
+}
+
+.focus-trap::before,
+.focus-trap::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --------- Landmark Roles --------- */
+[role="banner"],
+[role="navigation"],
+[role="main"],
+[role="contentinfo"] {
+  position: relative;
+}
+
+/* Add visual indicators for landmarks in development */
+.show-landmarks [role="banner"]::before { content: 'Banner'; }
+.show-landmarks [role="navigation"]::before { content: 'Navigation'; }
+.show-landmarks [role="main"]::before { content: 'Main'; }
+.show-landmarks [role="contentinfo"]::before { content: 'Content Info'; }
+
+.show-landmarks [role]::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--brand);
+  color: white;
+  font-size: 10px;
+  padding: 2px 4px;
+  z-index: 1000;
+  border-radius: 0 0 4px 0;
+}
+/* -
+-------- Accessibility Quick Menu --------- */
+.accessibility-quick-menu {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  min-width: 280px;
+  max-width: 90vw;
+  backdrop-filter: blur(8px);
+}
+
+.a11y-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.a11y-menu-header h3 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.a11y-menu-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.a11y-menu-close:hover {
+  background: var(--line);
+  color: var(--text);
+}
+
+.a11y-menu-content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.a11y-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: var(--fs-md);
+}
+
+.a11y-menu-item:hover {
+  background: var(--brand);
+  color: white;
+  transform: translateX(4px);
+}
+
+.a11y-menu-item:focus {
+  outline: 2px solid var(--brand-2);
+  outline-offset: 2px;
+}
+
+.a11y-menu-item span {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+/* Mobile optimization for accessibility menu */
+@media (max-width: 480px) {
+  .accessibility-quick-menu {
+    min-width: calc(100vw - 32px);
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+  }
+
+  .a11y-menu-content {
+    padding: 8px;
+  }
+
+  .a11y-menu-item {
+    padding: 14px 16px;
+    font-size: var(--fs-sm);
+  }
+}/
+* --------- Form Accessibility Enhancements --------- */
+
+/* Required field indicators */
+.required-indicator {
+  color: var(--danger);
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+/* Field help text */
+.field-help {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* Field validation states */
+.field-error {
+  color: var(--danger);
+  font-size: var(--fs-xs);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: slideInDown 0.3s ease;
+}
+
+.field-error::before {
+  content: '⚠️';
+  font-size: 12px;
+}
+
+.field-warning {
+  color: #f59e0b;
+  font-size: var(--fs-xs);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: slideInDown 0.3s ease;
+}
+
+.field-warning::before {
+  content: '⚡';
+  font-size: 12px;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Searchable select styling */
+.searchable-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover,
+.dropdown-item.highlighted {
+  background: var(--brand);
+  color: white;
+}
+
+.dropdown-item mark {
+  background: rgba(255, 255, 255, 0.3);
+  color: inherit;
+  padding: 0;
+  border-radius: 2px;
+}
+
+/* Quick input buttons */
+.quick-date-btns,
+.quick-qty-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-date-btn,
+.quick-qty-btn {
+  min-height: 36px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  flex: 0 0 auto;
+  border-radius: 6px !important;
+}
+
+.quick-date-btns .quick-date-btn {
+  flex: 1;
+  min-width: 80px;
+}
+
+.quick-qty-btns .quick-qty-btn {
+  min-width: 40px;
+}
+
+.quick-date-btn:hover,
+.quick-qty-btn:hover {
+  background: var(--brand);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Enhanced form navigation indicators */
+.field:focus-within {
+  position: relative;
+}
+
+.field:focus-within::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid var(--brand-2);
+  border-radius: calc(var(--radius) + 2px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Form keyboard shortcuts indicator */
+.form-shortcuts-hint {
+  position: fixed;
+  bottom: calc(var(--tabbar-h) + 120px + max(var(--sa-b), 0px));
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.form-shortcuts-hint.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Enhanced select styling */
+.select:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.select option {
+  padding: 8px;
+}
+
+.select option:checked {
+  background: var(--brand);
+  color: white;
+}
+
+/* Form validation summary */
+.form-validation-summary {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.form-validation-summary.show {
+  display: block;
+  animation: slideInDown 0.3s ease;
+}
+
+.form-validation-summary h4 {
+  color: var(--danger);
+  margin: 0 0 8px 0;
+  font-size: var(--fs-md);
+}
+
+.form-validation-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.form-validation-list li {
+  color: var(--danger);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-validation-list li::before {
+  content: '•';
+  font-weight: bold;
+}
+
+/* Enhanced button states */
+.btn[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn[aria-disabled="true"]:hover {
+  transform: none;
+  background: var(--muted);
+}
+
+/* Form progress indicator */
+.form-progress {
+  position: relative;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.form-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand), var(--brand-2));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* Mobile form enhancements */
+@media (max-width: 480px) {
+  .quick-date-btns,
+  .quick-qty-btns {
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .quick-date-btn,
+  .quick-qty-btn {
+    min-height: 40px !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+
+  .searchable-dropdown {
+    max-height: 150px;
+  }
+
+  .dropdown-item {
+    padding: 10px 12px;
+    font-size: var(--fs-sm);
+  }
+
+  .form-shortcuts-hint {
+    bottom: calc(var(--tabbar-h) + 80px + max(var(--sa-b), 0px));
+    right: 16px;
+    left: 16px;
+    text-align: center;
+  }
+
+  .field:focus-within::before {
+    border-width: 1px;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .quick-date-btns {
+    gap: 10px;
+  }
+
+  .quick-date-btn {
+    min-width: 100px;
+  }
+
+  .searchable-dropdown {
+    max-height: 250px;
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1025px) {
+  .form-shortcuts-hint {
+    bottom: 120px;
+  }
+
+  .searchable-dropdown {
+    max-height: 300px;
+  }
+
+  .dropdown-item {
+    padding: 14px 18px;
+  }
+
+  /* Enhanced hover states for desktop */
+  .field:hover .input,
+  .field:hover .select {
+    border-color: rgba(15, 118, 110, 0.5);
+  }
+}
+
+/* High contrast mode for forms */
+.high-contrast .field-error {
+  color: #ff0000;
+  font-weight: bold;
+}
+
+.high-contrast .field-warning {
+  color: #ffff00;
+  font-weight: bold;
+}
+
+.high-contrast .searchable-dropdown {
+  border: 2px solid var(--text);
+}
+
+.high-contrast .dropdown-item:hover,
+.high-contrast .dropdown-item.highlighted {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Reduced motion for forms */
+@media (prefers-reduced-motion: reduce) {
+  .field-error,
+  .field-warning,
+  .form-validation-summary {
+    animation: none !important;
+  }
+
+  .quick-date-btn:hover,
+  .quick-qty-btn:hover {
+    transform: none;
+  }
+
+  .form-progress-bar {
+    transition: none;
+  }
+}
+
+/* Print styles for forms */
+@media print {
+  .quick-date-btns,
+  .quick-qty-btns,
+  .form-shortcuts-hint,
+  .searchable-dropdown {
+    display: none !important;
+  }
+
+  .field-error,
+  .field-warning {
+    color: #000 !important;
+  }
+
+  .field-error::before,
+  .field-warning::before {
+    content: '[!]' !important;
+  }
+}

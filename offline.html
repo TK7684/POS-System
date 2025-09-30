@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ออฟไลน์ - POS ร้านกุ้งแซ่บ</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        
+        .offline-container {
+            max-width: 400px;
+            background: white;
+            border-radius: 12px;
+            padding: 40px 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .offline-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #0f766e;
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+        
+        p {
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        
+        .btn {
+            background: #0f766e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            margin: 8px;
+        }
+        
+        .btn:hover {
+            background: #14b8a6;
+        }
+        
+        .btn.secondary {
+            background: transparent;
+            color: #0f766e;
+            border: 2px solid #0f766e;
+        }
+        
+        .btn.secondary:hover {
+            background: #0f766e;
+            color: white;
+        }
+        
+        .features {
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            color: #64748b;
+        }
+        
+        .feature-icon {
+            margin-right: 12px;
+            font-size: 18px;
+        }
+        
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status.online {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="status" id="status">🔴 ออฟไลน์</div>
+    
+    <div class="offline-container">
+        <div class="offline-icon">🔌</div>
+        <h1>ไม่มีการเชื่อมต่ออินเทอร์เน็ต</h1>
+        <p>คุณกำลังใช้งานในโหมดออฟไลน์ ฟีเจอร์บางอย่างอาจไม่สามารถใช้งานได้</p>
+        
+        <button class="btn" onclick="tryReconnect()">ลองเชื่อมต่อใหม่</button>
+        <button class="btn secondary" onclick="goHome()">กลับหน้าหลัก</button>
+        
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span>ดูข้อมูลที่บันทึกไว้แล้ว</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span>บันทึกข้อมูลใหม่ (จะซิงค์เมื่อออนไลน์)</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span>ใช้งานฟีเจอร์พื้นฐาน</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">❌</span>
+                <span>ซิงค์ข้อมูลกับเซิร์ฟเวอร์</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check network status
+        function updateNetworkStatus() {
+            const status = document.getElementById('status');
+            if (navigator.onLine) {
+                status.textContent = '🟢 ออนไลน์';
+                status.className = 'status online';
+            } else {
+                status.textContent = '🔴 ออฟไลน์';
+                status.className = 'status';
+            }
+        }
+        
+        // Try to reconnect
+        async function tryReconnect() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            
+            btn.textContent = 'กำลังตรวจสอบ...';
+            btn.disabled = true;
+            
+            try {
+                // Try to fetch a small resource
+                const response = await fetch('/', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    // Connection restored
+                    btn.textContent = 'เชื่อมต่อสำเร็จ!';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (error) {
+                btn.textContent = 'ยังไม่สามารถเชื่อมต่อได้';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }
+        
+        // Go to home page
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        // Listen for network changes
+        window.addEventListener('online', () => {
+            updateNetworkStatus();
+            // Auto redirect when back online
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        });
+        
+        window.addEventListener('offline', updateNetworkStatus);
+        
+        // Initial status check
+        updateNetworkStatus();
+        
+        // Periodic connectivity check
+        setInterval(async () => {
+            try {
+                const response = await fetch('/', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok && !navigator.onLine) {
+                    // Connection restored but navigator.onLine is wrong
+                    window.dispatchEvent(new Event('online'));
+                }
+            } catch (error) {
+                // Still offline
+            }
+        }, 10000); // Check every 10 seconds
+    </script>
+</body>
+</html>

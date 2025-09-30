@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Optimizations Test</title>
+    
+    <!-- Critical CSS (inlined for testing) -->
+    <style data-critical="true">
+        /* Critical CSS for testing */
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .test-result.pass { background: #d4edda; color: #155724; }
+        .test-result.fail { background: #f8d7da; color: #721c24; }
+        .loading { display: none; }
+        .loading.show { display: block; }
+    </style>
+    
+    <!-- Resource hints for testing -->
+    <link rel="dns-prefetch" href="https://script.google.com">
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preload" href="js/critical.js" as="script">
+    
+    <!-- Final optimizations CSS -->
+    <link rel="stylesheet" href="css/final-optimizations.css">
+</head>
+<body>
+    <div class="test-container">
+        <h1>Final Optimizations Test Suite</h1>
+        <p>Testing all final optimizations implemented in task 14.2</p>
+        
+        <div id="test-results"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+                <div class="progress-text">0%</div>
+            </div>
+        </div>
+        
+        <!-- Test elements for validation -->
+        <div class="card" data-advanced="true">
+            <h3>Test Card</h3>
+            <div data-advanced-content="true">
+                <p>Advanced content for progressive disclosure testing</p>
+            </div>
+        </div>
+        
+        <button class="btn touch-target">Test Button</button>
+        <input type="text" placeholder="Test Input" data-search="test">
+        
+        <div data-virtual-scroll="true" style="height: 200px; overflow-y: auto;">
+            <div>Virtual scroll item 1</div>
+            <div>Virtual scroll item 2</div>
+            <div>Virtual scroll item 3</div>
+        </div>
+        
+        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2NjYyIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+VGVzdCBJbWFnZTwvdGV4dD48L3N2Zz4=" 
+             alt="Test Image" loading="lazy" decoding="async" width="100" height="100">
+    </div>
+
+    <!-- Toast for testing -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Load core dependencies -->
+    <script src="CacheManager.js"></script>
+    <script src="js/critical.js"></script>
+    
+    <!-- Load test modules -->
+    <script type="module">
+        import FinalOptimizationManager from './js/core/FinalOptimizationManager.js';
+        import FinalOptimizationValidator from './js/core/FinalOptimizationValidator.js';
+        
+        // Initialize systems
+        window.cacheManager = new CacheManager();
+        window.finalOptimizationManager = new FinalOptimizationManager();
+        
+        // Wait for initialization
+        setTimeout(async () => {
+            console.log('🧪 Starting Final Optimization Tests...');
+            
+            // Run validation
+            const validator = new FinalOptimizationValidator();
+            const results = await validator.runValidation();
+            
+            // Display results
+            displayTestResults(results);
+            
+            // Log summary
+            const report = validator.logSummary();
+            
+            // Show completion message
+            if (window.toast) {
+                const successRate = report.summary.successRate;
+                const message = successRate >= 80 ? 
+                    `✅ Final optimizations validated: ${successRate.toFixed(1)}% success` :
+                    `⚠️ Some optimizations need attention: ${successRate.toFixed(1)}% success`;
+                
+                window.toast(message, successRate >= 80 ? 'success' : 'warning');
+            }
+            
+        }, 2000);
+        
+        function displayTestResults(results) {
+            const container = document.getElementById('test-results');
+            
+            // Overall summary
+            const summary = document.createElement('div');
+            summary.className = `test-result ${results.overall.successRate >= 80 ? 'pass' : 'fail'}`;
+            summary.innerHTML = `
+                <h3>Overall Results</h3>
+                <p>Success Rate: ${results.overall.successRate.toFixed(1)}%</p>
+                <p>Tests Passed: ${results.overall.passedTests}/${results.overall.totalTests}</p>
+                <p>Duration: ${results.overall.duration.toFixed(2)}ms</p>
+            `;
+            container.appendChild(summary);
+            
+            // Category results
+            Object.keys(results).forEach(category => {
+                if (category === 'overall') return;
+                
+                const categoryDiv = document.createElement('div');
+                categoryDiv.innerHTML = `<h4>${category.charAt(0).toUpperCase() + category.slice(1)}</h4>`;
+                
+                const categoryTests = results[category];
+                Object.keys(categoryTests).forEach(testKey => {
+                    const test = categoryTests[testKey];
+                    const testDiv = document.createElement('div');
+                    testDiv.className = `test-result ${test.passed ? 'pass' : 'fail'}`;
+                    testDiv.innerHTML = `
+                        <strong>${test.name}</strong>: ${test.passed ? 'PASS' : 'FAIL'}
+                        ${test.details ? `<br><small>${JSON.stringify(test.details)}</small>` : ''}
+                    `;
+                    categoryDiv.appendChild(testDiv);
+                });
+                
+                container.appendChild(categoryDiv);
+            });
+        }
+        
+        // Test toast functionality
+        setTimeout(() => {
+            if (window.toast) {
+                window.toast('Testing enhanced toast notifications', 'info');
+            }
+        }, 3000);
+        
+        // Test performance monitoring
+        if (window.performanceMonitor) {
+            window.performanceMonitor.onAlert((alert) => {
+                console.log('Performance alert received:', alert);
+            });
+        }
+    </script>
+</body>
+</html>

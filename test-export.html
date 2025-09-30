@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Export Functionality</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #0f766e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #14b8a6;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+        }
+        .success {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+        }
+        .error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Export Functionality</h1>
+    <p>This page tests the export functionality of the POS system.</p>
+
+    <div class="test-section">
+        <h2>📊 Sample Report Data</h2>
+        <table id="sample-table">
+            <thead>
+                <tr>
+                    <th>วันที่</th>
+                    <th>เมนู</th>
+                    <th>จำนวน</th>
+                    <th>ยอดขาย</th>
+                    <th>ต้นทุน</th>
+                    <th>กำไร</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2024-01-15</td>
+                    <td>กุ้งแซ่บ</td>
+                    <td>5</td>
+                    <td>600</td>
+                    <td>300</td>
+                    <td>300</td>
+                </tr>
+                <tr>
+                    <td>2024-01-15</td>
+                    <td>ส้มตำ</td>
+                    <td>3</td>
+                    <td>180</td>
+                    <td>90</td>
+                    <td>90</td>
+                </tr>
+                <tr>
+                    <td>2024-01-16</td>
+                    <td>กุ้งแซ่บ</td>
+                    <td>7</td>
+                    <td>840</td>
+                    <td>420</td>
+                    <td>420</td>
+                </tr>
+                <tr>
+                    <td>2024-01-16</td>
+                    <td>ลาบหมู</td>
+                    <td>2</td>
+                    <td>160</td>
+                    <td>80</td>
+                    <td>80</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Export Tests</h2>
+        <button class="test-button" onclick="testCSVExport()">Test CSV Export</button>
+        <button class="test-button" onclick="testExcelExport()">Test Excel Export</button>
+        <button class="test-button" onclick="testPrintExport()">Test Print Export</button>
+        <button class="test-button" onclick="testTemplateManager()">Test Template Manager</button>
+        <button class="test-button" onclick="testReportsModule()">Test Reports Module</button>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Export Manager Status</h2>
+        <div id="manager-status">Loading...</div>
+    </div>
+
+    <!-- Load the required modules -->
+    <script src="js/core/ExportManager.js"></script>
+    <script src="js/core/ReportTemplateManager.js"></script>
+    <script src="js/core/modules/ReportsModule.js"></script>
+
+    <script>
+        // Mock POS critical functions
+        window.POS = {
+            critical: {
+                toast: (msg) => {
+                    console.log('Toast:', msg);
+                    addTestResult(msg, 'success');
+                },
+                loading: (show) => {
+                    console.log('Loading:', show);
+                }
+            }
+        };
+
+        let exportManager, templateManager, reportsModule;
+
+        // Initialize managers
+        async function initializeManagers() {
+            try {
+                exportManager = new ExportManager();
+                exportManager.init();
+                
+                templateManager = new ReportTemplateManager();
+                templateManager.init();
+                
+                reportsModule = new ReportsModule();
+                await reportsModule.init();
+                
+                updateManagerStatus();
+                addTestResult('✅ All managers initialized successfully', 'success');
+            } catch (error) {
+                addTestResult('❌ Failed to initialize managers: ' + error.message, 'error');
+            }
+        }
+
+        // Get sample data
+        function getSampleData() {
+            return [
+                {
+                    date: '2024-01-15',
+                    menu: 'กุ้งแซ่บ',
+                    quantity: 5,
+                    revenue: 600,
+                    cost: 300,
+                    profit: 300,
+                    platform: 'Walk-in',
+                    unitPrice: 120,
+                    profitMargin: 50
+                },
+                {
+                    date: '2024-01-15',
+                    menu: 'ส้มตำ',
+                    quantity: 3,
+                    revenue: 180,
+                    cost: 90,
+                    profit: 90,
+                    platform: 'Grab',
+                    unitPrice: 60,
+                    profitMargin: 50
+                },
+                {
+                    date: '2024-01-16',
+                    menu: 'กุ้งแซ่บ',
+                    quantity: 7,
+                    revenue: 840,
+                    cost: 420,
+                    profit: 420,
+                    platform: 'Walk-in',
+                    unitPrice: 120,
+                    profitMargin: 50
+                },
+                {
+                    date: '2024-01-16',
+                    menu: 'ลาบหมู',
+                    quantity: 2,
+                    revenue: 160,
+                    cost: 80,
+                    profit: 80,
+                    platform: 'Line Man',
+                    unitPrice: 80,
+                    profitMargin: 50
+                }
+            ];
+        }
+
+        // Test CSV export
+        async function testCSVExport() {
+            try {
+                if (!exportManager) {
+                    throw new Error('Export Manager not initialized');
+                }
+                
+                const data = getSampleData();
+                await exportManager.exportReport('csv', 'sales', data);
+                addTestResult('✅ CSV export test completed', 'success');
+            } catch (error) {
+                addTestResult('❌ CSV export test failed: ' + error.message, 'error');
+            }
+        }
+
+        // Test Excel export
+        async function testExcelExport() {
+            try {
+                if (!exportManager) {
+                    throw new Error('Export Manager not initialized');
+                }
+                
+                const data = getSampleData();
+                await exportManager.exportReport('excel', 'sales', data);
+                addTestResult('✅ Excel export test completed', 'success');
+            } catch (error) {
+                addTestResult('❌ Excel export test failed: ' + error.message, 'error');
+            }
+        }
+
+        // Test print export
+        async function testPrintExport() {
+            try {
+                if (!exportManager) {
+                    throw new Error('Export Manager not initialized');
+                }
+                
+                const data = getSampleData();
+                await exportManager.exportReport('print', 'sales', data);
+                addTestResult('✅ Print export test completed', 'success');
+            } catch (error) {
+                addTestResult('❌ Print export test failed: ' + error.message, 'error');
+            }
+        }
+
+        // Test template manager
+        function testTemplateManager() {
+            try {
+                if (!templateManager) {
+                    throw new Error('Template Manager not initialized');
+                }
+                
+                const templates = templateManager.getAllTemplates();
+                addTestResult(`✅ Template Manager test: Found ${templates.size} templates`, 'success');
+                
+                // Test custom template creation
+                const customTemplate = {
+                    name: 'Test Template',
+                    description: 'A test template',
+                    category: 'test',
+                    fields: [
+                        { key: 'date', label: 'Date', type: 'date' },
+                        { key: 'amount', label: 'Amount', type: 'currency' }
+                    ]
+                };
+                
+                const created = templateManager.createCustomTemplate(customTemplate);
+                addTestResult(`✅ Custom template created: ${created.id}`, 'success');
+                
+            } catch (error) {
+                addTestResult('❌ Template Manager test failed: ' + error.message, 'error');
+            }
+        }
+
+        // Test reports module
+        async function testReportsModule() {
+            try {
+                if (!reportsModule) {
+                    throw new Error('Reports Module not initialized');
+                }
+                
+                // Test setting report data
+                const data = getSampleData();
+                reportsModule.setReportData(data);
+                
+                const currentData = reportsModule.getCurrentReportData();
+                if (currentData && currentData.length === data.length) {
+                    addTestResult('✅ Reports Module data handling test passed', 'success');
+                } else {
+                    throw new Error('Data handling test failed');
+                }
+                
+                // Test export through reports module
+                await reportsModule.exportReport('csv');
+                addTestResult('✅ Reports Module export test completed', 'success');
+                
+            } catch (error) {
+                addTestResult('❌ Reports Module test failed: ' + error.message, 'error');
+            }
+        }
+
+        // Add test result to UI
+        function addTestResult(message, type) {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        // Update manager status
+        function updateManagerStatus() {
+            const statusDiv = document.getElementById('manager-status');
+            const status = {
+                'Export Manager': exportManager ? '✅ Initialized' : '❌ Not initialized',
+                'Template Manager': templateManager ? '✅ Initialized' : '❌ Not initialized',
+                'Reports Module': reportsModule ? '✅ Initialized' : '❌ Not initialized'
+            };
+            
+            statusDiv.innerHTML = Object.entries(status)
+                .map(([name, status]) => `<div><strong>${name}:</strong> ${status}</div>`)
+                .join('');
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initializeManagers();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Demo - POS System</title>
+    
+    <!-- Load existing styles -->
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/search.css">
+    
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg, #f8fafc);
+            color: var(--text, #1e293b);
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card, white);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--line, #e2e8f0);
+        }
+        
+        .demo-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+        }
+        
+        .demo-subtitle {
+            color: var(--muted, #64748b);
+            margin: 0;
+        }
+        
+        .search-container {
+            width: 100%;
+            min-height: 400px;
+        }
+        
+        .demo-info {
+            margin-top: 32px;
+            padding: 16px;
+            background: var(--bg, #f8fafc);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--muted, #64748b);
+        }
+        
+        .demo-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feature-icon {
+            font-size: 16px;
+        }
+        
+        /* CSS Variables for consistent theming */
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --brand: #0f766e;
+            --brand-2: #14b8a6;
+            --danger: #dc2626;
+            --ok: #059669;
+            --line: #e2e8f0;
+            --radius: 12px;
+            --touch: 52px;
+            --gap-1: 12px;
+            --gap-2: 16px;
+            --gap-3: 20px;
+            --gap-4: 24px;
+            --fs-xs: 14px;
+            --fs-sm: 15px;
+            --fs-md: 16px;
+            --fs-lg: 18px;
+            --fs-xl: 20px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 52px;
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: var(--fs-md);
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .btn.brand {
+            background: var(--brand);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 2px 4px rgba(15,118,110,0.3);
+        }
+        
+        .btn.ghost {
+            background: transparent;
+            border-color: transparent;
+        }
+        
+        .btn.pill {
+            border-radius: 999px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+        
+        .input, .select {
+            width: 100%;
+            min-height: 52px;
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            border: 2px solid var(--line);
+            background: var(--card);
+            color: inherit;
+            font-size: var(--fs-md);
+            transition: border-color 0.2s ease;
+        }
+        
+        .input:focus, .select:focus {
+            border-color: var(--brand);
+            outline: none;
+        }
+        
+        .label {
+            font-size: var(--fs-sm);
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1 class="demo-title">🔍 Advanced Search Demo</h1>
+            <p class="demo-subtitle">ทดสอบระบบค้นหาและตัวกรองขั้นสูง</p>
+        </div>
+        
+        <div class="search-container" id="search-demo">
+            <!-- Search interface will be inserted here -->
+        </div>
+        
+        <div class="demo-info">
+            <h3>คุณสมบัติที่ทดสอบได้:</h3>
+            <div class="demo-features">
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span>ค้นหาแบบเรียลไทม์</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💡</span>
+                    <span>ข้อเสนอแนะอัตโนมัติ</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🕒</span>
+                    <span>ประวัติการค้นหา</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔧</span>
+                    <span>ตัวกรองขั้นสูง</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💾</span>
+                    <span>บันทึกตัวกรอง</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    <span>การจัดอันดับผลลัพธ์</span>
+                </div>
+            </div>
+            
+            <p style="margin-top: 16px;">
+                <strong>วิธีทดสอบ:</strong> พิมพ์คำค้นหาในช่องด้านบน เช่น "กุ้ง", "เมนู", หรือ "ขาย" 
+                เพื่อดูผลลัพธ์การค้นหาและข้อเสนอแนะ คลิกปุ่มตัวกรองเพื่อใช้ตัวกรองขั้นสูง
+            </p>
+        </div>
+    </div>
+
+    <!-- Load JavaScript modules -->
+    <script type="module">
+        // Mock data for demo
+        const mockData = {
+            ingredients: [
+                { id: 'ING001', name: 'กุ้งสด', stockU: 'ตัว', buyU: 'กก.', usageCount: 15, lastUsed: '2024-01-15' },
+                { id: 'ING002', name: 'น้ำปลา', stockU: 'มล.', buyU: 'ขวด', usageCount: 8, lastUsed: '2024-01-14' },
+                { id: 'ING003', name: 'พริกไทย', stockU: 'กรัม', buyU: 'ถุง', usageCount: 12, lastUsed: '2024-01-13' },
+                { id: 'ING004', name: 'กระเทียม', stockU: 'กรัม', buyU: 'กก.', usageCount: 20, lastUsed: '2024-01-16' },
+                { id: 'ING005', name: 'น้ำมันพืช', stockU: 'มล.', buyU: 'ลิตร', usageCount: 5, lastUsed: '2024-01-12' }
+            ],
+            menus: [
+                { menu_id: 'M001', name: 'กุ้งแซ่บ', usageCount: 25, lastUsed: '2024-01-16' },
+                { menu_id: 'M002', name: 'กุ้งทอด', usageCount: 18, lastUsed: '2024-01-15' },
+                { menu_id: 'M003', name: 'ต้มยำกุ้ง', usageCount: 22, lastUsed: '2024-01-16' },
+                { menu_id: 'M004', name: 'ผัดไทยกุ้ง', usageCount: 30, lastUsed: '2024-01-16' }
+            ],
+            transactions: [
+                { id: 'T001', type: 'sale', date: '2024-01-16', platform: 'walkin', menu_id: 'M001', total: 120 },
+                { id: 'T002', type: 'sale', date: '2024-01-16', platform: 'grab', menu_id: 'M002', total: 95 },
+                { id: 'T003', type: 'purchase', date: '2024-01-15', ingredient_id: 'ING001', totalPrice: 250 },
+                { id: 'T004', type: 'sale', date: '2024-01-15', platform: 'lineman', menu_id: 'M003', total: 110 }
+            ]
+        };
+
+        // Mock SearchModule for demo
+        class MockSearchModule {
+            constructor() {
+                this.searchIndex = new Map();
+                this.searchHistory = [];
+                this.filterPresets = new Map();
+                this.initialized = false;
+            }
+
+            async init() {
+                await this.buildSearchIndex();
+                this.loadSearchHistory();
+                this.setupDefaultFilters();
+                this.initialized = true;
+            }
+
+            async buildSearchIndex() {
+                // Index ingredients
+                mockData.ingredients.forEach(ingredient => {
+                    const searchTerms = this.generateSearchTerms([
+                        ingredient.id, ingredient.name, ingredient.stockU, ingredient.buyU
+                    ]);
+                    
+                    this.searchIndex.set(`ingredient_${ingredient.id}`, {
+                        type: 'ingredient',
+                        id: ingredient.id,
+                        name: ingredient.name,
+                        displayName: `${ingredient.name} (${ingredient.id})`,
+                        searchTerms,
+                        data: ingredient,
+                        category: 'วัตถุดิบ',
+                        relevanceScore: this.calculateRelevanceScore('ingredient', ingredient)
+                    });
+                });
+
+                // Index menus
+                mockData.menus.forEach(menu => {
+                    const searchTerms = this.generateSearchTerms([
+                        menu.menu_id, menu.name
+                    ]);
+                    
+                    this.searchIndex.set(`menu_${menu.menu_id}`, {
+                        type: 'menu',
+                        id: menu.menu_id,
+                        name: menu.name,
+                        displayName: `${menu.name} (${menu.menu_id})`,
+                        searchTerms,
+                        data: menu,
+                        category: 'เมนู',
+                        relevanceScore: this.calculateRelevanceScore('menu', menu)
+                    });
+                });
+
+                // Index transactions
+                mockData.transactions.forEach(transaction => {
+                    const searchTerms = this.generateSearchTerms([
+                        transaction.id, transaction.type, transaction.platform,
+                        transaction.menu_id, transaction.ingredient_id
+                    ]);
+                    
+                    this.searchIndex.set(`transaction_${transaction.id}`, {
+                        type: 'transaction',
+                        id: transaction.id,
+                        name: this.getTransactionDisplayName(transaction),
+                        displayName: this.getTransactionDisplayName(transaction),
+                        searchTerms,
+                        data: transaction,
+                        category: transaction.type === 'sale' ? 'การขาย' : 'การซื้อ',
+                        relevanceScore: this.calculateRelevanceScore('transaction', transaction)
+                    });
+                });
+            }
+
+            generateSearchTerms(values) {
+                const terms = new Set();
+                values.forEach(value => {
+                    if (!value) return;
+                    const str = String(value).toLowerCase();
+                    terms.add(str);
+                    str.split(/\s+/).forEach(word => {
+                        if (word.length > 1) terms.add(word);
+                    });
+                });
+                return Array.from(terms);
+            }
+
+            calculateRelevanceScore(type, item) {
+                const typeScores = { 'ingredient': 100, 'menu': 90, 'transaction': 80 };
+                let score = typeScores[type] || 50;
+                if (item.usageCount) score += Math.min(item.usageCount * 2, 50);
+                return score;
+            }
+
+            getTransactionDisplayName(transaction) {
+                if (transaction.type === 'sale') {
+                    return `ขาย ${transaction.menu_id} - ${transaction.platform}`;
+                } else {
+                    return `ซื้อ ${transaction.ingredient_id}`;
+                }
+            }
+
+            search(query, options = {}) {
+                const { types = ['ingredient', 'menu', 'transaction'], filters = {} } = options;
+                
+                if (!query || query.length < 1) {
+                    return {
+                        results: [],
+                        suggestions: this.getSearchSuggestions(query),
+                        totalCount: 0,
+                        query,
+                        executionTime: 0
+                    };
+                }
+
+                const startTime = performance.now();
+                const normalizedQuery = query.toLowerCase().trim();
+                const queryTerms = normalizedQuery.split(/\s+/);
+                const results = [];
+
+                for (const [key, item] of this.searchIndex) {
+                    if (!types.includes(item.type)) continue;
+                    
+                    const matchScore = this.calculateMatchScore(item, queryTerms);
+                    if (matchScore > 0) {
+                        results.push({
+                            ...item,
+                            matchScore,
+                            highlightedName: this.highlightMatches(item.name, queryTerms)
+                        });
+                    }
+                }
+
+                results.sort((a, b) => b.matchScore - a.matchScore);
+
+                const searchResult = {
+                    results: results.slice(0, 50),
+                    suggestions: this.getSearchSuggestions(query, results),
+                    totalCount: results.length,
+                    query,
+                    executionTime: performance.now() - startTime
+                };
+
+                this.addToSearchHistory(query, results.length);
+                return searchResult;
+            }
+
+            calculateMatchScore(item, queryTerms) {
+                let score = 0;
+                queryTerms.forEach(queryTerm => {
+                    let bestMatch = 0;
+                    item.searchTerms.forEach(searchTerm => {
+                        if (searchTerm === queryTerm) bestMatch = Math.max(bestMatch, 100);
+                        else if (searchTerm.startsWith(queryTerm)) bestMatch = Math.max(bestMatch, 80);
+                        else if (searchTerm.includes(queryTerm)) bestMatch = Math.max(bestMatch, 60);
+                    });
+                    score += bestMatch;
+                });
+                return (score / queryTerms.length) * (1 + item.relevanceScore / 1000);
+            }
+
+            highlightMatches(text, queryTerms) {
+                let highlighted = text;
+                queryTerms.forEach(term => {
+                    const regex = new RegExp(`(${term})`, 'gi');
+                    highlighted = highlighted.replace(regex, '<mark>$1</mark>');
+                });
+                return highlighted;
+            }
+
+            getSearchSuggestions(query, currentResults = []) {
+                const suggestions = [];
+                
+                // Add history suggestions
+                const historySuggestions = this.searchHistory
+                    .filter(item => item.query.toLowerCase().includes(query.toLowerCase()))
+                    .slice(0, 3)
+                    .map(item => ({
+                        type: 'history',
+                        text: item.query,
+                        count: item.resultCount
+                    }));
+                suggestions.push(...historySuggestions);
+
+                // Add autocomplete suggestions
+                if (query.length >= 2) {
+                    const autoComplete = [];
+                    for (const [key, item] of this.searchIndex) {
+                        const matchingTerms = item.searchTerms.filter(term => 
+                            term.toLowerCase().startsWith(query.toLowerCase())
+                        );
+                        if (matchingTerms.length > 0) {
+                            autoComplete.push({
+                                type: 'autocomplete',
+                                text: matchingTerms[0],
+                                category: item.category
+                            });
+                        }
+                        if (autoComplete.length >= 5) break;
+                    }
+                    suggestions.push(...autoComplete);
+                }
+
+                return suggestions.slice(0, 10);
+            }
+
+            addToSearchHistory(query, resultCount) {
+                this.searchHistory = this.searchHistory.filter(item => item.query !== query);
+                this.searchHistory.unshift({ query, resultCount, timestamp: Date.now() });
+                if (this.searchHistory.length > 10) {
+                    this.searchHistory = this.searchHistory.slice(0, 10);
+                }
+                this.saveSearchHistory();
+            }
+
+            loadSearchHistory() {
+                try {
+                    const history = localStorage.getItem('demo_search_history');
+                    if (history) this.searchHistory = JSON.parse(history);
+                } catch (error) {
+                    this.searchHistory = [];
+                }
+            }
+
+            saveSearchHistory() {
+                try {
+                    localStorage.setItem('demo_search_history', JSON.stringify(this.searchHistory));
+                } catch (error) {
+                    console.warn('Failed to save search history');
+                }
+            }
+
+            setupDefaultFilters() {
+                this.filterPresets.set('preset_ingredients', {
+                    id: 'preset_ingredients',
+                    name: 'วัตถุดิบเท่านั้น',
+                    filters: { types: ['ingredient'] }
+                });
+            }
+
+            createAdvancedFilter(containerId) {
+                // Simplified filter for demo
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `
+                        <div class="advanced-filter">
+                            <div class="filter-header">
+                                <h3>ตัวกรองขั้นสูง</h3>
+                            </div>
+                            <div class="filter-sections">
+                                <div class="filter-section">
+                                    <label class="label">ประเภทข้อมูล:</label>
+                                    <div class="filter-checkboxes">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="type-filter" value="ingredient" checked>
+                                            <span>วัตถุดิบ</span>
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="type-filter" value="menu" checked>
+                                            <span>เมนู</span>
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="type-filter" value="transaction" checked>
+                                            <span>ธุรกรรม</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Mock SearchInterface
+        class MockSearchInterface {
+            constructor(containerId, options = {}) {
+                this.containerId = containerId;
+                this.container = document.getElementById(containerId);
+                this.searchModule = new MockSearchModule();
+                this.currentQuery = '';
+                this.debounceTimer = null;
+                this.config = {
+                    placeholder: 'ค้นหาวัตถุดิบ, เมนู, หรือธุรกรรม...',
+                    showFilters: true,
+                    debounceDelay: 200,
+                    ...options
+                };
+                this.init();
+            }
+
+            async init() {
+                await this.searchModule.init();
+                this.createSearchUI();
+                this.setupEventListeners();
+            }
+
+            createSearchUI() {
+                this.container.innerHTML = `
+                    <div class="search-interface">
+                        <div class="search-input-container">
+                            <div class="search-input-wrapper">
+                                <input 
+                                    type="text" 
+                                    id="${this.containerId}-search-input" 
+                                    class="search-input input" 
+                                    placeholder="${this.config.placeholder}"
+                                    autocomplete="off"
+                                >
+                                <button class="search-clear-btn" id="${this.containerId}-clear-btn" title="ล้างการค้นหา" style="display: none;">×</button>
+                                <button class="filter-toggle-btn btn ghost" id="${this.containerId}-filter-btn" title="ตัวกรอง">🔍</button>
+                            </div>
+                            <div class="search-suggestions" id="${this.containerId}-suggestions" style="display: none;"></div>
+                        </div>
+                        <div class="advanced-filters" id="${this.containerId}-filters" style="display: none;"></div>
+                        <div class="search-results" id="${this.containerId}-results">
+                            <div class="search-status">
+                                <div class="search-placeholder">
+                                    <div class="search-icon">🔍</div>
+                                    <div class="search-message">เริ่มพิมพ์เพื่อค้นหา</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                this.searchModule.createAdvancedFilter(`${this.containerId}-filters`);
+            }
+
+            setupEventListeners() {
+                const searchInput = document.getElementById(`${this.containerId}-search-input`);
+                const clearBtn = document.getElementById(`${this.containerId}-clear-btn`);
+                const filterBtn = document.getElementById(`${this.containerId}-filter-btn`);
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        this.handleSearchInput(e.target.value);
+                    });
+                    searchInput.addEventListener('focus', () => this.showSuggestions());
+                    searchInput.addEventListener('blur', () => {
+                        setTimeout(() => this.hideSuggestions(), 200);
+                    });
+                }
+
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', () => this.clearSearch());
+                }
+
+                if (filterBtn) {
+                    filterBtn.addEventListener('click', () => this.toggleFilters());
+                }
+            }
+
+            handleSearchInput(query) {
+                this.currentQuery = query;
+                
+                const clearBtn = document.getElementById(`${this.containerId}-clear-btn`);
+                if (clearBtn) {
+                    clearBtn.style.display = query ? 'block' : 'none';
+                }
+
+                if (this.debounceTimer) clearTimeout(this.debounceTimer);
+                
+                this.debounceTimer = setTimeout(() => {
+                    this.performSearch(query);
+                    this.updateSuggestions(query);
+                }, this.config.debounceDelay);
+            }
+
+            async performSearch(query) {
+                const resultsContainer = document.getElementById(`${this.containerId}-results`);
+                
+                if (!query || query.trim().length === 0) {
+                    this.showSearchPlaceholder();
+                    return;
+                }
+
+                this.showSearchStatus('กำลังค้นหา...');
+
+                try {
+                    const searchResult = this.searchModule.search(query);
+                    this.displaySearchResults(searchResult);
+                } catch (error) {
+                    this.showSearchStatus('เกิดข้อผิดพลาดในการค้นหา');
+                }
+            }
+
+            displaySearchResults(searchResult) {
+                const resultsContainer = document.getElementById(`${this.containerId}-results`);
+                
+                if (searchResult.results.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="search-status">
+                            <div class="no-results">
+                                <div class="no-results-icon">🔍</div>
+                                <div class="no-results-message">ไม่พบผลลัพธ์สำหรับ "${searchResult.query}"</div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const resultsHTML = `
+                    <div class="search-results-header">
+                        <div class="results-info">พบ ${searchResult.totalCount} รายการ สำหรับ "${searchResult.query}"</div>
+                        <div class="results-time">${searchResult.executionTime.toFixed(1)} ms</div>
+                    </div>
+                    <div class="search-results-list">
+                        ${searchResult.results.map(result => this.renderSearchResult(result)).join('')}
+                    </div>
+                `;
+
+                resultsContainer.innerHTML = resultsHTML;
+            }
+
+            renderSearchResult(result) {
+                const typeIcons = { 'ingredient': '📦', 'menu': '🍢', 'transaction': '💰' };
+                const typeLabels = { 'ingredient': 'วัตถุดิบ', 'menu': 'เมนู', 'transaction': 'ธุรกรรม' };
+
+                return `
+                    <div class="search-result-item">
+                        <div class="result-icon">${typeIcons[result.type] || '📄'}</div>
+                        <div class="result-content">
+                            <div class="result-title">${result.highlightedName || result.name}</div>
+                            <div class="result-meta">
+                                <span class="result-type">${typeLabels[result.type]}</span>
+                                <span class="result-category">${result.category}</span>
+                                <span class="result-score">${Math.round(result.matchScore)}%</span>
+                            </div>
+                            ${this.renderResultDetails(result)}
+                        </div>
+                        <div class="result-actions">
+                            <button class="btn ghost pill" onclick="alert('เลือก: ${result.name}')">เลือก</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderResultDetails(result) {
+                switch (result.type) {
+                    case 'ingredient':
+                        return `<div class="result-details">
+                            <span>หน่วยสต๊อก: ${result.data.stockU}</span>
+                            <span>หน่วยซื้อ: ${result.data.buyU}</span>
+                        </div>`;
+                    case 'menu':
+                        return `<div class="result-details">
+                            <span>รหัสเมนู: ${result.data.menu_id}</span>
+                        </div>`;
+                    case 'transaction':
+                        return `<div class="result-details">
+                            <span>วันที่: ${result.data.date}</span>
+                            <span>จำนวน: ${result.data.total || result.data.totalPrice} บาท</span>
+                        </div>`;
+                    default:
+                        return '';
+                }
+            }
+
+            updateSuggestions(query) {
+                const suggestionsContainer = document.getElementById(`${this.containerId}-suggestions`);
+                
+                if (!query || query.length < 2) {
+                    this.hideSuggestions();
+                    return;
+                }
+
+                const suggestions = this.searchModule.getSearchSuggestions(query);
+                
+                if (suggestions.length === 0) {
+                    this.hideSuggestions();
+                    return;
+                }
+
+                const suggestionsHTML = suggestions.map(suggestion => `
+                    <div class="suggestion-item" onclick="document.getElementById('${this.containerId}-search-input').value='${suggestion.text}'; searchInterface.handleSearchInput('${suggestion.text}'); searchInterface.hideSuggestions();">
+                        <div class="suggestion-icon">${suggestion.type === 'history' ? '🕒' : '💡'}</div>
+                        <div class="suggestion-content">
+                            <div class="suggestion-text">${suggestion.text}</div>
+                            ${suggestion.count ? `<div class="suggestion-meta">${suggestion.count} รายการ</div>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+                suggestionsContainer.innerHTML = suggestionsHTML;
+                this.showSuggestions();
+            }
+
+            showSuggestions() {
+                const suggestionsContainer = document.getElementById(`${this.containerId}-suggestions`);
+                if (suggestionsContainer && suggestionsContainer.innerHTML.trim()) {
+                    suggestionsContainer.style.display = 'block';
+                }
+            }
+
+            hideSuggestions() {
+                const suggestionsContainer = document.getElementById(`${this.containerId}-suggestions`);
+                if (suggestionsContainer) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            }
+
+            clearSearch() {
+                const searchInput = document.getElementById(`${this.containerId}-search-input`);
+                const clearBtn = document.getElementById(`${this.containerId}-clear-btn`);
+                
+                if (searchInput) {
+                    searchInput.value = '';
+                    searchInput.focus();
+                }
+                if (clearBtn) clearBtn.style.display = 'none';
+                
+                this.currentQuery = '';
+                this.hideSuggestions();
+                this.showSearchPlaceholder();
+            }
+
+            toggleFilters() {
+                const filtersContainer = document.getElementById(`${this.containerId}-filters`);
+                const filterBtn = document.getElementById(`${this.containerId}-filter-btn`);
+                
+                if (filtersContainer) {
+                    const isVisible = filtersContainer.style.display !== 'none';
+                    filtersContainer.style.display = isVisible ? 'none' : 'block';
+                    if (filterBtn) filterBtn.classList.toggle('active', !isVisible);
+                }
+            }
+
+            showSearchPlaceholder() {
+                const resultsContainer = document.getElementById(`${this.containerId}-results`);
+                resultsContainer.innerHTML = `
+                    <div class="search-status">
+                        <div class="search-placeholder">
+                            <div class="search-icon">🔍</div>
+                            <div class="search-message">เริ่มพิมพ์เพื่อค้นหา</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            showSearchStatus(message) {
+                const resultsContainer = document.getElementById(`${this.containerId}-results`);
+                resultsContainer.innerHTML = `
+                    <div class="search-status">
+                        <div class="search-message">${message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize search interface
+        window.searchInterface = new MockSearchInterface('search-demo', {
+            placeholder: 'ค้นหาวัตถุดิบ, เมนู, หรือธุรกรรม...',
+            showFilters: true
+        });
+    </script>
+</body>
+</html>

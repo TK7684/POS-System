@@ -1,0 +1,596 @@
+/* Keyboard Shortcuts Help System Styles */
+
+/* --------- Help Modal --------- */
+.keyboard-help-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.keyboard-help-modal.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.help-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.help-content {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.keyboard-help-modal.visible .help-content {
+  transform: scale(1);
+}
+
+/* --------- Help Header --------- */
+.help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: white;
+}
+
+.help-header h2 {
+  margin: 0;
+  font-size: var(--fs-xl);
+  font-weight: 700;
+}
+
+.help-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.help-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* --------- Help Body --------- */
+.help-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.help-categories {
+  width: 200px;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.help-category-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  border-radius: 0 8px 8px 0;
+  margin-right: 8px;
+}
+
+.help-category-btn:hover {
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.help-category-btn.active {
+  background: var(--brand);
+  color: white;
+}
+
+.category-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.category-title {
+  font-weight: 500;
+  font-size: var(--fs-sm);
+}
+
+.help-shortcuts {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* --------- Shortcuts Display --------- */
+.shortcuts-category {
+  animation: fadeInUp 0.3s ease;
+}
+
+.shortcuts-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 20px 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.shortcuts-icon {
+  font-size: 24px;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.shortcut-item:hover {
+  border-color: var(--brand);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.1);
+}
+
+.shortcut-item.has-demo:hover {
+  transform: translateX(4px);
+}
+
+.shortcut-key {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 4px 8px;
+  background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.key-separator {
+  color: var(--muted);
+  font-weight: 600;
+  margin: 0 4px;
+}
+
+.shortcut-description {
+  flex: 1;
+  font-size: var(--fs-md);
+  line-height: 1.4;
+}
+
+.shortcut-demo {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.shortcut-demo:hover {
+  background: var(--brand);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* --------- Help Footer --------- */
+.help-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.help-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.help-demo-btn,
+.help-print-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  transition: all 0.2s ease;
+}
+
+.help-demo-btn:hover,
+.help-print-btn:hover {
+  background: var(--brand);
+  color: white;
+}
+
+.help-tip {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --------- Demo Mode --------- */
+.demo-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 118, 110, 0.9);
+  z-index: 1999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+.demo-instructions {
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+}
+
+.demo-instructions h3 {
+  margin: 0 0 16px 0;
+  color: var(--brand);
+  font-size: var(--fs-xl);
+}
+
+.demo-instructions p {
+  margin: 8px 0;
+  color: var(--text);
+  font-size: var(--fs-md);
+}
+
+.demo-mode .keyboard-help-modal {
+  z-index: 2001;
+}
+
+/* --------- Shortcut Demo Overlay --------- */
+.shortcut-demo-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: var(--card);
+  border: 2px solid var(--brand);
+  border-radius: 16px;
+  padding: 24px;
+  z-index: 2002;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shortcut-demo-overlay.animate {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.demo-content {
+  text-align: center;
+  min-width: 200px;
+}
+
+.demo-keys {
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.demo-keys .key {
+  font-size: 14px;
+  min-width: 40px;
+  height: 40px;
+}
+
+.demo-description {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 12px;
+}
+
+.demo-animation {
+  font-size: 24px;
+  animation: bounce 0.6s ease infinite alternate;
+}
+
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --------- Mobile Optimizations --------- */
+@media (max-width: 768px) {
+  .help-content {
+    width: 95vw;
+    height: 90vh;
+    max-width: none;
+  }
+
+  .help-body {
+    flex-direction: column;
+  }
+
+  .help-categories {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .help-category-btn {
+    flex-shrink: 0;
+    border-radius: 8px;
+    margin-right: 0;
+    white-space: nowrap;
+  }
+
+  .help-shortcuts {
+    padding: 16px;
+  }
+
+  .shortcut-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .shortcut-key {
+    min-width: auto;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .shortcut-demo {
+    align-self: flex-end;
+  }
+
+  .help-footer {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .help-controls {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .help-header {
+    padding: 16px;
+  }
+
+  .help-header h2 {
+    font-size: var(--fs-lg);
+  }
+
+  .shortcuts-title {
+    font-size: var(--fs-md);
+  }
+
+  .shortcut-description {
+    font-size: var(--fs-sm);
+  }
+
+  .key {
+    min-width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .demo-content {
+    min-width: 150px;
+  }
+
+  .shortcut-demo-overlay {
+    padding: 16px;
+  }
+}
+
+/* --------- Dark Theme --------- */
+@media (prefers-color-scheme: dark) {
+  .key {
+    background: linear-gradient(145deg, #2d3748, #1a202c);
+    border-color: #4a5568;
+    color: #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .demo-instructions {
+    background: var(--card);
+    color: var(--text);
+  }
+}
+
+/* --------- High Contrast Mode --------- */
+.high-contrast .key {
+  background: var(--bg);
+  border: 2px solid var(--text);
+  color: var(--text);
+}
+
+.high-contrast .shortcut-item {
+  border: 2px solid var(--text);
+}
+
+.high-contrast .help-content {
+  border: 2px solid var(--text);
+}
+
+/* --------- Reduced Motion --------- */
+@media (prefers-reduced-motion: reduce) {
+  .keyboard-help-modal,
+  .help-content,
+  .shortcut-demo-overlay,
+  .shortcuts-category {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .demo-animation {
+    animation: none !important;
+  }
+
+  .shortcut-item.has-demo:hover {
+    transform: none;
+  }
+}
+
+/* --------- Print Styles --------- */
+@media print {
+  .keyboard-help-modal {
+    position: static !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .help-backdrop {
+    display: none !important;
+  }
+
+  .help-content {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    max-width: none !important;
+    max-height: none !important;
+    width: 100% !important;
+    transform: none !important;
+  }
+
+  .help-header {
+    background: none !important;
+    color: #000 !important;
+    border-bottom: 2px solid #000 !important;
+  }
+
+  .help-close,
+  .help-demo-btn,
+  .shortcut-demo {
+    display: none !important;
+  }
+
+  .help-body {
+    flex-direction: column;
+  }
+
+  .help-categories {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid #000;
+  }
+
+  .shortcut-item {
+    break-inside: avoid;
+    border: 1px solid #000 !important;
+    background: none !important;
+  }
+
+  .key {
+    background: none !important;
+    border: 1px solid #000 !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+}

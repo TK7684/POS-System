@@ -1,0 +1,137 @@
+{
+  "accessibility": {
+    "enabled": true,
+    "standards": "WCAG21AA",
+    "rules": {
+      "color-contrast": { "enabled": true, "level": "AA" },
+      "keyboard-navigation": { "enabled": true },
+      "focus-management": { "enabled": true },
+      "screen-reader": { "enabled": true },
+      "touch-targets": { "enabled": true, "minSize": 44 },
+      "aria-labels": { "enabled": true },
+      "heading-order": { "enabled": true },
+      "landmark-roles": { "enabled": true }
+    },
+    "excludeSelectors": [".test-element", "[data-test]"],
+    "thresholds": {
+      "overallScore": 95,
+      "violations": 0,
+      "contrastRatio": 4.5,
+      "touchTargetSize": 44
+    }
+  },
+  "performance": {
+    "enabled": true,
+    "thresholds": {
+      "performance": 90,
+      "accessibility": 95,
+      "bestPractices": 90,
+      "seo": 80,
+      "pwa": 80,
+      "firstContentfulPaint": 1800,
+      "largestContentfulPaint": 2500,
+      "firstInputDelay": 100,
+      "cumulativeLayoutShift": 0.1,
+      "speedIndex": 3000,
+      "timeToInteractive": 3800
+    },
+    "settings": {
+      "formFactor": "mobile",
+      "throttling": {
+        "rttMs": 150,
+        "throughputKbps": 1638.4,
+        "cpuSlowdownMultiplier": 4
+      },
+      "screenEmulation": {
+        "mobile": true,
+        "width": 360,
+        "height": 640,
+        "deviceScaleFactor": 2
+      }
+    },
+    "continuousMonitoring": {
+      "enabled": false,
+      "interval": 300000,
+      "regressionThreshold": 5
+    }
+  },
+  "crossBrowser": {
+    "enabled": true,
+    "browsers": [
+      {
+        "name": "Chrome",
+        "versions": ["latest", "latest-1", "latest-2"],
+        "enabled": true
+      },
+      {
+        "name": "Firefox", 
+        "versions": ["latest", "latest-1", "latest-2"],
+        "enabled": true
+      },
+      {
+        "name": "Safari",
+        "versions": ["latest", "latest-1"],
+        "enabled": true
+      },
+      {
+        "name": "Edge",
+        "versions": ["latest", "latest-1"],
+        "enabled": true
+      }
+    ],
+    "mobileDevices": [
+      {
+        "name": "iPhone 14",
+        "enabled": true,
+        "viewport": { "width": 390, "height": 844 }
+      },
+      {
+        "name": "Samsung Galaxy S23",
+        "enabled": true,
+        "viewport": { "width": 360, "height": 780 }
+      },
+      {
+        "name": "iPad Pro",
+        "enabled": true,
+        "viewport": { "width": 1024, "height": 1366 }
+      }
+    ],
+    "testScenarios": [
+      "basic_functionality",
+      "responsive_design", 
+      "performance_metrics",
+      "feature_compatibility",
+      "user_interactions",
+      "offline_functionality"
+    ],
+    "thresholds": {
+      "successRate": 90,
+      "maxFailures": 2
+    }
+  },
+  "reporting": {
+    "enabled": true,
+    "formats": ["html", "json", "csv"],
+    "saveResults": true,
+    "maxStoredResults": 10,
+    "generateScreenshots": false,
+    "includeDetailedLogs": true
+  },
+  "ci": {
+    "enabled": false,
+    "failOnRegression": true,
+    "regressionThreshold": 5,
+    "requiredTests": ["accessibility", "performance"],
+    "webhooks": {
+      "onFailure": null,
+      "onSuccess": null
+    }
+  },
+  "environment": {
+    "baseUrl": "http://localhost:3000",
+    "timeout": 30000,
+    "retries": 3,
+    "parallel": true,
+    "headless": true
+  }
+}
