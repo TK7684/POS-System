@@ -1,0 +1,1995 @@
+<!doctype html>
+<html lang="th">
+    <head>
+        <meta charset="utf-8" />
+        <title>POS ร้านกุ้งแซ่บ</title>
+
+        <!-- Critical for responsive behaviour -->
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+        />
+        <meta name="theme-color" content="#0e7a5f" />
+
+        <!-- AI Status Indicator Styles -->
+        <style>
+            .ai-status-indicator {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                background: rgba(15, 118, 110, 0.9);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 10001;
+                display: none;
+            }
+
+            .ai-status-indicator.active {
+                display: block;
+            }
+            .ai-status-indicator.error {
+                background: rgba(239, 68, 68, 0.9);
+            }
+            .ai-status-indicator.success {
+                background: rgba(34, 197, 94, 0.9);
+            }
+        </style>
+
+        <!-- Critical CSS inlined for fastest initial render -->
+        <style>
+            /* --------- Critical CSS - Above-the-fold only --------- */
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                max-width: 100vw;
+                overflow-x: hidden;
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    Roboto,
+                    sans-serif;
+            }
+            body {
+                -webkit-text-size-adjust: 100%;
+                text-rendering: optimizeLegibility;
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+            img,
+            svg,
+            video,
+            canvas {
+                display: block;
+                max-width: 100%;
+                height: auto;
+            }
+            button,
+            input,
+            select,
+            textarea {
+                font: inherit;
+                font-size: 16px !important;
+            }
+            a {
+                color: inherit;
+                text-decoration: none;
+            }
+
+            /* Force full width for Google Apps Script */
+            html,
+            body,
+            div,
+            .app,
+            #app {
+                width: 100% !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow-x: hidden !important;
+            }
+
+            /* --------- Design tokens --------- */
+            :root {
+                --bg: #f8fafc;
+                --card: #ffffff;
+                --text: #1e293b;
+                --muted: #64748b;
+                --brand: #0f766e;
+                --brand-2: #14b8a6;
+                --danger: #dc2626;
+                --ok: #059669;
+                --line: #e2e8f0;
+                --radius: 12px;
+                --appbar-h: 60px;
+                --tabbar-h: 70px;
+                --touch: 52px;
+
+                /* dynamic viewport fix (set in JS) */
+                --vh: 1vh;
+
+                /* safe area for notches */
+                --sa-t: env(safe-area-inset-top);
+                --sa-b: env(safe-area-inset-bottom);
+                --sa-l: env(safe-area-inset-left);
+                --sa-r: env(safe-area-inset-right);
+
+                /* fluid type scale - larger for mobile */
+                --fs-xs: clamp(14px, 1rem + 0.2vw, 16px);
+                --fs-sm: clamp(15px, 1.05rem + 0.3vw, 18px);
+                --fs-md: clamp(16px, 1.2rem + 0.5vw, 20px);
+                --fs-lg: clamp(18px, 1.3rem + 0.8vw, 22px);
+                --fs-xl: clamp(20px, 1.4rem + 1vw, 26px);
+
+                /* spacing - larger for mobile */
+                --gap-1: 12px;
+                --gap-2: 16px;
+                --gap-3: 20px;
+                --gap-4: 24px;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #0b0f14;
+                    --card: #0f141a;
+                    --text: #e5e7eb;
+                    --muted: #9ca3af;
+                    --line: #1f2937;
+                }
+            }
+
+            /* Explicit dark theme via data-theme attribute */
+            :root[data-theme="dark"],
+            body[data-theme="dark"] {
+                --bg: #0b0f14;
+                --card: #0f141a;
+                --text: #e5e7eb;
+                --muted: #9ca3af;
+                --line: #1f2937;
+                --brand: #0f766e;
+                --brand-2: #14b8a6;
+                --danger: #ef4444;
+                --ok: #10b981;
+            }
+
+            /* --------- App shell layout --------- */
+            .app {
+                min-height: calc(var(--vh) * 100);
+                background: var(--bg);
+                color: var(--text);
+                display: flex;
+                flex-direction: column;
+                padding: 0 max(var(--sa-l), 0px) 0 max(var(--sa-r), 0px);
+            }
+            .appbar {
+                height: calc(var(--appbar-h) + var(--sa-t));
+                padding-top: max(var(--sa-t), 0px);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding-inline: 16px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.85),
+                    rgba(255, 255, 255, 0.75)
+                );
+                -webkit-backdrop-filter: saturate(140%) blur(8px);
+                backdrop-filter: saturate(140%) blur(8px);
+                border-bottom: 1px solid var(--line);
+            }
+            @media (prefers-color-scheme: dark) {
+                .appbar {
+                    background: linear-gradient(
+                        180deg,
+                        rgba(15, 20, 26, 0.85),
+                        rgba(15, 20, 26, 0.7)
+                    );
+                }
+            }
+            body[data-theme="dark"] .appbar {
+                background: linear-gradient(
+                    180deg,
+                    rgba(15, 20, 26, 0.85),
+                    rgba(15, 20, 26, 0.7)
+                );
+            }
+            .appbar .title {
+                font-size: var(--fs-lg);
+                font-weight: 700;
+            }
+            .appbar .spacer {
+                flex: 1;
+            }
+
+            main {
+                flex: 1;
+                min-height: 0;
+                padding: 16px;
+                padding-bottom: calc(
+                    16px + var(--tabbar-h) + max(var(--sa-b), 0px)
+                );
+                display: flex;
+                flex-direction: column;
+                gap: var(--gap-3);
+            }
+
+            /* --------- Bottom Tab Bar --------- */
+            .tabbar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 10;
+                height: calc(var(--tabbar-h) + max(var(--sa-b), 0px));
+                padding-bottom: max(var(--sa-b), 0px);
+                border-top: 1px solid var(--line);
+                background: linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.95),
+                    rgba(255, 255, 255, 0.92)
+                );
+                backdrop-filter: saturate(140%) blur(8px);
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+            }
+            @media (prefers-color-scheme: dark) {
+                .tabbar {
+                    background: linear-gradient(
+                        0deg,
+                        rgba(15, 20, 26, 0.9),
+                        rgba(15, 20, 26, 0.86)
+                    );
+                }
+            }
+            body[data-theme="dark"] .tabbar {
+                background: linear-gradient(
+                    0deg,
+                    rgba(15, 20, 26, 0.9),
+                    rgba(15, 20, 26, 0.86)
+                );
+            }
+            .tabbtn {
+                -webkit-tap-highlight-color: transparent;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                font-size: var(--fs-xs);
+                border: none;
+                background: none;
+                cursor: pointer;
+                min-height: var(--touch-nav);
+                color: var(--muted);
+            }
+            .tabbtn[aria-current="page"] {
+                color: var(--brand);
+            }
+            .tabbtn:active {
+                opacity: 0.7;
+            }
+
+            /* --------- Cards, Lists, Grids --------- */
+            .card {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            .row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .grow {
+                flex: 1;
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .badge {
+                padding: 4px 12px;
+                border-radius: 999px;
+                border: 1px solid var(--line);
+                font-size: var(--fs-xs);
+                font-weight: 600;
+            }
+
+            .grid {
+                display: grid;
+                gap: var(--gap-md);
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
+            .adaptive-grid {
+                display: grid;
+                gap: var(--gap-md);
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            }
+            .tile {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: var(--gap-md);
+                min-height: 140px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            .tile:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .tile:active {
+                transform: scale(0.98);
+                opacity: 0.8;
+            }
+            .tile .title {
+                font-weight: 600;
+                font-size: var(--fs-md);
+                line-height: 1.3;
+            }
+
+            /* --------- Buttons & Inputs --------- */
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                min-height: var(--touch-comfortable);
+                padding: 16px 24px;
+                border-radius: var(--radius);
+                border: 1px solid var(--line);
+                background: #fff;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: var(--fs-base);
+                transition: all 0.2s ease;
+            }
+            .btn.brand {
+                background: var(--brand);
+                color: white;
+                border-color: transparent;
+                box-shadow: 0 2px 4px rgba(15, 118, 110, 0.3);
+                min-height: var(--touch-primary);
+                font-size: var(--fs-md);
+                padding: 18px 28px;
+            }
+            .btn.brand:hover {
+                background: var(--brand-2);
+                transform: translateY(-1px);
+            }
+            .btn.ghost {
+                background: transparent;
+                border-color: transparent;
+            }
+            .btn:active {
+                transform: scale(0.98);
+                opacity: 0.8;
+            }
+
+            .field {
+                display: grid;
+                gap: 8px;
+            }
+            .label {
+                font-size: var(--fs-sm);
+                font-weight: 600;
+                color: var(--text);
+            }
+            .input,
+            .select {
+                width: 100%;
+                min-height: var(--touch-comfortable);
+                padding: 16px 20px;
+                border-radius: var(--radius);
+                border: 2px solid var(--line);
+                background: var(--card);
+                color: inherit;
+                font-size: var(--fs-base);
+                transition: border-color 0.2s ease;
+            }
+            .input:focus,
+            .select:focus {
+                border-color: var(--brand);
+                outline: none;
+            }
+            .input::placeholder {
+                color: var(--muted);
+                opacity: 0.7;
+            }
+
+            /* Prevent iOS zoom - use larger minimum font size for mobile */
+            input,
+            select,
+            textarea,
+            button {
+                font-size: 18px !important;
+            }
+
+            /* --------- Responsive table -> cards on small --------- */
+            .table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: var(--fs-sm);
+            }
+            .table th,
+            .table td {
+                padding: 10px;
+                border-bottom: 1px solid var(--line);
+            }
+            .table th {
+                text-align: left;
+                font-weight: 700;
+            }
+            @media (max-width: 640px) {
+                .table {
+                    display: block;
+                }
+                .table thead {
+                    display: none;
+                }
+                .table tbody {
+                    display: grid;
+                    gap: 12px;
+                }
+                .table tr {
+                    display: grid;
+                    background: var(--card);
+                    border: 1px solid var(--line);
+                    border-radius: 12px;
+                    padding: 8px;
+                }
+                .table td {
+                    display: grid;
+                    grid-template-columns: 120px 1fr;
+                    gap: 8px;
+                    border: none;
+                }
+                .table td::before {
+                    content: attr(data-label);
+                    font-weight: 600;
+                    color: var(--muted);
+                }
+            }
+
+            /* --------- Motion & focus --------- */
+            :focus-visible {
+                outline: 2px solid var(--brand-2);
+                outline-offset: 2px;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation: none !important;
+                    transition: none !important;
+                    scroll-behavior: auto !important;
+                }
+            }
+
+            /* --------- Utility --------- */
+            .hide {
+                display: none !important;
+            }
+            .center {
+                display: grid;
+                place-items: center;
+            }
+            .right {
+                text-align: right;
+            }
+            .pill {
+                border-radius: 999px;
+            }
+            .form-row {
+                display: grid;
+                gap: 12px;
+            }
+            .form-row.tablet-horizontal {
+                grid-template-columns: 1fr;
+            }
+
+            /* --------- POS Specific Styles --------- */
+            .kpi {
+                background: linear-gradient(
+                    135deg,
+                    var(--brand),
+                    var(--brand-2)
+                );
+                color: #fff;
+                padding: 20px;
+                border-radius: var(--radius);
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3);
+            }
+            .kpi .v {
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                line-height: 1;
+            }
+            .kpi .l {
+                font-size: var(--fs-sm);
+                opacity: 0.9;
+                font-weight: 500;
+            }
+            .toast {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                padding: 16px 24px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+                z-index: 1001;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                font-size: var(--fs-md);
+                font-weight: 500;
+                max-width: calc(100vw - 40px);
+            }
+            .toast.show {
+                opacity: 1;
+            }
+            .loading {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.6);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                backdrop-filter: blur(4px);
+            }
+            .loading.show {
+                display: flex;
+            }
+            .spinner {
+                width: 48px;
+                height: 48px;
+                border: 4px solid rgba(255, 255, 255, 0.3);
+                border-top: 4px solid #fff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* Critical performance optimizations */
+            .appbar,
+            .tabbar {
+                contain: layout style;
+            }
+            main {
+                contain: layout;
+            }
+            .tabbtn:active,
+            .tile:active,
+            .btn:active {
+                transform: scale(0.98);
+                will-change: transform;
+            }
+            .tile:hover {
+                transform: translateY(-2px);
+                will-change: transform;
+            }
+            .loading,
+            .toast {
+                will-change: opacity, transform;
+            }
+            .spinner {
+                will-change: transform;
+            }
+
+            /* Critical mobile optimizations */
+            @media (max-width: 768px) {
+                main {
+                    padding: 16px;
+                    padding-bottom: calc(
+                        16px + var(--tabbar-h) + max(var(--sa-b), 0px)
+                    );
+                }
+                .card {
+                    padding: 20px;
+                    gap: var(--gap-md);
+                }
+                .grid {
+                    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                    gap: var(--gap-md);
+                }
+                .adaptive-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                    gap: var(--gap-md);
+                }
+                .tile {
+                    padding: 20px;
+                    min-height: 140px;
+                    gap: var(--gap-md);
+                }
+                .kpi {
+                    padding: 24px;
+                }
+                .kpi .v {
+                    font-size: 36px;
+                }
+                .row {
+                    flex-wrap: wrap;
+                    gap: var(--gap-md);
+                }
+                .btn {
+                    min-height: var(--touch-comfortable);
+                    padding: 16px 24px;
+                    font-size: var(--fs-base);
+                }
+                .btn.brand {
+                    min-height: var(--touch-primary);
+                    padding: 18px 28px;
+                    font-size: var(--fs-md);
+                }
+                .input,
+                .select {
+                    min-height: var(--touch-comfortable);
+                    padding: 16px 20px;
+                    font-size: var(--fs-base);
+                }
+                .tabbtn {
+                    min-height: var(--touch-nav);
+                    gap: 6px;
+                }
+            }
+            @media (max-width: 480px) {
+                main {
+                    padding: 12px;
+                    padding-bottom: calc(
+                        12px + var(--tabbar-h) + max(var(--sa-b), 0px)
+                    );
+                }
+                .card {
+                    padding: 16px;
+                }
+                .grid {
+                    grid-template-columns: 1fr;
+                    gap: var(--gap-sm);
+                }
+                .adaptive-grid {
+                    grid-template-columns: 1fr;
+                    gap: var(--gap-sm);
+                }
+                .tile {
+                    padding: 16px;
+                    min-height: 120px;
+                }
+                .kpi {
+                    padding: 20px;
+                }
+                .kpi .v {
+                    font-size: 32px;
+                }
+                .btn {
+                    min-height: var(--touch-min);
+                    padding: 14px 20px;
+                }
+                .btn.brand {
+                    min-height: var(--touch-comfortable);
+                    padding: 16px 24px;
+                }
+                .input,
+                .select {
+                    min-height: var(--touch-min);
+                    padding: 14px 16px;
+                }
+            }
+            @media (min-width: 720px) {
+                .responsive-form .form-row.tablet-horizontal {
+                    grid-template-columns: 1fr 180px;
+                }
+            }
+            @media (max-width: 360px) {
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation: none !important;
+                    transition: none !important;
+                    scroll-behavior: auto !important;
+                }
+            }
+        </style>
+
+        <!-- Preload critical resources -->
+        <link rel="preload" href="js/critical.js" as="script" />
+        <link rel="preload" href="css/mobile-optimized.css" as="style" />
+        <link rel="preload" href="css/components.css" as="style" />
+        <link rel="preload" href="css/export.css" as="style" />
+
+        <!-- Mobile-optimized CSS - loaded early for mobile-first experience -->
+        <link rel="stylesheet" href="css/mobile-optimized.css" />
+
+        <!-- Accessibility CSS - ensure all accessibility features are available -->
+        <link rel="stylesheet" href="css/accessibility.css" />
+
+        <!-- PWA Manifest -->
+        <link rel="manifest" href="/manifest.json" />
+
+        <!-- DNS prefetch for external resources -->
+        <link rel="dns-prefetch" href="//script.google.com" />
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    </head>
+    <body>
+        <div class="app" id="app">
+            <!-- App Bar -->
+            <header class="appbar">
+                <div class="title">POS ร้านกุ้งแซ่บ</div>
+                <div class="spacer"></div>
+                <button class="btn ghost" id="themeBtn" aria-label="เปลี่ยนธีม">
+                    🌙
+                </button>
+                <button
+                    class="btn ghost"
+                    id="notificationBtn"
+                    aria-label="การแจ้งเตือน"
+                    style="position: relative"
+                >
+                    🔔
+                    <span
+                        class="notification-badge"
+                        id="notification-badge"
+                    ></span>
+                </button>
+                <button class="btn ghost" id="syncBtn" aria-label="Sync">
+                    ⟳
+                </button>
+            </header>
+
+            <!-- Main content -->
+            <main id="screen">
+                <!-- Home Screen -->
+                <div id="home-screen">
+                    <!-- KPIs -->
+                    <section
+                        class="grid"
+                        style="grid-template-columns: repeat(2, 1fr); gap: 12px"
+                    >
+                        <div class="kpi">
+                            <div class="v" id="kpi-low">0</div>
+                            <div class="l">วัตถุดิบใกล้หมด</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="v" id="kpi-menus">7</div>
+                            <div class="l">เมนูพร้อมขาย</div>
+                        </div>
+                    </section>
+
+                    <!-- Quick actions -->
+                    <section class="adaptive-grid" aria-label="Quick Actions">
+                        <button
+                            class="tile responsive-card"
+                            data-route="purchase"
+                        >
+                            <div class="title">📦 ซื้อวัตถุดิบ</div>
+                            <div class="muted">บันทึกการซื้อ</div>
+                        </button>
+                        <button class="tile responsive-card" data-route="sale">
+                            <div class="title">🛒 ขายด่วน</div>
+                            <div class="muted">บันทึกการขาย</div>
+                        </button>
+                        <button class="tile responsive-card" data-route="menu">
+                            <div class="title">🍢 จัดการเมนู</div>
+                            <div class="muted">BOM & ราคา</div>
+                        </button>
+                        <button
+                            class="tile responsive-card"
+                            data-route="reports"
+                        >
+                            <div class="title">📊 รายงาน</div>
+                            <div class="muted">กำไร & สต๊อก</div>
+                        </button>
+                    </section>
+
+                    <!-- Low stock alert -->
+                    <section class="card">
+                        <div class="row">
+                            <div class="grow">
+                                <div
+                                    style="
+                                        font-size: var(--fs-md);
+                                        font-weight: 700;
+                                    "
+                                >
+                                    วัตถุดิบใกล้หมด
+                                </div>
+                                <div
+                                    class="muted"
+                                    style="font-size: var(--fs-sm)"
+                                >
+                                    ต้องสั่งเพิ่ม
+                                </div>
+                            </div>
+                            <button
+                                class="btn brand pill"
+                                onclick="refreshLowStock()"
+                            >
+                                รีเฟรช
+                            </button>
+                        </div>
+                        <div id="low-stock-content">
+                            <div class="muted">กำลังโหลด...</div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Purchase Screen -->
+                <div id="purchase-screen" class="hide">
+                    <section class="card responsive-card">
+                        <div class="responsive-heading">
+                            บันทึกการซื้อวัตถุดิบ
+                        </div>
+                        <form class="responsive-form">
+                            <div class="field">
+                                <label class="label" for="p_date">วันที่</label>
+                                <input
+                                    class="input responsive-input"
+                                    id="p_date"
+                                    type="date"
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="p_ing"
+                                    >วัตถุดิบ</label
+                                >
+                                <select
+                                    class="select responsive-input"
+                                    id="p_ing"
+                                >
+                                    <option value="">เลือกวัตถุดิบ...</option>
+                                </select>
+                            </div>
+                            <div class="form-row tablet-horizontal">
+                                <div class="field grow">
+                                    <label class="label" for="p_qty"
+                                        >จำนวน</label
+                                    >
+                                    <input
+                                        class="input responsive-input"
+                                        id="p_qty"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        inputmode="decimal"
+                                        placeholder="เช่น 1.5"
+                                    />
+                                </div>
+                                <div class="field tablet-fixed">
+                                    <label class="label" for="p_unit"
+                                        >หน่วย</label
+                                    >
+                                    <select
+                                        class="select responsive-input"
+                                        id="p_unit"
+                                    >
+                                        <option value="">เลือกหน่วย...</option>
+                                        <option value="kg">
+                                            กิโลกรัม (kg)
+                                        </option>
+                                        <option value="g">กรัม (g)</option>
+                                        <option value="liter">ลิตร (L)</option>
+                                        <option value="ml">
+                                            มิลลิลิตร (ml)
+                                        </option>
+                                        <option value="piece">
+                                            ชิ้น (piece)
+                                        </option>
+                                        <option value="pack">
+                                            แพ็ค (pack)
+                                        </option>
+                                        <option value="box">กล่อง (box)</option>
+                                        <option value="bottle">
+                                            ขวด (bottle)
+                                        </option>
+                                        <option value="bag">ถุง (bag)</option>
+                                        <option value="can">
+                                            กระป๋อง (can)
+                                        </option>
+                                        <option value="dozen">
+                                            โหล (dozen)
+                                        </option>
+                                        <option value="lb">ปอนด์ (lb)</option>
+                                        <option value="oz">ออนซ์ (oz)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field span-2">
+                                <label class="label" for="p_actual_yield"
+                                    >จำนวนจริงที่ได้
+                                    (สำหรับวัตถุดิบที่มีผลผลิตแปรผัน)</label
+                                >
+                                <input
+                                    class="input responsive-input"
+                                    id="p_actual_yield"
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    placeholder="เช่น 43 ชิ้น (ว่างได้)"
+                                />
+                            </div>
+                            <div class="form-row tablet-horizontal">
+                                <div class="field grow">
+                                    <label class="label" for="p_total_price"
+                                        >ราคารวม (บาท)</label
+                                    >
+                                    <input
+                                        class="input responsive-input"
+                                        id="p_total_price"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        inputmode="decimal"
+                                        placeholder="เช่น 240"
+                                        onchange="calculatePricePerUnit()"
+                                    />
+                                </div>
+                                <div class="field tablet-fixed">
+                                    <label class="label" for="p_price"
+                                        >ราคาต่อหน่วย</label
+                                    >
+                                    <input
+                                        class="input responsive-input"
+                                        id="p_price"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        inputmode="decimal"
+                                        readonly
+                                        placeholder="คำนวณอัตโนมัติ"
+                                    />
+                                </div>
+                            </div>
+                            <div class="field span-2">
+                                <label class="label" for="p_note"
+                                    >ผู้ขาย/หมายเหตุ</label
+                                >
+                                <input
+                                    class="input responsive-input"
+                                    id="p_note"
+                                    placeholder="Market/Supplier"
+                                />
+                            </div>
+                            <div class="tablet-button-group">
+                                <button
+                                    type="button"
+                                    class="btn responsive-btn secondary"
+                                    onclick="resetPurchase()"
+                                >
+                                    ล้างฟอร์ม
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn responsive-btn brand primary"
+                                    onclick="onAddPurchase()"
+                                >
+                                    บันทึกการซื้อ
+                                </button>
+                            </div>
+                        </form>
+                        <div class="muted" style="font-size: var(--fs-xs)">
+                            💡
+                            <strong>สำหรับวัตถุดิบที่มีผลผลิตแปรผัน:</strong>
+                            กรอกจำนวนจริงที่ได้ (เช่น กุ้ง 1 กก. ได้ 43 ตัว)
+                            เพื่อความแม่นยำในการคำนวณต้นทุน
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Sale Screen -->
+                <div id="sale-screen" class="hide">
+                    <section class="card">
+                        <div style="font-size: var(--fs-lg); font-weight: 700">
+                            บันทึกการขาย & ตัดสต๊อก (FIFO)
+                        </div>
+                        <div class="field">
+                            <label class="label" for="s_date">วันที่</label>
+                            <input class="input" id="s_date" type="date" />
+                        </div>
+                        <div class="field">
+                            <label class="label" for="s_platform"
+                                >แพลตฟอร์ม</label
+                            >
+                            <select class="select" id="s_platform">
+                                <option value="">เลือกแพลตฟอร์ม...</option>
+                                <option value="walkin">Walk-in</option>
+                                <option value="grab">Grab</option>
+                                <option value="lineman">Line Man</option>
+                                <option value="shopee">Shopee Food</option>
+                                <option value="foodpanda">Foodpanda</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="label" for="s_menu">เมนู</label>
+                            <select class="select" id="s_menu">
+                                <option value="">เลือกเมนู...</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="field grow">
+                                <label class="label" for="s_qty"
+                                    >จำนวนเสิร์ฟ</label
+                                >
+                                <input
+                                    class="input"
+                                    id="s_qty"
+                                    type="number"
+                                    step="1"
+                                    min="1"
+                                    value="1"
+                                    placeholder="เช่น 2"
+                                />
+                            </div>
+                            <div class="field" style="width: 160px">
+                                <label class="label" for="s_price"
+                                    >ราคาขาย</label
+                                >
+                                <input
+                                    class="input"
+                                    id="s_price"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    inputmode="decimal"
+                                    placeholder="เช่น 120"
+                                />
+                            </div>
+                        </div>
+                        <div class="row" style="gap: 12px">
+                            <button
+                                class="btn"
+                                onclick="resetSale()"
+                                style="flex: 1"
+                            >
+                                ล้างฟอร์ม
+                            </button>
+                            <button
+                                class="btn brand"
+                                onclick="onAddSale()"
+                                style="flex: 2"
+                            >
+                                บันทึกการขาย
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Menu Screen -->
+                <div id="menu-screen" class="hide">
+                    <section class="card">
+                        <div style="font-size: var(--fs-lg); font-weight: 700">
+                            จัดการเมนู & BOM
+                        </div>
+                        <div class="field">
+                            <label class="label" for="m_menu">เมนู</label>
+                            <select class="select" id="m_menu">
+                                <option value="">เลือกเมนู...</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="label" for="m_ingredient"
+                                >วัตถุดิบ</label
+                            >
+                            <select class="select" id="m_ingredient">
+                                <option value="">เลือกวัตถุดิบ...</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="field grow">
+                                <label class="label" for="m_qty"
+                                    >จำนวนต่อเสิร์ฟ</label
+                                >
+                                <input
+                                    class="input"
+                                    id="m_qty"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    inputmode="decimal"
+                                    placeholder="เช่น 0.2"
+                                />
+                            </div>
+                            <div class="field" style="width: 160px">
+                                <label class="label" for="m_unit">หน่วย</label>
+                                <input
+                                    class="input"
+                                    id="m_unit"
+                                    type="text"
+                                    readonly
+                                    placeholder="หน่วยสต๊อก"
+                                />
+                            </div>
+                        </div>
+                        <div class="row" style="gap: 12px">
+                            <button
+                                class="btn"
+                                onclick="resetMenuForm()"
+                                style="flex: 1"
+                            >
+                                ล้างฟอร์ม
+                            </button>
+                            <button
+                                class="btn brand"
+                                onclick="addMenuIngredient()"
+                                style="flex: 2"
+                            >
+                                เพิ่มในเมนู
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <div class="row">
+                            <div class="grow">
+                                <div
+                                    style="
+                                        font-size: var(--fs-md);
+                                        font-weight: 700;
+                                    "
+                                >
+                                    วัตถุดิบในเมนู
+                                </div>
+                                <div
+                                    class="muted"
+                                    style="font-size: var(--fs-sm)"
+                                >
+                                    รายการวัตถุดิบที่ใช้
+                                </div>
+                            </div>
+                            <button
+                                class="btn brand pill"
+                                onclick="calculateMenuCost()"
+                            >
+                                คำนวณต้นทุน
+                            </button>
+                        </div>
+                        <div id="menu-ingredients-content">
+                            <div class="muted">เลือกเมนูเพื่อดูวัตถุดิบ</div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Reports Screen -->
+                <div id="reports-screen" class="hide">
+                    <section class="card">
+                        <div style="font-size: var(--fs-lg); font-weight: 700">
+                            รายงานกำไร
+                        </div>
+                        <div class="row">
+                            <div class="field grow">
+                                <label class="label" for="rp_from"
+                                    >จากวันที่</label
+                                >
+                                <input class="input" id="rp_from" type="date" />
+                            </div>
+                            <div class="field grow">
+                                <label class="label" for="rp_to"
+                                    >ถึงวันที่</label
+                                >
+                                <input class="input" id="rp_to" type="date" />
+                            </div>
+                        </div>
+                        <div class="row" style="gap: 12px">
+                            <button
+                                class="btn"
+                                onclick="resetReportForm()"
+                                style="flex: 1"
+                            >
+                                ล้างฟอร์ม
+                            </button>
+                            <button
+                                class="btn brand"
+                                onclick="generateReport()"
+                                style="flex: 2"
+                            >
+                                สร้างรายงาน
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <div class="row">
+                            <div class="grow">
+                                <div
+                                    style="
+                                        font-size: var(--fs-md);
+                                        font-weight: 700;
+                                    "
+                                >
+                                    ผลลัพธ์รายงาน
+                                </div>
+                                <div
+                                    class="muted"
+                                    style="font-size: var(--fs-sm)"
+                                >
+                                    ข้อมูลกำไรและยอดขาย
+                                </div>
+                            </div>
+                            <button class="btn pill" onclick="exportReport()">
+                                ส่งออก
+                            </button>
+                        </div>
+                        <div id="report-content">
+                            <div class="muted">
+                                เลือกช่วงวันที่และกดสร้างรายงาน
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <!-- AI Status Indicator -->
+            <div id="ai-status-indicator" class="ai-status-indicator">
+                AI: พร้อมช่วยเหลือ
+            </div>
+
+            <!-- Bottom navigation -->
+            <nav class="tabbar" role="tablist" aria-label="Main">
+                <button class="tabbtn" aria-current="page" data-route="home">
+                    🏠<span>หน้าหลัก</span>
+                </button>
+                <button class="tabbtn" data-route="purchase">
+                    📦<span>ซื้อ</span>
+                </button>
+                <button class="tabbtn" data-route="sale">
+                    🛒<span>ขาย</span>
+                </button>
+                <button class="tabbtn" data-route="menu">
+                    🍢<span>เมนู</span>
+                </button>
+                <button class="tabbtn" data-route="reports">
+                    📊<span>รายงาน</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Toast & Loading -->
+        <div class="toast" id="toast"></div>
+        <div class="loading" id="loading"><div class="spinner"></div></div>
+
+        <!-- Load critical JavaScript - Inlined for Google Apps Script -->
+        <script>
+            <?!= HtmlService.createHtmlOutputFromFile('CacheManager').getContent(); ?>
+        </script>
+        <script>
+            <?!= HtmlService.createHtmlOutputFromFile('Critical').getContent(); ?>
+        </script>
+
+        <!-- Service Worker Registration -->
+        <script>
+            // Register service worker as early as possible
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                    navigator.serviceWorker
+                        .register("/sw.js")
+                        .then((registration) => {
+                            console.log(
+                                "[App] Service worker registered:",
+                                registration.scope,
+                            );
+                        })
+                        .catch((error) => {
+                            console.error(
+                                "[App] Service worker registration failed:",
+                                error,
+                            );
+                        });
+                });
+            }
+        </script>
+
+        <!-- Optimized CSS loading -->
+        <script>
+            // Critical path CSS optimization
+            (function () {
+                // Load non-critical CSS asynchronously
+                function loadCSS(href, media) {
+                    const link = document.createElement("link");
+                    link.rel = "stylesheet";
+                    link.href = href;
+                    link.media = media || "all";
+                    link.onload = function () {
+                        this.media = "all";
+                    };
+                    document.head.appendChild(link);
+                }
+
+                // Load CSS when browser is idle
+                function loadCSSWhenIdle() {
+                    if (window.requestIdleCallback) {
+                        requestIdleCallback(
+                            function () {
+                                loadCSS("css/components.css");
+                                loadCSS("css/responsive-layout.css");
+                                loadCSS("css/desktop-enhancements.css");
+                                loadCSS("css/export.css");
+                                loadCSS("css/analytics.css");
+                                loadCSS("css/performance-dashboard.css");
+                            },
+                            { timeout: 2000 },
+                        );
+                    } else {
+                        setTimeout(function () {
+                            loadCSS("css/components.css");
+                            loadCSS("css/responsive-layout.css");
+                            loadCSS("css/desktop-enhancements.css");
+                            loadCSS("css/export.css");
+                            loadCSS("css/analytics.css");
+                            loadCSS("css/performance-dashboard.css");
+                        }, 1000);
+                    }
+                }
+
+                // Load immediately if already loaded, otherwise wait for load event
+                if (document.readyState === "complete") {
+                    loadCSSWhenIdle();
+                } else {
+                    window.addEventListener("load", loadCSSWhenIdle);
+                }
+
+                // Fallback: load on first user interaction
+                const events = ["click", "touchstart", "keydown"];
+                const loadOnInteraction = function () {
+                    loadCSS("css/components.css");
+                    loadCSS("css/responsive-layout.css");
+                    loadCSS("css/desktop-enhancements.css");
+                    loadCSS("css/export.css");
+                    loadCSS("css/analytics.css");
+                    loadCSS("css/performance-dashboard.css");
+                    events.forEach((event) => {
+                        document.removeEventListener(event, loadOnInteraction);
+                    });
+                };
+
+                events.forEach((event) => {
+                    document.addEventListener(event, loadOnInteraction, {
+                        once: true,
+                        passive: true,
+                    });
+                });
+            })();
+
+            // ---------- 1) Reliable 100vh on iOS + Android ----------
+            function setVH() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty("--vh", `${vh}px`);
+            }
+            setVH();
+            window.addEventListener("resize", setVH);
+            window.addEventListener("orientationchange", () => {
+                setTimeout(setVH, 250);
+            });
+
+            // ---------- 2) Soft keyboard handling ----------
+            (function () {
+                let focused = false;
+                const app = document.getElementById("app");
+                const screen = document.getElementById("screen");
+                function onFocusIn(e) {
+                    if (e.target.matches("input, textarea, select")) {
+                        focused = true;
+                        app.style.minHeight = "auto";
+                        screen.style.paddingBottom = "16px";
+                    }
+                }
+                function onFocusOut(e) {
+                    if (e.target.matches("input, textarea, select")) {
+                        focused = false;
+                        app.style.minHeight = "calc(var(--vh) * 100)";
+                        screen.style.paddingBottom =
+                            "calc(12px + var(--tabbar-h) + max(var(--sa-b), 0px))";
+                    }
+                }
+                document.addEventListener("focusin", onFocusIn);
+                document.addEventListener("focusout", onFocusOut);
+            })();
+
+            // ---------- 3) Fast tab routing ----------
+            const screen = document.getElementById("screen");
+            function routeTo(name) {
+                // Hide all screens
+                document
+                    .querySelectorAll('[id$="-screen"]')
+                    .forEach((s) => s.classList.add("hide"));
+
+                // Show target screen
+                const targetScreen = document.getElementById(name + "-screen");
+                if (targetScreen) {
+                    targetScreen.classList.remove("hide");
+                }
+
+                // Update tab states
+                [...document.querySelectorAll(".tabbtn")].forEach((b) =>
+                    b.setAttribute("aria-current", "false"),
+                );
+                const active = document.querySelector(
+                    `.tabbtn[data-route="${name}"]`,
+                );
+                if (active) active.setAttribute("aria-current", "page");
+
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: "instant" });
+
+                // Load data for specific screens
+                if (name === "home") {
+                    refreshLowStock();
+                } else if (name === "menu") {
+                    loadMenuIngredients();
+                }
+            }
+
+            // Event listeners for navigation
+            document.querySelectorAll("[data-route]").forEach((el) => {
+                el.addEventListener("click", () => routeTo(el.dataset.route));
+            });
+
+            // ---------- 4) POS Functions ----------
+            const $ = (id) => document.getElementById(id);
+
+            // Populate select elements with data from Apps Script
+            function populateSelect(selectId, items, valueKey, labelKey) {
+                const el = $(selectId);
+                if (!el || !Array.isArray(items)) return;
+                const previous = el.value;
+                const placeholderText =
+                    el.options && el.options[0]
+                        ? el.options[0].textContent
+                        : "เลือก...";
+                el.innerHTML = "";
+                const ph = document.createElement("option");
+                ph.value = "";
+                ph.textContent = placeholderText;
+                el.appendChild(ph);
+                items.forEach((it) => {
+                    if (it && it[valueKey]) {
+                        const opt = document.createElement("option");
+                        opt.value = String(it[valueKey]);
+                        opt.textContent = it[labelKey] || String(it[valueKey]);
+                        el.appendChild(opt);
+                    }
+                });
+                if (previous) {
+                    el.value = previous;
+                }
+            }
+
+            // Load bootstrap data and fill dropdowns
+            function loadBootstrapData() {
+                if (
+                    typeof google === "undefined" ||
+                    !google.script ||
+                    !google.script.run
+                )
+                    return;
+                google.script.run
+                    .withSuccessHandler((data) => {
+                        try {
+                            const ingredients =
+                                (data && data.ingredients) || [];
+                            const menus = (data && data.menus) || [];
+                            populateSelect("p_ing", ingredients, "id", "name");
+                            populateSelect(
+                                "m_ingredient",
+                                ingredients,
+                                "id",
+                                "name",
+                            );
+                            populateSelect("m_menu", menus, "menu_id", "name");
+                            populateSelect("s_menu", menus, "menu_id", "name");
+                        } catch (e) {
+                            console.error("Bootstrap populate error:", e);
+                        }
+                    })
+                    .withFailureHandler((err) => {
+                        console.error("Failed to load bootstrap data:", err);
+                    })
+                    .getBootstrapData();
+            }
+
+            function toast(msg) {
+                const t = $("toast");
+                t.textContent = msg;
+                t.classList.add("show");
+                setTimeout(() => t.classList.remove("show"), 3000);
+            }
+
+            function loading(show) {
+                $("loading").classList.toggle("show", show);
+            }
+
+            // Legacy purchase functions - now handled by PurchaseModule
+            function calculatePricePerUnit() {
+                if (
+                    window.purchaseInstance &&
+                    window.purchaseInstance.calculatePricePerUnit
+                ) {
+                    window.purchaseInstance.calculatePricePerUnit();
+                } else {
+                    // Fallback for immediate use
+                    const qty = Number($("p_qty").value || 0);
+                    const totalPrice = Number($("p_total_price").value || 0);
+                    if (qty > 0 && totalPrice > 0) {
+                        $("p_price").value = (totalPrice / qty).toFixed(2);
+                    }
+                }
+            }
+
+            function onAddPurchase() {
+                if (
+                    window.purchaseInstance &&
+                    window.purchaseInstance.onAddPurchase
+                ) {
+                    window.purchaseInstance.onAddPurchase();
+                } else {
+                    toast("กำลังโหลดฟังก์ชันการซื้อ...");
+                    // Load module and retry
+                    loadScreenModule("purchase").then(() => {
+                        if (window.purchaseInstance) {
+                            window.purchaseInstance.onAddPurchase();
+                        }
+                    });
+                }
+            }
+
+            // Legacy sale functions - now handled by SaleModule
+            function onAddSale() {
+                if (window.saleInstance && window.saleInstance.onAddSale) {
+                    window.saleInstance.onAddSale();
+                } else {
+                    toast("กำลังโหลดฟังก์ชันการขาย...");
+                    // Load module and retry
+                    loadScreenModule("sale").then(() => {
+                        if (window.saleInstance) {
+                            window.saleInstance.onAddSale();
+                        }
+                    });
+                }
+            }
+
+            // Legacy menu functions - now handled by MenuModule
+            function addMenuIngredient() {
+                if (
+                    window.menuInstance &&
+                    window.menuInstance.addMenuIngredient
+                ) {
+                    window.menuInstance.addMenuIngredient();
+                } else {
+                    toast("กำลังโหลดฟังก์ชันจัดการเมนู...");
+                    // Load module and retry
+                    loadScreenModule("menu").then(() => {
+                        if (window.menuInstance) {
+                            window.menuInstance.addMenuIngredient();
+                        }
+                    });
+                }
+            }
+
+            function loadMenuIngredients() {
+                if (
+                    window.menuInstance &&
+                    window.menuInstance.loadMenuIngredients
+                ) {
+                    window.menuInstance.loadMenuIngredients();
+                } else {
+                    // Fallback for immediate use
+                    const menuId = $("m_menu").value;
+                    if (!menuId) {
+                        $("menu-ingredients-content").innerHTML =
+                            '<div class="muted">เลือกเมนูเพื่อดูวัตถุดิบ</div>';
+                        return;
+                    }
+
+                    if (
+                        typeof google !== "undefined" &&
+                        google.script &&
+                        google.script.run
+                    ) {
+                        google.script.run
+                            .withSuccessHandler((html) => {
+                                $("menu-ingredients-content").innerHTML =
+                                    html ||
+                                    '<div class="muted">ไม่มีวัตถุดิบในเมนูนี้</div>';
+                            })
+                            .withFailureHandler(() => {
+                                $("menu-ingredients-content").innerHTML =
+                                    '<div class="muted">ไม่สามารถโหลดข้อมูลได้</div>';
+                            })
+                            .getMenuIngredientsHTML({ menu_id: menuId });
+                    }
+                }
+            }
+
+            function calculateMenuCost() {
+                if (
+                    window.menuInstance &&
+                    window.menuInstance.calculateMenuCost
+                ) {
+                    window.menuInstance.calculateMenuCost();
+                } else {
+                    // Fallback: call Apps Script directly
+                    const menuId = $("m_menu").value;
+                    if (!menuId) {
+                        toast("กรุณาเลือกเมนู");
+                        return;
+                    }
+
+                    loading(true);
+                    if (
+                        typeof google !== "undefined" &&
+                        google.script &&
+                        google.script.run
+                    ) {
+                        google.script.run
+                            .withSuccessHandler((res) => {
+                                loading(false);
+                                const cost = Number(res.totalCost || 0);
+                                const suggested = Number(
+                                    res.suggestedPrice || 0,
+                                );
+                                toast(
+                                    `💰 ต้นทุน: ${cost.toFixed(2)} บาท | ราคาแนะนำ: ${suggested.toFixed(2)} บาท`,
+                                );
+                            })
+                            .withFailureHandler((err) => {
+                                loading(false);
+                                toast(
+                                    `❌ ${err && err.message ? err.message : "ไม่สามารถคำนวณได้"}`,
+                                );
+                            })
+                            .calculateMenuCost({
+                                menu_id: menuId,
+                                targetGP: 60,
+                            });
+                    } else {
+                        loading(false);
+                        toast("❌ ไม่สามารถเชื่อมต่อกับ Google Sheets ได้");
+                    }
+                }
+            }
+
+            // Legacy report functions - now handled by ReportsModule
+            function resetReportForm() {
+                if (
+                    window.reportsInstance &&
+                    window.reportsInstance.resetForm
+                ) {
+                    window.reportsInstance.resetForm();
+                } else {
+                    // Fallback
+                    ["rp_from", "rp_to"].forEach((id) => ($(id).value = ""));
+                    $("report-content").innerHTML =
+                        '<div class="muted">เลือกช่วงวันที่และกดสร้างรายงาน</div>';
+                }
+            }
+
+            function generateReport() {
+                if (
+                    window.reportsInstance &&
+                    window.reportsInstance.generateReport
+                ) {
+                    window.reportsInstance.generateReport();
+                } else {
+                    toast("กำลังโหลดฟังก์ชันรายงาน...");
+                    // Load module and retry
+                    loadScreenModule("reports").then(() => {
+                        if (window.reportsInstance) {
+                            window.reportsInstance.generateReport();
+                        }
+                    });
+                }
+            }
+
+            function exportReport() {
+                if (
+                    window.reportsInstance &&
+                    window.reportsInstance.exportReport
+                ) {
+                    window.reportsInstance.exportReport();
+                } else {
+                    toast("กำลังโหลดฟังก์ชันส่งออก...");
+                    // Load module and retry
+                    loadScreenModule("reports").then(() => {
+                        if (window.reportsInstance) {
+                            window.reportsInstance.exportReport();
+                        }
+                    });
+                }
+            }
+
+            // Low stock functions
+            function refreshLowStock() {
+                if (
+                    typeof google !== "undefined" &&
+                    google.script &&
+                    google.script.run
+                ) {
+                    google.script.run
+                        .withSuccessHandler((html) => {
+                            $("low-stock-content").innerHTML =
+                                html ||
+                                '<div class="muted">ไม่มีวัตถุดิบที่ใกล้หมด 👍</div>';
+                        })
+                        .withFailureHandler(() => {
+                            $("low-stock-content").innerHTML =
+                                '<div class="muted">ไม่สามารถโหลดข้อมูลได้</div>';
+                        })
+                        .getLowStockHTML();
+                }
+            }
+
+            // Theme toggle
+            document
+                .getElementById("themeBtn")
+                ?.addEventListener("click", () => {
+                    const body = document.body;
+                    const currentTheme = body.getAttribute("data-theme");
+                    const newTheme = currentTheme === "dark" ? "light" : "dark";
+                    body.setAttribute("data-theme", newTheme);
+                    localStorage.setItem("pos-theme", newTheme);
+                    const btn = document.getElementById("themeBtn");
+                    if (btn)
+                        btn.textContent = newTheme === "dark" ? "☀️" : "🌙";
+                });
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem("pos-theme");
+            if (savedTheme) {
+                document.body.setAttribute("data-theme", savedTheme);
+                const btn = document.getElementById("themeBtn");
+                if (btn) btn.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+            }
+
+            // Sync button
+            document
+                .getElementById("syncBtn")
+                ?.addEventListener("click", () => {
+                    const btn = document.getElementById("syncBtn");
+                    const prev = btn.textContent;
+                    btn.textContent = "…";
+                    setTimeout(() => {
+                        btn.textContent = prev;
+                        toast("ซิงค์ข้อมูลแล้ว!");
+                        refreshLowStock();
+                    }, 500);
+                });
+
+            // Initialize
+            document.addEventListener("DOMContentLoaded", () => {
+                // Set today's date
+                const today = new Date().toISOString().slice(0, 10);
+                $("p_date").value = today;
+                $("s_date").value = today;
+
+                // Load initial data
+                refreshLowStock();
+                loadBootstrapData();
+
+                // Force mobile layout fixes for Google Apps Script deployment
+                forceMobileLayout();
+            });
+
+            // Force mobile layout for Google Apps Script deployment
+            function forceMobileLayout() {
+                const styles = {
+                    width: "100%",
+                    maxWidth: "100vw",
+                    margin: "0",
+                    padding: "0",
+                    overflowX: "hidden",
+                };
+                Object.assign(document.body.style, styles);
+                Object.assign(document.documentElement.style, styles);
+
+                const app = $("app");
+                if (app) Object.assign(app.style, styles);
+
+                // Fix any wrapper divs
+                document.querySelectorAll("div").forEach((div) => {
+                    if (div.style.maxWidth && div.style.maxWidth !== "100vw")
+                        div.style.maxWidth = "100vw";
+                    if (div.style.width && div.style.width !== "100%")
+                        div.style.width = "100%";
+                });
+
+                setVH();
+            }
+
+            // Disable double-tap zoom (iOS Safari)
+            document.addEventListener(
+                "touchend",
+                (e) => {
+                    const t = e.target.closest("button,a");
+                    if (t) {
+                        e.preventDefault();
+                        t.click();
+                    }
+                },
+                { passive: false },
+            );
+
+            // ===== AI FUNCTIONALITY =====
+
+            // Update AI Status
+            function updateAIStatus(message, type = "active") {
+                const indicator = document.getElementById(
+                    "ai-status-indicator",
+                );
+                if (!indicator) return;
+
+                if (message) {
+                    indicator.textContent = `AI: ${message}`;
+                    indicator.className = `ai-status-indicator ${type}`;
+                    indicator.classList.add("active");
+                }
+
+                // Auto-hide status after 3 seconds (except for errors)
+                if (type !== "error") {
+                    setTimeout(() => {
+                        indicator.classList.remove("active");
+                    }, 3000);
+                }
+            }
+
+            // Send text to AI Agent
+            function sendFixedText(text) {
+                if (!text) return;
+
+                updateAIStatus("กำลังประมวลผล...", "active");
+
+                if (
+                    typeof google !== "undefined" &&
+                    google.script &&
+                    google.script.run
+                ) {
+                    google.script.run
+                        .withSuccessHandler((response) => {
+                            updateAIStatus("เสร็จสิ้น", "success");
+                            console.log("AI Response:", response);
+
+                            // Show result as toast or alert
+                            if (response.success) {
+                                toast(response.message || "✅ ดำเนินการสำเร็จ");
+                            } else {
+                                toast(response.message || "❌ เกิดข้อผิดพลาด");
+                            }
+                        })
+                        .withFailureHandler((error) => {
+                            updateAIStatus("เกิดข้อผิดพลาด", "error");
+                            console.error("AI Error:", error);
+                            toast("❌ ไม่สามารถเชื่อมต่อ AI ได้");
+                        })
+                        .processAIMessage({
+                            message: text,
+                            userKey: "USER_WEB",
+                            timestamp: new Date().toISOString(),
+                        });
+                } else {
+                    updateAIStatus("ไม่สามารถเชื่อมต่อ", "error");
+                    toast("❌ ไม่สามารถเชื่อมต่อกับ Google Apps Script");
+                }
+            }
+
+            // Quick AI functions
+            function quickAddPurchase() {
+                const ing = prompt("ชื่อวัตถุดิบ:");
+                if (!ing) return;
+
+                const qty = prompt("จำนวน:");
+                if (!qty || isNaN(qty)) return;
+
+                const price = prompt("ราคารวม:");
+                if (!price || isNaN(price)) return;
+
+                sendFixedText(`ซื้อ ${ing} ${qty} กิโลกรัม ${price} บาท`);
+            }
+
+            function quickAddExpense() {
+                const desc = prompt("รายการค่าใช้จ่าย:");
+                if (!desc) return;
+
+                const amount = prompt("จำนวนเงิน:");
+                if (!amount || isNaN(amount)) return;
+
+                sendFixedText(`บันทึกค่าใช้จ่าย ${desc} ${amount} บาท`);
+            }
+
+            function quickPriceCheck() {
+                const ing = prompt("ชื่อวัตถุดิบ:");
+                if (!ing) return;
+
+                sendFixedText(`ตรวจสอบราคา ${ing}`);
+            }
+
+            function addAIButtons() {
+                const lowStockDiv =
+                    document.getElementById("low-stock-content");
+
+                if (!lowStockDiv) return;
+
+                // Create AI controls div
+                const aiControls = document.createElement("div");
+                aiControls.style.cssText =
+                    "margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;";
+
+                // Add AI buttons
+                const buttons = [
+                    {
+                        text: "🤖 ผู้ช่วย AI",
+                        action: () => sendFixedText("สวัสดี"),
+                    },
+                    { text: "🛒 เพิ่มการซื้อ", action: quickAddPurchase },
+                    { text: "💰 เพิ่มค่าใช้จ่าย", action: quickAddExpense },
+                    { text: "📊 ตรวจสอบราคา", action: quickPriceCheck },
+                ];
+
+                buttons.forEach((btn) => {
+                    const button = document.createElement("button");
+                    button.className = "btn ghost";
+                    button.textContent = btn.text;
+                    button.style.cssText = "font-size: 12px; padding: 4px 8px;";
+                    button.onclick = btn.action;
+                    aiControls.appendChild(button);
+                });
+
+                lowStockDiv.parentNode.insertBefore(
+                    aiControls,
+                    lowStockDiv.nextSibling,
+                );
+            }
+
+            // Initialize AI functionality
+            function initializeAI() {
+                addAIButtons();
+                updateAIStatus("พร้อมช่วยเหลือ", "success");
+            }
+
+            // Add AI initialization to existing DOM ready event
+            // The existing DOMContentLoaded event above will initialize the app
+            // We just need to add AI initialization after everything else loads
+
+            // Initialize AI after app is ready
+            setTimeout(() => {
+                if (typeof initializeAI === "function") {
+                    initializeAI();
+                }
+            }, 1500);
+        </script>
+    </body>
+</html>

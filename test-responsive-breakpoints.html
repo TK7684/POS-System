@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Responsive Breakpoint System Test</title>
+  <link rel="stylesheet" href="css/critical.css">
+  <link rel="stylesheet" href="css/responsive-layout.css">
+  <style>
+    body {
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    
+    .test-section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: var(--card, #fff);
+      border: 1px solid var(--line, #ddd);
+      border-radius: 8px;
+    }
+    
+    .test-section h2 {
+      margin-top: 0;
+      color: var(--brand, #0f766e);
+    }
+    
+    .breakpoint-indicator {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 12px 20px;
+      background: var(--brand, #0f766e);
+      color: white;
+      border-radius: 8px;
+      font-weight: bold;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .demo-box {
+      padding: 20px;
+      background: var(--bg, #f5f5f5);
+      border: 2px solid var(--brand, #0f766e);
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .color-box {
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .color-box:nth-child(1) { background: #ef4444; }
+    .color-box:nth-child(2) { background: #f59e0b; }
+    .color-box:nth-child(3) { background: #10b981; }
+    .color-box:nth-child(4) { background: #3b82f6; }
+    .color-box:nth-child(5) { background: #8b5cf6; }
+    .color-box:nth-child(6) { background: #ec4899; }
+    
+    .info-panel {
+      padding: 16px;
+      background: #dbeafe;
+      border-left: 4px solid #3b82f6;
+      border-radius: 4px;
+      margin: 16px 0;
+    }
+    
+    .info-panel strong {
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="breakpoint-indicator" id="breakpoint">
+    <span id="breakpoint-name">Loading...</span>
+    <br>
+    <small id="viewport-size"></small>
+  </div>
+
+  <h1>Responsive Breakpoint System Test</h1>
+  <p>Resize your browser window or rotate your device to see the breakpoint system in action.</p>
+
+  <div class="info-panel">
+    <strong>Current Breakpoint:</strong> <span id="current-bp">Detecting...</span><br>
+    <strong>Viewport Width:</strong> <span id="vw">-</span>px<br>
+    <strong>Orientation:</strong> <span id="orientation">-</span>
+  </div>
+
+  <!-- Test 1: Adaptive Grid -->
+  <div class="test-section">
+    <h2>1. Adaptive Grid System</h2>
+    <p>Grid columns: 1 (small mobile) → 2 (large mobile) → 3 (tablet) → 4 (desktop)</p>
+    <div class="adaptive-grid">
+      <div class="color-box">Box 1</div>
+      <div class="color-box">Box 2</div>
+      <div class="color-box">Box 3</div>
+      <div class="color-box">Box 4</div>
+      <div class="color-box">Box 5</div>
+      <div class="color-box">Box 6</div>
+    </div>
+  </div>
+
+  <!-- Test 2: Flex Layout -->
+  <div class="test-section">
+    <h2>2. Flex Layout (Column → Row)</h2>
+    <p>Column on mobile, row on tablet and desktop</p>
+    <div class="flex-layout tablet-row desktop-row">
+      <div class="demo-box">Item 1</div>
+      <div class="demo-box">Item 2</div>
+      <div class="demo-box">Item 3</div>
+    </div>
+  </div>
+
+  <!-- Test 3: Responsive Container -->
+  <div class="test-section">
+    <h2>3. Responsive Container Padding</h2>
+    <p>Padding scales: 16px → 20px → 24px → 32px</p>
+    <div class="responsive-container" style="background: var(--bg, #f5f5f5); border: 2px dashed var(--brand, #0f766e);">
+      <div class="demo-box">Container content with responsive padding</div>
+    </div>
+  </div>
+
+  <!-- Test 4: Visibility Utilities -->
+  <div class="test-section">
+    <h2>4. Device-Specific Visibility</h2>
+    <div class="small-mobile-only" style="padding: 16px; background: #fef3c7; border-radius: 8px; margin: 8px 0;">
+      ✓ Visible on SMALL MOBILE only (< 480px)
+    </div>
+    <div class="large-mobile-only" style="padding: 16px; background: #dbeafe; border-radius: 8px; margin: 8px 0;">
+      ✓ Visible on LARGE MOBILE only (480-767px)
+    </div>
+    <div class="tablet-only" style="padding: 16px; background: #d1fae5; border-radius: 8px; margin: 8px 0;">
+      ✓ Visible on TABLET only (768-1023px)
+    </div>
+    <div class="desktop-only" style="padding: 16px; background: #e9d5ff; border-radius: 8px; margin: 8px 0;">
+      ✓ Visible on DESKTOP only (≥ 1024px)
+    </div>
+  </div>
+
+  <!-- Test 5: Responsive Buttons -->
+  <div class="test-section">
+    <h2>5. Responsive Button Sizing</h2>
+    <p>Touch targets scale appropriately for each device</p>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <button class="responsive-btn">Primary Action</button>
+      <button class="responsive-btn">Secondary</button>
+      <button class="responsive-btn">Tertiary</button>
+    </div>
+  </div>
+
+  <!-- Test 6: Responsive Cards -->
+  <div class="test-section">
+    <h2>6. Responsive Card Grid</h2>
+    <div class="adaptive-grid">
+      <div class="responsive-card">
+        <h3 style="margin-top: 0;">Card 1</h3>
+        <p>Hover effects appear on tablet and desktop</p>
+      </div>
+      <div class="responsive-card">
+        <h3 style="margin-top: 0;">Card 2</h3>
+        <p>Padding scales with breakpoints</p>
+      </div>
+      <div class="responsive-card">
+        <h3 style="margin-top: 0;">Card 3</h3>
+        <p>Smooth transitions on orientation change</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test 7: Responsive Table -->
+  <div class="test-section">
+    <h2>7. Responsive Table</h2>
+    <p>Cards on mobile, traditional table on tablet+</p>
+    <div class="responsive-table-container">
+      <table class="responsive-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Product">Coffee</td>
+            <td data-label="Price">$3.50</td>
+            <td data-label="Stock">45</td>
+            <td data-label="Status">Available</td>
+          </tr>
+          <tr>
+            <td data-label="Product">Tea</td>
+            <td data-label="Price">$2.50</td>
+            <td data-label="Stock">32</td>
+            <td data-label="Status">Available</td>
+          </tr>
+          <tr>
+            <td data-label="Product">Pastry</td>
+            <td data-label="Price">$4.00</td>
+            <td data-label="Stock">12</td>
+            <td data-label="Status">Low Stock</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Test 8: Orientation Handling -->
+  <div class="test-section">
+    <h2>8. Orientation Change Handling</h2>
+    <p>Rotate your device to see smooth 300ms transitions</p>
+    <div class="landscape-optimize portrait-optimize" style="padding: 20px; background: var(--bg, #f5f5f5); border-radius: 8px;">
+      <div class="demo-box">
+        Padding adjusts smoothly on orientation change
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Breakpoint detection and display
+    function updateBreakpointInfo() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const orientation = width > height ? 'Landscape' : 'Portrait';
+      
+      let breakpoint = '';
+      let bgColor = '';
+      
+      if (width < 480) {
+        breakpoint = 'Small Mobile';
+        bgColor = '#dc2626';
+      } else if (width >= 480 && width < 768) {
+        breakpoint = 'Large Mobile';
+        bgColor = '#ea580c';
+      } else if (width >= 768 && width < 1024) {
+        breakpoint = 'Tablet';
+        bgColor = '#059669';
+      } else {
+        breakpoint = 'Desktop';
+        bgColor = '#2563eb';
+      }
+      
+      // Update indicator
+      document.getElementById('breakpoint-name').textContent = breakpoint;
+      document.getElementById('viewport-size').textContent = `${width}px × ${height}px`;
+      document.querySelector('.breakpoint-indicator').style.background = bgColor;
+      
+      // Update info panel
+      document.getElementById('current-bp').textContent = breakpoint;
+      document.getElementById('vw').textContent = width;
+      document.getElementById('orientation').textContent = orientation;
+    }
+    
+    // Update on load
+    updateBreakpointInfo();
+    
+    // Update on resize with debounce
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(updateBreakpointInfo, 100);
+    });
+    
+    // Update on orientation change
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateBreakpointInfo, 350); // After transition completes
+    });
+    
+    // Log breakpoint changes
+    let lastWidth = window.innerWidth;
+    window.addEventListener('resize', () => {
+      const currentWidth = window.innerWidth;
+      const crossedBreakpoint = 
+        (lastWidth < 480 && currentWidth >= 480) ||
+        (lastWidth < 768 && currentWidth >= 768) ||
+        (lastWidth < 1024 && currentWidth >= 1024) ||
+        (lastWidth >= 480 && currentWidth < 480) ||
+        (lastWidth >= 768 && currentWidth < 768) ||
+        (lastWidth >= 1024 && currentWidth < 1024);
+      
+      if (crossedBreakpoint) {
+        console.log(`Breakpoint changed at ${currentWidth}px`);
+      }
+      
+      lastWidth = currentWidth;
+    });
+  </script>
+</body>
+</html>

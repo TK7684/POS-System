@@ -4,7 +4,8 @@
  */
 
 class SaleModule {
-  constructor() {
+  constructor(dropdownManager = null) {
+    this.dropdownManager = dropdownManager;
     this.initialized = false;
     this.recentMenus = new Set();
     this.platformPreferences = new Map();
@@ -14,16 +15,107 @@ class SaleModule {
   /**
    * Initialize sale module
    */
-  init() {
+  async init() {
     if (this.initialized) return;
     
-    this.setupEventListeners();
-    this.loadRecentData();
-    this.setupSmartSuggestions();
-    this.setupQuickActions();
-    this.initialized = true;
-    
-    console.log('Sale module initialized');
+    try {
+      // Initialize dropdowns if dropdownManager is available
+      if (this.dropdownManager) {
+        await this.initializeDropdowns();
+      }
+      
+      this.setupEventListeners();
+      this.loadRecentData();
+      this.setupSmartSuggestions();
+      this.setupQuickActions();
+      this.initialized = true;
+      
+      console.log('Sale module initialized');
+    } catch (error) {
+      console.error('Failed to initialize Sale module:', error);
+      this.showInitializationError();
+    }
+  }
+
+  /**
+   * Initialize dropdowns on Sale screen
+   */
+  async initializeDropdowns() {
+    try {
+      const menuSelect = document.getElementById('s_menu');
+      const platformSelect = document.getElementById('s_platform');
+      
+      if (!menuSelect || !platformSelect) {
+        console.warn('Menu or Platform dropdown not found on Sale screen');
+        return;
+      }
+      
+      // Populate menu dropdown
+      await this.dropdownManager.populateMenus(menuSelect, {
+        includePlaceholder: true,
+        forceRefresh: false
+      });
+      
+      // Populate platform dropdown
+      await this.dropdownManager.populatePlatforms(platformSelect);
+      
+      // Set up menu change handler for auto-populating price
+      this.dropdownManager.onMenuChange(menuSelect, (menuData) => {
+        this.handleMenuChange(menuData);
+      });
+      
+      console.log('Sale screen dropdowns initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Sale screen dropdowns:', error);
+      this.showDropdownError('ไม่สามารถโหลดข้อมูลเมนูและแพลตฟอร์มได้ กรุณาลองใหม่อีกครั้ง');
+      throw error;
+    }
+  }
+
+  /**
+   * Handle menu selection change - auto-populate price field
+   */
+  handleMenuChange(menuData) {
+    try {
+      const priceInput = document.getElementById('s_price');
+      
+      if (!priceInput) {
+        console.warn('Price input not found');
+        return;
+      }
+      
+      // Auto-populate price if available and field is empty
+      if (menuData.price && !priceInput.value) {
+        priceInput.value = menuData.price;
+      }
+      
+      // Add to recent menus for smart suggestions
+      this.recentMenus.add(menuData.id);
+      this.saveRecentData();
+      
+      console.log(`Price auto-populated for menu: ${menuData.name} (${menuData.price} บาท)`);
+    } catch (error) {
+      console.error('Error handling menu change:', error);
+      this.showDropdownError('เกิดข้อผิดพลาดในการเลือกเมนู');
+    }
+  }
+
+  /**
+   * Show initialization error message
+   */
+  showInitializationError() {
+    if (window.POS && window.POS.critical && window.POS.critical.toast) {
+      window.POS.critical.toast('⚠️ ไม่สามารถเริ่มต้นหน้าจอการขายได้ กรุณาลองใหม่อีกครั้ง');
+    }
+  }
+
+  /**
+   * Show dropdown error message
+   */
+  showDropdownError(message) {
+    if (window.POS && window.POS.critical && window.POS.critical.toast) {
+      window.POS.critical.toast(`❌ ${message}`);
+    }
   }
 
   /**
@@ -64,7 +156,8 @@ class SaleModule {
   }
 
   /**
-   * Handle menu selection change
+   * Handle menu selection change (legacy event handler)
+   * Note: This is kept for backward compatibility with existing code
    */
   onMenuChange(event) {
     const menuId = event.target.value;

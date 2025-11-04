@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Task 9: Search & Category Components Test</title>
+    
+    <!-- Load CSS -->
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/mobile-optimized.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/search.css">
+    
+    <style>
+        body {
+            padding: 20px;
+            background: var(--bg);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .test-section h2 {
+            margin: 0 0 16px 0;
+            font-size: var(--fs-lg);
+            color: var(--text);
+        }
+        
+        .test-info {
+            background: var(--bg);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: var(--fs-sm);
+            color: var(--muted);
+        }
+        
+        .test-info strong {
+            color: var(--text);
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0;
+        }
+        
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+        
+        .pass {
+            color: var(--ok);
+        }
+        
+        .fail {
+            color: var(--danger);
+        }
+        
+        .demo-spacing {
+            margin: 24px 0;
+        }
+        
+        .measurement {
+            display: inline-block;
+            background: var(--brand);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .viewport-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: var(--brand);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-info" id="viewport-info"></div>
+    
+    <div class="test-container">
+        <div class="test-section">
+            <h2>🔍 Task 9: Search & Category Components</h2>
+            <div class="test-info">
+                <strong>Requirements from Task 9:</strong>
+                ✓ Search input height: 48px minimum<br>
+                ✓ Search input font-size: 16px (prevents iOS zoom)<br>
+                ✓ Category tab height: 48px minimum<br>
+                ✓ Proper touch spacing between category tabs (12px on mobile)
+            </div>
+        </div>
+        
+        <!-- Search Input Test -->
+        <div class="test-section">
+            <h2>Search Input Component</h2>
+            <div class="test-info">
+                <strong>Testing:</strong>
+                • Minimum height of 48px<br>
+                • Font size of 16px to prevent iOS auto-zoom<br>
+                • Proper padding and touch-friendly design
+            </div>
+            
+            <div class="search-interface">
+                <div class="search-input-container">
+                    <div class="search-input-wrapper">
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            placeholder="ค้นหาสินค้า, เมนู, หรือวัตถุดิบ..."
+                            id="test-search-input"
+                        >
+                        <button class="search-clear-btn" style="display: none;">×</button>
+                        <button class="filter-toggle-btn">🔍</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="demo-spacing"></div>
+            
+            <div id="search-measurements" style="font-size: var(--fs-sm); color: var(--muted);"></div>
+        </div>
+        
+        <!-- Category Tabs Test -->
+        <div class="test-section">
+            <h2>Category Tab Component</h2>
+            <div class="test-info">
+                <strong>Testing:</strong>
+                • Minimum height of 48px<br>
+                • Font size of 16px<br>
+                • 12px gap between tabs on mobile<br>
+                • Horizontal scrolling on mobile<br>
+                • Touch-friendly active states
+            </div>
+            
+            <div class="category-tabs" id="category-tabs">
+                <button class="category-tab active">ทั้งหมด</button>
+                <button class="category-tab">อาหารทะเล</button>
+                <button class="category-tab">ของทอด</button>
+                <button class="category-tab">ของย่าง</button>
+                <button class="category-tab">ส้มตำ</button>
+                <button class="category-tab">ข้าว</button>
+                <button class="category-tab">เครื่องดื่ม</button>
+                <button class="category-tab">ของหวาน</button>
+            </div>
+            
+            <div class="demo-spacing"></div>
+            
+            <div id="category-measurements" style="font-size: var(--fs-sm); color: var(--muted);"></div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="test-section">
+            <h2>📋 Test Results</h2>
+            <ul class="checklist" id="test-results"></ul>
+        </div>
+        
+        <!-- Testing Instructions -->
+        <div class="test-section">
+            <h2>📱 Testing Instructions</h2>
+            <div class="test-info">
+                <strong>Manual Testing:</strong><br>
+                1. Test on mobile devices (< 768px width)<br>
+                2. Verify search input doesn't trigger zoom on iOS<br>
+                3. Tap category tabs to ensure they're easily tappable<br>
+                4. Scroll category tabs horizontally on mobile<br>
+                5. Verify proper spacing between tabs<br>
+                6. Test focus states with keyboard navigation
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Update viewport info
+        function updateViewportInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            document.getElementById('viewport-info').textContent = `${width}px × ${height}px`;
+        }
+        
+        updateViewportInfo();
+        window.addEventListener('resize', updateViewportInfo);
+        
+        // Measure search input
+        function measureSearchInput() {
+            const searchInput = document.getElementById('test-search-input');
+            const rect = searchInput.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(searchInput);
+            
+            const measurements = document.getElementById('search-measurements');
+            measurements.innerHTML = `
+                <strong>Measurements:</strong><br>
+                Height: <span class="${rect.height >= 48 ? 'pass' : 'fail'}">${rect.height.toFixed(1)}px</span> 
+                (min: 48px)<br>
+                Font Size: <span class="${computedStyle.fontSize === '16px' ? 'pass' : 'fail'}">${computedStyle.fontSize}</span> 
+                (required: 16px)<br>
+                Padding: ${computedStyle.paddingTop} ${computedStyle.paddingRight} 
+                ${computedStyle.paddingBottom} ${computedStyle.paddingLeft}
+            `;
+        }
+        
+        // Measure category tabs
+        function measureCategoryTabs() {
+            const tabs = document.querySelectorAll('.category-tab');
+            const container = document.getElementById('category-tabs');
+            const containerStyle = window.getComputedStyle(container);
+            
+            if (tabs.length > 0) {
+                const firstTab = tabs[0];
+                const rect = firstTab.getBoundingClientRect();
+                const computedStyle = window.getComputedStyle(firstTab);
+                
+                // Measure gap between tabs
+                let gap = 0;
+                if (tabs.length > 1) {
+                    const firstRect = tabs[0].getBoundingClientRect();
+                    const secondRect = tabs[1].getBoundingClientRect();
+                    gap = secondRect.left - firstRect.right;
+                }
+                
+                const measurements = document.getElementById('category-measurements');
+                const isMobile = window.innerWidth < 640;
+                const expectedGap = isMobile ? 12 : 8;
+                
+                measurements.innerHTML = `
+                    <strong>Measurements:</strong><br>
+                    Tab Height: <span class="${rect.height >= 48 ? 'pass' : 'fail'}">${rect.height.toFixed(1)}px</span> 
+                    (min: 48px)<br>
+                    Font Size: <span class="${computedStyle.fontSize === '16px' ? 'pass' : 'fail'}">${computedStyle.fontSize}</span> 
+                    (required: 16px)<br>
+                    Gap Between Tabs: <span class="${Math.abs(gap - expectedGap) < 2 ? 'pass' : 'fail'}">${gap.toFixed(1)}px</span> 
+                    (expected: ${expectedGap}px on ${isMobile ? 'mobile' : 'desktop'})<br>
+                    Padding: ${computedStyle.paddingTop} ${computedStyle.paddingRight} 
+                    ${computedStyle.paddingBottom} ${computedStyle.paddingLeft}
+                `;
+            }
+        }
+        
+        // Run tests
+        function runTests() {
+            const results = [];
+            const searchInput = document.getElementById('test-search-input');
+            const tabs = document.querySelectorAll('.category-tab');
+            
+            // Test 1: Search input height
+            const searchRect = searchInput.getBoundingClientRect();
+            results.push({
+                name: 'Search input minimum height (48px)',
+                pass: searchRect.height >= 48,
+                value: `${searchRect.height.toFixed(1)}px`
+            });
+            
+            // Test 2: Search input font size
+            const searchStyle = window.getComputedStyle(searchInput);
+            results.push({
+                name: 'Search input font size (16px)',
+                pass: searchStyle.fontSize === '16px',
+                value: searchStyle.fontSize
+            });
+            
+            // Test 3: Category tab height
+            if (tabs.length > 0) {
+                const tabRect = tabs[0].getBoundingClientRect();
+                results.push({
+                    name: 'Category tab minimum height (48px)',
+                    pass: tabRect.height >= 48,
+                    value: `${tabRect.height.toFixed(1)}px`
+                });
+                
+                // Test 4: Category tab font size
+                const tabStyle = window.getComputedStyle(tabs[0]);
+                results.push({
+                    name: 'Category tab font size (16px)',
+                    pass: tabStyle.fontSize === '16px',
+                    value: tabStyle.fontSize
+                });
+                
+                // Test 5: Touch spacing between tabs
+                if (tabs.length > 1) {
+                    const firstRect = tabs[0].getBoundingClientRect();
+                    const secondRect = tabs[1].getBoundingClientRect();
+                    const gap = secondRect.left - firstRect.right;
+                    const isMobile = window.innerWidth < 640;
+                    const expectedGap = isMobile ? 12 : 8;
+                    
+                    results.push({
+                        name: `Touch spacing between tabs (${expectedGap}px on ${isMobile ? 'mobile' : 'desktop'})`,
+                        pass: Math.abs(gap - expectedGap) < 2,
+                        value: `${gap.toFixed(1)}px`
+                    });
+                }
+            }
+            
+            // Display results
+            const resultsContainer = document.getElementById('test-results');
+            resultsContainer.innerHTML = results.map(result => `
+                <li>
+                    <span class="${result.pass ? 'pass' : 'fail'}">
+                        ${result.pass ? '✓' : '✗'}
+                    </span>
+                    ${result.name}: <strong>${result.value}</strong>
+                </li>
+            `).join('');
+            
+            // Update measurements
+            measureSearchInput();
+            measureCategoryTabs();
+        }
+        
+        // Category tab interaction
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Run tests on load and resize
+        window.addEventListener('load', runTests);
+        window.addEventListener('resize', runTests);
+        
+        // Initial run
+        setTimeout(runTests, 100);
+    </script>
+</body>
+</html>

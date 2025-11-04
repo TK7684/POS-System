@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Button Touch Optimization Test</title>
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        body {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: var(--brand);
+        }
+        .test-section p {
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+        .measurement {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+        .pass {
+            color: var(--ok);
+            font-weight: 600;
+        }
+        .fail {
+            color: var(--danger);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <h1>Button Touch Optimization Test</h1>
+    <p>Testing Task 3: Update button components for touch optimization</p>
+
+    <div class="test-section">
+        <h2>✅ Requirement 2.1 & 2.2: Standard Button (52px min height)</h2>
+        <p>Standard buttons should have minimum 52px height with 14px vertical and 16px horizontal padding</p>
+        <button class="btn" id="standard-btn">Standard Button</button>
+        <div class="measurement" id="standard-measure"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Requirement 2.2: Primary Action Button (56px min height)</h2>
+        <p>Primary action buttons (.btn.brand) should have minimum 56px height</p>
+        <button class="btn brand" id="primary-btn">Primary Action</button>
+        <div class="measurement" id="primary-measure"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Requirement 2.3: Adjacent Button Spacing (12px gap)</h2>
+        <p>Adjacent buttons should have at least 12px spacing between them</p>
+        <button class="btn">Button 1</button>
+        <button class="btn">Button 2</button>
+        <button class="btn">Button 3</button>
+        <div class="measurement">Using .btn + .btn margin-left: 12px</div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Requirement 2.3: Button Group (12px gap)</h2>
+        <p>Button groups should use flexbox with 12px gap for better control</p>
+        <div class="btn-group">
+            <button class="btn">Action 1</button>
+            <button class="btn">Action 2</button>
+            <button class="btn brand">Primary</button>
+        </div>
+        <div class="measurement">Using .btn-group with gap: 12px</div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Requirement 2.5 & 2.6: Icon Buttons (48px × 48px)</h2>
+        <p>Icon buttons should be minimum 48px × 48px with 24px icons</p>
+        <div class="btn-group">
+            <button class="btn-icon" id="icon-btn" title="Settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m-6-6h6m6 0h-6"></path>
+                </svg>
+            </button>
+            <button class="btn-icon" title="Search">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+            </button>
+            <button class="btn-icon" title="Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="measurement" id="icon-measure"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Font Size Requirement (16px minimum)</h2>
+        <p>All button text should be at least 16px to prevent iOS auto-zoom</p>
+        <button class="btn">Check Font Size</button>
+        <div class="measurement" id="font-measure"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📱 Mobile Touch Test</h2>
+        <p>Try tapping these buttons on a mobile device. They should be easy to tap without mis-taps.</p>
+        <div class="btn-group">
+            <button class="btn" onclick="alert('Button 1 tapped!')">Tap Me 1</button>
+            <button class="btn" onclick="alert('Button 2 tapped!')">Tap Me 2</button>
+            <button class="btn brand" onclick="alert('Primary tapped!')">Primary</button>
+        </div>
+    </div>
+
+    <script>
+        // Measure button dimensions
+        function measureElement(id, measureId, expectedHeight) {
+            const el = document.getElementById(id);
+            const measureEl = document.getElementById(measureId);
+            if (el && measureEl) {
+                const rect = el.getBoundingClientRect();
+                const computedStyle = window.getComputedStyle(el);
+                const fontSize = parseFloat(computedStyle.fontSize);
+                const paddingTop = parseFloat(computedStyle.paddingTop);
+                const paddingBottom = parseFloat(computedStyle.paddingBottom);
+                const paddingLeft = parseFloat(computedStyle.paddingLeft);
+                const paddingRight = parseFloat(computedStyle.paddingRight);
+                
+                const heightPass = rect.height >= expectedHeight;
+                const fontPass = fontSize >= 16;
+                const paddingPass = paddingTop >= 14 && paddingLeft >= 16;
+                
+                measureEl.innerHTML = `
+                    Height: ${rect.height.toFixed(1)}px ${heightPass ? '<span class="pass">✓ PASS</span>' : '<span class="fail">✗ FAIL</span>'} (expected ≥${expectedHeight}px)<br>
+                    Font Size: ${fontSize}px ${fontPass ? '<span class="pass">✓ PASS</span>' : '<span class="fail">✗ FAIL</span>'} (expected ≥16px)<br>
+                    Padding: ${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px ${paddingPass ? '<span class="pass">✓ PASS</span>' : '<span class="fail">✗ FAIL</span>'} (expected ≥14px vertical, ≥16px horizontal)
+                `;
+            }
+        }
+
+        function measureIconButton() {
+            const el = document.getElementById('icon-btn');
+            const measureEl = document.getElementById('icon-measure');
+            if (el && measureEl) {
+                const rect = el.getBoundingClientRect();
+                const svg = el.querySelector('svg');
+                const svgRect = svg ? svg.getBoundingClientRect() : null;
+                
+                const widthPass = rect.width >= 48;
+                const heightPass = rect.height >= 48;
+                const iconPass = svgRect && svgRect.width >= 24 && svgRect.height >= 24;
+                
+                measureEl.innerHTML = `
+                    Button Size: ${rect.width.toFixed(1)}px × ${rect.height.toFixed(1)}px ${widthPass && heightPass ? '<span class="pass">✓ PASS</span>' : '<span class="fail">✗ FAIL</span>'} (expected ≥48px × 48px)<br>
+                    Icon Size: ${svgRect ? `${svgRect.width.toFixed(1)}px × ${svgRect.height.toFixed(1)}px` : 'N/A'} ${iconPass ? '<span class="pass">✓ PASS</span>' : '<span class="fail">✗ FAIL</span>'} (expected ≥24px × 24px)
+                `;
+            }
+        }
+
+        // Run measurements after page load
+        window.addEventListener('load', () => {
+            measureElement('standard-btn', 'standard-measure', 52);
+            measureElement('primary-btn', 'primary-measure', 56);
+            measureIconButton();
+            
+            // Font size check
+            const fontMeasure = document.getElementById('font-measure');
+            const btn = document.querySelector('.btn');
+            const fontSize = parseFloat(window.getComputedStyle(btn).fontSize);
+            fontMeasure.innerHTML = `Button font-size: ${fontSize}px ${fontSize >= 16 ? '<span class="pass">✓ PASS</span>' : '<span class="fail">✗ FAIL</span>'} (expected ≥16px)`;
+        });
+    </script>
+</body>
+</html>

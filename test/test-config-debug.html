@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Config Debug Test</title>
+</head>
+<body>
+    <h1>Configuration Debug Test</h1>
+    <div id="output"></div>
+
+    <script src="test/comprehensive-test-config.js"></script>
+    <script src="test/functional-testing-module.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += `<p>${message}</p>`;
+            console.log(message);
+        }
+        
+        log('<h2>Testing Configuration</h2>');
+        log(`ComprehensiveTestConfig exists: ${typeof ComprehensiveTestConfig !== 'undefined'}`);
+        
+        if (typeof ComprehensiveTestConfig !== 'undefined') {
+            log(`<h3>Full Config:</h3><pre>${JSON.stringify(ComprehensiveTestConfig, null, 2)}</pre>`);
+            log(`<h3>Environment Config:</h3><pre>${JSON.stringify(ComprehensiveTestConfig.environment, null, 2)}</pre>`);
+            log(`API URL: ${ComprehensiveTestConfig.environment.apiUrl}`);
+            
+            log('<h2>Testing Module Instantiation</h2>');
+            
+            try {
+                const module = new FunctionalTestingModule(ComprehensiveTestConfig.environment);
+                log('✅ Module instantiated successfully');
+                log(`Module config apiUrl: ${module.config.apiUrl}`);
+                log(`Module config timeout: ${module.config.timeout}`);
+                log(`Module config retries: ${module.config.retries}`);
+                
+                // Try to make a simple API call
+                log('<h2>Testing API Call</h2>');
+                module.makeApiCall({ action: 'getBootstrapData' })
+                    .then(result => {
+                        log('✅ API call successful');
+                        log(`<pre>${JSON.stringify(result, null, 2)}</pre>`);
+                    })
+                    .catch(error => {
+                        log(`❌ API call failed: ${error.message}`);
+                    });
+                    
+            } catch (error) {
+                log(`❌ Module instantiation failed: ${error.message}`);
+                log(`Stack: ${error.stack}`);
+            }
+        } else {
+            log('❌ ComprehensiveTestConfig not found');
+        }
+    </script>
+</body>
+</html>

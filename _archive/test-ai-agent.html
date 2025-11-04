@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Chat - Test & Demo</title>
+  <link rel="stylesheet" href="css/critical.css">
+  <link rel="stylesheet" href="css/mobile-optimized.css">
+  <link rel="stylesheet" href="css/ai-chat.css">
+  <style>
+    body {
+      background: var(--bg, #f8fafc);
+      color: var(--text, #1e293b);
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .demo-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .demo-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    
+    .demo-header p {
+      font-size: 18px;
+      color: var(--muted, #64748b);
+    }
+    
+    .demo-section {
+      background: var(--card, #ffffff);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .demo-section h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--brand, #0f766e);
+    }
+    
+    .demo-section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 20px 0 12px 0;
+      color: var(--text, #1e293b);
+    }
+    
+    .example-command {
+      background: var(--bg, #f8fafc);
+      border: 2px solid var(--line, #e2e8f0);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .example-command:hover {
+      border-color: var(--brand, #0f766e);
+      background: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
+    }
+    
+    .example-command .command-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text, #1e293b);
+      margin-bottom: 8px;
+    }
+    
+    .example-command .command-desc {
+      font-size: 14px;
+      color: var(--muted, #64748b);
+    }
+    
+    .example-command .command-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    
+    .feature-card {
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(20, 184, 166, 0.1));
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--line, #e2e8f0);
+    }
+    
+    .feature-card .icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    
+    .feature-card .title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .feature-card .desc {
+      font-size: 14px;
+      color: var(--muted, #64748b);
+      line-height: 1.5;
+    }
+    
+    .open-chat-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(15, 118, 110, 0.4);
+      transition: all 0.3s ease;
+      z-index: 998;
+    }
+    
+    .open-chat-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(15, 118, 110, 0.5);
+    }
+    
+    @media (max-width: 768px) {
+      .demo-header h1 {
+        font-size: 24px;
+      }
+      
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .open-chat-btn {
+        bottom: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-header">
+    <h1>🤖 AI Agent Chat System</h1>
+    <p>ระบบผู้ช่วย AI สำหรับจัดการร้านอาหาร</p>
+  </div>
+
+  <div class="demo-section">
+    <h2>✨ ความสามารถของ AI Agent</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">📦</div>
+        <div class="title">บันทึกการซื้อ</div>
+        <div class="desc">พิมพ์คำสั่งซื้อวัตถุดิบเป็นภาษาไทยธรรมชาติ ระบบจะแยกแยะและบันทึกข้อมูลอัตโนมัติ</div>
+      </div>
+      
+      <div class="feature-card">
+        <div class="icon">💰</div>
+        <div class="title">บันทึกค่าใช้จ่าย</div>
+        <div class="desc">บันทึกค่าจ้าง ค่าน้ำ ค่าไฟ และค่าใช้จ่ายอื่นๆ ด้วยคำสั่งภาษาไทย</div>
+      </div>
+      
+      <div class="feature-card">
+        <div class="icon">🍲</div>
+        <div class="title">คำนวณต้นทุนเมนู</div>
+        <div class="desc">คำนวณต้นทุนเมนูพร้อมอัพเดทราคาวัตถุดิบและแนะนำราคาขาย</div>
+      </div>
+      
+      <div class="feature-card">
+        <div class="icon">📊</div>
+        <div class="title">ตรวจสอบสต๊อก</div>
+        <div class="desc">ตรวจสอบระดับสต๊อกวัตถุดิบและรับการแจ้งเตือนเมื่อใกล้หมด</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>📝 ตัวอย่างคำสั่ง</h2>
+    <p style="color: var(--muted); margin-bottom: 20px;">คลิกที่ตัวอย่างเพื่อลองใช้งาน</p>
+    
+    <h3>1. บันทึกการซื้อวัตถุดิบ</h3>
+    
+    <div class="example-command" onclick="tryCommand(this)">
+      <div class="command-text">20251008 ซื้อ กะหล่ำ 2 กิโลกรัม 80 บาท ค่าจ้างพนักงาน 300 บาท ค่าน้ำแข็ง 50 บาท พริก 1 กิโล 90 บาท</div>
+      <div class="command-desc">บันทึกการซื้อวัตถุดิบหลายรายการพร้อมค่าใช้จ่ายในครั้งเดียว</div>
+      <span class="command-badge">บันทึกการซื้อ + ค่าใช้จ่าย</span>
+    </div>
+    
+    <div class="example-command" onclick="tryCommand(this)">
+      <div class="command-text">ซื้อ กุ้งสด 3 กิโล 450 บาท มะนาว 2 กิโล 120 บาท</div>
+      <div class="command-desc">บันทึกการซื้อวัตถุดิบ 2 รายการ (จะใช้วันที่ปัจจุบันโดยอัตโนมัติ)</div>
+      <span class="command-badge">บันทึกการซื้อ</span>
+    </div>
+    
+    <h3>2. บันทึกค่าใช้จ่าย</h3>
+    
+    <div class="example-command" onclick="tryCommand(this)">
+      <div class="command-text">ค่าจ้างพนักงาน 500 บาท ค่าไฟฟ้า 1200 บาท ค่าน้ำประปา 350 บาท</div>
+      <div class="command-desc">บันทึกค่าใช้จ่ายประจำวัน</div>
+      <span class="command-badge">ค่าใช้จ่าย</span>
+    </div>
+    
+    <h3>3. คำนวณต้นทุนเมนู</h3>
+    
+    <div class="example-command" onclick="tryCommand(this)">
+      <div class="command-text">เมนูกุ้งแช่น้ำปลา 7-8 ตัว ราคาพริก เพิ่มเป็น 120 บาท ต่อ กิโลกรัม มะนาว 200 บาท ต่อกิโลกรัม ช่วยคำนวนต้นทุน</div>
+      <div class="command-desc">คำนวณต้นทุนเมนูพร้อมอัพเดทราคาวัตถุดิบบางรายการ</div>
+      <span class="command-badge">คำนวณต้นทุน</span>
+    </div>
+    
+    <div class="example-command" onclick="tryCommand(this)">
+      <div class="command-text">เมนูส้มตำไทย ช่วยคำนวนต้นทุน</div>
+      <div class="command-desc">คำนวณต้นทุนเมนูจากราคาล่าสุดในระบบ</div>
+      <span class="command-badge">คำนวณต้นทุน</span>
+    </div>
+    
+    <h3>4. ตรวจสอบข้อมูล</h3>
+    
+    <div class="example-command" onclick="tryCommand(this)">
+      <div class="command-text">สต๊อกพริกเหลือเท่าไหร่</div>
+      <div class="command-desc">ตรวจสอบระดับสต๊อกวัตถุดิบ</div>
+      <span class="command-badge">ตรวจสอบสต๊อก</span>
+    </div>
+    
+    <div class="example-command" onclick="tryCommand(this)">
+      <div class="command-text">สต๊อกวัตถุดิบทั้งหมด</div>
+      <div class="command-desc">ดูสต๊อกวัตถุดิบทั้งหมดในคลัง</div>
+      <span class="command-badge">ตรวจสอบสต๊อก</span>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>💡 เคล็ดลับการใช้งาน</h2>
+    <ul style="line-height: 2; color: var(--muted);">
+      <li><strong>พิมพ์เป็นภาษาไทยธรรมชาติ:</strong> ไม่ต้องกังวลเรื่องรูปแบบ AI จะเข้าใจและแปลความหมาย</li>
+      <li><strong>ใส่วันที่ได้:</strong> รูปแบบ YYYYMMDD เช่น 20251008 หรือปล่อยว่างให้ใช้วันที่ปัจจุบัน</li>
+      <li><strong>หลายรายการในครั้งเดียว:</strong> สามารถบันทึกหลายรายการในคำสั่งเดียวได้</li>
+      <li><strong>หน่วยที่รองรับ:</strong> กิโล, กิโลกรัม, กก, ตัว, ชิ้น, ลูก, แพ็ค, กล่อง, ถุง, ขวด</li>
+      <li><strong>คำนวณอัตโนมัติ:</strong> ระบบจะคำนวณราคาต่อหน่วยและแปลงหน่วยอัตโนมัติ</li>
+    </ul>
+  </div>
+
+  <div class="demo-section">
+    <h2>🚀 วิธีใช้งาน</h2>
+    <ol style="line-height: 2.5; color: var(--muted); font-size: 16px;">
+      <li>คลิกปุ่ม <strong style="color: var(--brand);">🤖 เปิด AI Chat</strong> ด้านล่างขวา</li>
+      <li>พิมพ์คำสั่งหรือคำถามเป็นภาษาไทย</li>
+      <li>กด Enter หรือคลิกปุ่มส่ง</li>
+      <li>รอให้ AI ประมวลผลและแสดงผลลัพธ์</li>
+      <li>ตรวจสอบข้อมูลที่บันทึกใน Google Sheets</li>
+    </ol>
+  </div>
+
+  <button class="open-chat-btn" onclick="openAIChat()">
+    🤖 เปิด AI Chat
+  </button>
+
+  <!-- AI Agent Scripts -->
+  <script src="js/core/AIAgentChat.js"></script>
+  <script src="js/core/AIAgentChatUI.js"></script>
+  
+  <script>
+    // Function to try example commands
+    function tryCommand(element) {
+      const commandText = element.querySelector('.command-text').textContent;
+      
+      // Open chat if not already open
+      if (window.aiChatUI && !window.aiChatUI.isOpen) {
+        window.aiChatUI.toggleChat();
+      }
+      
+      // Set the command in the input
+      setTimeout(() => {
+        const input = document.getElementById('ai-chat-input');
+        if (input) {
+          input.value = commandText;
+          input.focus();
+          
+          // Auto-resize textarea
+          input.style.height = 'auto';
+          input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        }
+      }, 300);
+    }
+    
+    // Function to open AI chat
+    function openAIChat() {
+      if (window.aiChatUI) {
+        if (!window.aiChatUI.isOpen) {
+          window.aiChatUI.toggleChat();
+        }
+      } else {
+        alert('AI Chat กำลังโหลด... กรุณารอสักครู่');
+      }
+    }
+    
+    // Show welcome toast
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        // Create a simple toast notification
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #0f766e, #14b8a6);
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+          z-index: 9999;
+          font-size: 16px;
+          font-weight: 600;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        `;
+        toast.textContent = '✨ ลองคลิกที่ตัวอย่างคำสั่งเพื่อทดสอบ AI Agent!';
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.style.opacity = '1', 100);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 4000);
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
+

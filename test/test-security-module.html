@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Testing Module - Test Runner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #48bb78;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #38a169;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .results {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-card.total {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .summary-card.passed {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+    }
+
+    .summary-card.failed {
+      background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+      color: white;
+    }
+
+    .summary-card.warnings {
+      background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+      color: white;
+    }
+
+    .summary-value {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .summary-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .test-category {
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .category-header {
+      background: #f7fafc;
+      padding: 15px;
+      font-weight: 600;
+      color: #2d3748;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .category-header:hover {
+      background: #edf2f7;
+    }
+
+    .category-content {
+      padding: 15px;
+      display: none;
+    }
+
+    .category-content.active {
+      display: block;
+    }
+
+    .test-result {
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid;
+    }
+
+    .test-result.passed {
+      background: #f0fff4;
+      border-color: #48bb78;
+    }
+
+    .test-result.failed {
+      background: #fff5f5;
+      border-color: #f56565;
+    }
+
+    .test-result.warning {
+      background: #fffaf0;
+      border-color: #ed8936;
+    }
+
+    .test-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #2d3748;
+    }
+
+    .test-message {
+      font-size: 14px;
+      color: #4a5568;
+      margin-bottom: 5px;
+    }
+
+    .test-details {
+      font-size: 12px;
+      color: #718096;
+      font-family: 'Courier New', monospace;
+      background: #f7fafc;
+      padding: 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+      overflow-x: auto;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-badge.passed {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .status-badge.failed {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .status-badge.warning {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+
+    .requirement-tag {
+      display: inline-block;
+      background: #e6fffa;
+      color: #234e52;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔒 Security Testing Module</h1>
+      <p class="subtitle">Test authentication, authorization, input validation, XSS prevention, CSRF protection, and CORS handling</p>
+    </div>
+
+    <div class="controls">
+      <div class="button-group">
+        <button class="btn-primary" onclick="runAllTests()">Run All Tests</button>
+        <button class="btn-secondary" onclick="runTest('authentication')">Test Authentication</button>
+        <button class="btn-secondary" onclick="runTest('authorization')">Test Authorization</button>
+        <button class="btn-secondary" onclick="runTest('inactiveUsers')">Test Inactive Users</button>
+        <button class="btn-secondary" onclick="runTest('inputValidation')">Test Input Validation</button>
+        <button class="btn-secondary" onclick="runTest('xssPrevention')">Test XSS Prevention</button>
+        <button class="btn-secondary" onclick="runTest('csrfProtection')">Test CSRF Protection</button>
+        <button class="btn-secondary" onclick="runTest('corsHandling')">Test CORS Handling</button>
+        <button class="btn-danger" onclick="clearResults()">Clear Results</button>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <p style="text-align: center; color: #999;">Click "Run All Tests" to start testing</p>
+    </div>
+  </div>
+
+  <script src="test-config.js"></script>
+  <script src="test-utilities.js"></script>
+  <script src="security-testing-module.js"></script>
+  <script>
+    let securityModule;
+    let allResults = {};
+
+    function init() {
+      const config = {
+        apiUrl: TestConfig.environment.apiUrl,
+        timeout: TestConfig.environment.timeout
+      };
+      
+      securityModule = new SecurityTestingModule(config);
+      console.log('Security Testing Module initialized');
+    }
+
+    async function runAllTests() {
+      showLoading();
+      allResults = {};
+      
+      try {
+        // Run all test categories
+        allResults.authentication = await securityModule.testAuthentication();
+        allResults.authorization = await securityModule.testAuthorization();
+        allResults.inactiveUsers = await securityModule.testInactiveUsers();
+        allResults.inputValidation = await securityModule.testInputValidation();
+        allResults.xssPrevention = await securityModule.testXSSPrevention();
+        allResults.csrfProtection = await securityModule.testCSRFProtection();
+        allResults.corsHandling = await securityModule.testCORSHandling();
+        
+        displayResults();
+      } catch (error) {
+        console.error('Error running tests:', error);
+        document.getElementById('results').innerHTML = `
+          <div class="test-result failed">
+            <div class="test-name">Error Running Tests</div>
+            <div class="test-message">${error.message}</div>
+          </div>
+        `;
+      }
+    }
+
+    async function runTest(testName) {
+      showLoading();
+      
+      try {
+        let result;
+        switch(testName) {
+          case 'authentication':
+            result = await securityModule.testAuthentication();
+            break;
+          case 'authorization':
+            result = await securityModule.testAuthorization();
+            break;
+          case 'inactiveUsers':
+            result = await securityModule.testInactiveUsers();
+            break;
+          case 'inputValidation':
+            result = await securityModule.testInputValidation();
+            break;
+          case 'xssPrevention':
+            result = await securityModule.testXSSPrevention();
+            break;
+          case 'csrfProtection':
+            result = await securityModule.testCSRFProtection();
+            break;
+          case 'corsHandling':
+            result = await securityModule.testCORSHandling();
+            break;
+        }
+        
+        allResults[testName] = result;
+        displayResults();
+      } catch (error) {
+        console.error(`Error running ${testName}:`, error);
+        document.getElementById('results').innerHTML = `
+          <div class="test-result failed">
+            <div class="test-name">Error Running ${testName}</div>
+            <div class="test-message">${error.message}</div>
+          </div>
+        `;
+      }
+    }
+
+    function showLoading() {
+      document.getElementById('results').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Running security tests...</p>
+        </div>
+      `;
+    }
+
+    function displayResults() {
+      const resultsDiv = document.getElementById('results');
+      
+      // Calculate totals
+      let totalTests = 0;
+      let totalPassed = 0;
+      let totalFailed = 0;
+      let totalWarnings = 0;
+      
+      Object.values(allResults).forEach(category => {
+        if (category.summary) {
+          totalTests += category.summary.total;
+          totalPassed += category.summary.passed;
+          totalFailed += category.summary.failed;
+        }
+      });
+      
+      // Build HTML
+      let html = `
+        <div class="summary">
+          <div class="summary-card total">
+            <div class="summary-value">${totalTests}</div>
+            <div class="summary-label">Total Tests</div>
+          </div>
+          <div class="summary-card passed">
+            <div class="summary-value">${totalPassed}</div>
+            <div class="summary-label">Passed</div>
+          </div>
+          <div class="summary-card failed">
+            <div class="summary-value">${totalFailed}</div>
+            <div class="summary-label">Failed</div>
+          </div>
+          <div class="summary-card warnings">
+            <div class="summary-value">${totalWarnings}</div>
+            <div class="summary-label">Warnings</div>
+          </div>
+        </div>
+      `;
+      
+      // Add test categories
+      Object.entries(allResults).forEach(([categoryName, categoryData]) => {
+        const categoryTitle = categoryName.replace(/([A-Z])/g, ' $1').trim();
+        const categoryStatus = categoryData.passed ? 'passed' : 'failed';
+        
+        html += `
+          <div class="test-category">
+            <div class="category-header" onclick="toggleCategory('${categoryName}')">
+              <span>${categoryTitle} <span class="status-badge ${categoryStatus}">${categoryStatus.toUpperCase()}</span></span>
+              <span>${categoryData.summary.passed}/${categoryData.summary.total} passed</span>
+            </div>
+            <div class="category-content" id="category-${categoryName}">
+        `;
+        
+        categoryData.results.forEach(test => {
+          const status = test.passed ? 'passed' : 'failed';
+          const requirement = test.requirement ? `<span class="requirement-tag">Req ${test.requirement}</span>` : '';
+          
+          html += `
+            <div class="test-result ${status}">
+              <div class="test-name">${test.testName} ${requirement}</div>
+              <div class="test-message">${test.message || ''}</div>
+          `;
+          
+          if (test.error) {
+            html += `<div class="test-details">Error: ${test.error}</div>`;
+          }
+          
+          if (test.payload) {
+            html += `<div class="test-details">Payload: ${escapeHtml(test.payload)}</div>`;
+          }
+          
+          if (test.sanitized) {
+            html += `<div class="test-details">Sanitized: ${escapeHtml(test.sanitized)}</div>`;
+          }
+          
+          html += `</div>`;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    function toggleCategory(categoryName) {
+      const content = document.getElementById(`category-${categoryName}`);
+      content.classList.toggle('active');
+    }
+
+    function clearResults() {
+      allResults = {};
+      document.getElementById('results').innerHTML = `
+        <p style="text-align: center; color: #999;">Click "Run All Tests" to start testing</p>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

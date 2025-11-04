@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporting Testing Module - Verification</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4ec9b0;
+      border-bottom: 2px solid #4ec9b0;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #252526;
+      border-left: 4px solid #007acc;
+      border-radius: 4px;
+    }
+    .test-title {
+      color: #4ec9b0;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .pass {
+      color: #4ec9b0;
+    }
+    .fail {
+      color: #f48771;
+    }
+    .info {
+      color: #ce9178;
+    }
+    .summary {
+      background: #007acc;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+      text-align: center;
+    }
+    pre {
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Reporting Testing Module - Verification</h1>
+    <div id="results"></div>
+  </div>
+
+  <script src="reporting-testing-module.js"></script>
+  <script>
+    const results = [];
+    
+    function log(message, type = 'info') {
+      results.push({ message, type });
+    }
+    
+    function displayResults() {
+      const container = document.getElementById('results');
+      let html = '';
+      
+      let currentSection = null;
+      results.forEach(result => {
+        if (result.message.startsWith('Test ')) {
+          if (currentSection) {
+            html += '</div>';
+          }
+          html += `<div class="test-section"><div class="test-title">${result.message}</div>`;
+          currentSection = result.message;
+        } else {
+          const className = result.type;
+          const symbol = result.type === 'pass' ? '✓' : result.type === 'fail' ? '✗' : '•';
+          html += `<div class="${className}">${symbol} ${result.message}</div>`;
+        }
+      });
+      
+      if (currentSection) {
+        html += '</div>';
+      }
+      
+      const passCount = results.filter(r => r.type === 'pass').length;
+      const failCount = results.filter(r => r.type === 'fail').length;
+      const totalTests = passCount + failCount;
+      
+      html += `
+        <div class="summary">
+          <h2>Verification Summary</h2>
+          <p>Total Tests: ${totalTests}</p>
+          <p>Passed: ${passCount}</p>
+          <p>Failed: ${failCount}</p>
+          <p>Success Rate: ${totalTests > 0 ? ((passCount / totalTests) * 100).toFixed(1) : 0}%</p>
+          ${failCount === 0 ? '<p style="font-size: 24px; margin-top: 20px;">✓ ALL TESTS PASSED</p>' : ''}
+        </div>
+      `;
+      
+      container.innerHTML = html;
+    }
+    
+    // Run verification tests
+    try {
+      log('Test 1: Module Instantiation');
+      
+      // Test 1: Module instantiation
+      try {
+        const module = new ReportingTestingModule({
+          apiUrl: 'https://example.com/api',
+          timeout: 5000
+        });
+        log('Module instantiated successfully', 'pass');
+        log(`API URL: ${module.config.apiUrl}`, 'info');
+        log(`Timeout: ${module.config.timeout}`, 'info');
+      } catch (error) {
+        log(`Module instantiation failed: ${error.message}`, 'fail');
+      }
+      
+      // Test 2: Required methods
+      log('Test 2: Required Methods');
+      const module = new ReportingTestingModule({ apiUrl: 'https://example.com/api' });
+      
+      const requiredMethods = [
+        'testDailyReports',
+        'testWeeklyReports',
+        'testMonthlyReports',
+        'testPlatformAnalysis',
+        'testMenuPerformance',
+        'testIngredientUsage',
+        'testCostTrends',
+        'testProfitMargins',
+        'testExportFunctionality',
+        'runAllReportingTests',
+        'validateReportStructure',
+        'makeApiCall',
+        'getReportingTestReport'
+      ];
+      
+      let allMethodsPresent = true;
+      requiredMethods.forEach(method => {
+        if (typeof module[method] === 'function') {
+          log(`${method}() exists`, 'pass');
+        } else {
+          log(`${method}() NOT FOUND`, 'fail');
+          allMethodsPresent = false;
+        }
+      });
+      
+      // Test 3: Test results structure
+      log('Test 3: Test Results Structure');
+      const requiredFields = [
+        'timestamp',
+        'totalTests',
+        'passed',
+        'failed',
+        'warnings',
+        'issues',
+        'reportTests'
+      ];
+      
+      let allFieldsPresent = true;
+      requiredFields.forEach(field => {
+        if (field in module.testResults) {
+          log(`${field} field exists (${typeof module.testResults[field]})`, 'pass');
+        } else {
+          log(`${field} field NOT FOUND`, 'fail');
+          allFieldsPresent = false;
+        }
+      });
+      
+      // Test 4: Validate report structure method
+      log('Test 4: Validate Report Structure Method');
+      try {
+        const testData = {
+          date: '2024-01-01',
+          sales: 1000,
+          costs: 600,
+          profit: 400
+        };
+        
+        const validation = module.validateReportStructure(testData, ['date', 'sales', 'costs', 'profit']);
+        
+        if (validation.valid && validation.missing.length === 0) {
+          log('Validation passed for complete data', 'pass');
+        } else {
+          log('Validation failed for complete data', 'fail');
+        }
+        
+        const incompleteData = {
+          date: '2024-01-01',
+          sales: 1000
+        };
+        
+        const validation2 = module.validateReportStructure(incompleteData, ['date', 'sales', 'costs', 'profit']);
+        
+        if (!validation2.valid && validation2.missing.length === 2) {
+          log('Validation correctly identified missing fields', 'pass');
+          log(`Missing fields: ${validation2.missing.join(', ')}`, 'info');
+        } else {
+          log('Validation did not identify missing fields correctly', 'fail');
+        }
+      } catch (error) {
+        log(`validateReportStructure() test failed: ${error.message}`, 'fail');
+      }
+      
+      // Test 5: Test categories
+      log('Test 5: Test Categories');
+      const testCategories = [
+        { name: 'Daily Reports', method: 'testDailyReports', requirement: '10.1' },
+        { name: 'Weekly Reports', method: 'testWeeklyReports', requirement: '10.2' },
+        { name: 'Monthly Reports', method: 'testMonthlyReports', requirement: '10.3' },
+        { name: 'Platform Analysis', method: 'testPlatformAnalysis', requirement: '10.4' },
+        { name: 'Menu Performance', method: 'testMenuPerformance', requirement: '10.5' },
+        { name: 'Ingredient Usage', method: 'testIngredientUsage', requirement: '10.6' },
+        { name: 'Cost Trends', method: 'testCostTrends', requirement: '10.7' },
+        { name: 'Profit Margins', method: 'testProfitMargins', requirement: '10.8' },
+        { name: 'Export Functionality', method: 'testExportFunctionality', requirement: '10.9' }
+      ];
+      
+      testCategories.forEach(category => {
+        if (typeof module[category.method] === 'function') {
+          log(`${category.name} (${category.requirement}) - ${category.method}()`, 'pass');
+        } else {
+          log(`${category.name} (${category.requirement}) - ${category.method}() NOT FOUND`, 'fail');
+        }
+      });
+      
+      // Test 6: Module exports
+      log('Test 6: Module Exports');
+      if (typeof ReportingTestingModule === 'function') {
+        log('Module exports ReportingTestingModule class', 'pass');
+      } else {
+        log('Module does not export ReportingTestingModule class', 'fail');
+      }
+      
+      // Test 7: Configuration validation
+      log('Test 7: Configuration Validation');
+      try {
+        const module1 = new ReportingTestingModule({});
+        log('Module accepts empty config', 'pass');
+        log(`Default API URL: ${module1.config.apiUrl}`, 'info');
+        log(`Default timeout: ${module1.config.timeout}`, 'info');
+        
+        const module2 = new ReportingTestingModule({
+          apiUrl: 'https://custom.com/api',
+          timeout: 15000,
+          customField: 'test'
+        });
+        log('Module accepts custom config', 'pass');
+        log(`Custom API URL: ${module2.config.apiUrl}`, 'info');
+        log(`Custom timeout: ${module2.config.timeout}`, 'info');
+        log(`Custom field preserved: ${module2.config.customField}`, 'info');
+      } catch (error) {
+        log(`Configuration validation failed: ${error.message}`, 'fail');
+      }
+      
+    } catch (error) {
+      log(`Verification error: ${error.message}`, 'fail');
+    }
+    
+    // Display all results
+    displayResults();
+  </script>
+</body>
+</html>

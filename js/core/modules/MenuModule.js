@@ -4,7 +4,8 @@
  */
 
 class MenuModule {
-  constructor() {
+  constructor(dropdownManager = null) {
+    this.dropdownManager = dropdownManager;
     this.initialized = false;
     this.menuCache = new Map();
     this.costCache = new Map();
@@ -13,14 +14,124 @@ class MenuModule {
   /**
    * Initialize menu module
    */
-  init() {
+  async init() {
     if (this.initialized) return;
     
-    this.setupEventListeners();
-    this.loadMenuIngredients();
-    this.initialized = true;
-    
-    console.log('Menu module initialized');
+    try {
+      // Initialize dropdowns if dropdownManager is available
+      if (this.dropdownManager) {
+        await this.initializeDropdowns();
+      }
+      
+      this.setupEventListeners();
+      this.loadMenuIngredients();
+      this.initialized = true;
+      
+      console.log('Menu module initialized');
+    } catch (error) {
+      console.error('Failed to initialize Menu module:', error);
+      this.showInitializationError();
+    }
+  }
+
+  /**
+   * Initialize dropdowns on Menu screen
+   */
+  async initializeDropdowns() {
+    try {
+      const menuSelect = document.getElementById('m_menu');
+      const ingredientSelect = document.getElementById('m_ingredient');
+      
+      if (!menuSelect || !ingredientSelect) {
+        console.warn('Menu or Ingredient dropdown not found on Menu screen');
+        return;
+      }
+      
+      // Populate menu dropdown
+      await this.dropdownManager.populateMenus(menuSelect, {
+        includePlaceholder: true,
+        forceRefresh: false
+      });
+      
+      // Populate ingredient dropdown
+      await this.dropdownManager.populateIngredients(ingredientSelect, {
+        includePlaceholder: true,
+        forceRefresh: false
+      });
+      
+      // Set up menu change handler for loading menu ingredients
+      this.dropdownManager.onMenuChange(menuSelect, (menuData) => {
+        this.handleMenuChangeForIngredients(menuData);
+      });
+      
+      // Set up ingredient change handler for auto-populating unit
+      this.dropdownManager.onIngredientChange(ingredientSelect, (ingredientData) => {
+        this.handleIngredientChangeForUnit(ingredientData);
+      });
+      
+      console.log('Menu screen dropdowns initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Menu screen dropdowns:', error);
+      this.showDropdownError('ไม่สามารถโหลดข้อมูลเมนูและวัตถุดิบได้ กรุณาลองใหม่อีกครั้ง');
+      throw error;
+    }
+  }
+
+  /**
+   * Handle menu selection change - load and display menu ingredients
+   */
+  async handleMenuChangeForIngredients(menuData) {
+    try {
+      // Load menu ingredients using the existing method
+      await this.loadMenuIngredients(menuData.id);
+      
+      console.log(`Menu ingredients loaded for: ${menuData.name}`);
+    } catch (error) {
+      console.error('Error loading menu ingredients:', error);
+      this.showDropdownError('ไม่สามารถโหลดวัตถุดิบในเมนูได้');
+    }
+  }
+
+  /**
+   * Handle ingredient selection change - auto-populate unit field
+   */
+  handleIngredientChangeForUnit(ingredientData) {
+    try {
+      const unitInput = document.getElementById('m_unit');
+      
+      if (!unitInput) {
+        console.warn('Unit input not found');
+        return;
+      }
+      
+      // Auto-populate with stock_unit (used for menu recipes)
+      if (ingredientData.stockUnit) {
+        unitInput.value = ingredientData.stockUnit;
+      }
+      
+      console.log(`Unit auto-populated for ingredient: ${ingredientData.name} (${ingredientData.stockUnit})`);
+    } catch (error) {
+      console.error('Error handling ingredient change:', error);
+      this.showDropdownError('เกิดข้อผิดพลาดในการเลือกวัตถุดิบ');
+    }
+  }
+
+  /**
+   * Show initialization error message
+   */
+  showInitializationError() {
+    if (window.POS && window.POS.critical && window.POS.critical.toast) {
+      window.POS.critical.toast('⚠️ ไม่สามารถเริ่มต้นหน้าจอจัดการเมนูได้ กรุณาลองใหม่อีกครั้ง');
+    }
+  }
+
+  /**
+   * Show dropdown error message
+   */
+  showDropdownError(message) {
+    if (window.POS && window.POS.critical && window.POS.critical.toast) {
+      window.POS.critical.toast(`❌ ${message}`);
+    }
   }
 
   /**
@@ -57,7 +168,8 @@ class MenuModule {
   }
 
   /**
-   * Handle menu selection change
+   * Handle menu selection change (legacy event handler)
+   * Note: This is kept for backward compatibility with existing code
    */
   onMenuChange(event) {
     const menuId = event.target.value;
@@ -65,7 +177,8 @@ class MenuModule {
   }
 
   /**
-   * Handle ingredient selection change
+   * Handle ingredient selection change (legacy event handler)
+   * Note: This is kept for backward compatibility with existing code
    */
   onIngredientChange(event) {
     const ingredientId = event.target.value;

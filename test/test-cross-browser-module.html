@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cross-Browser Testing Module - POS System</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .test-controls {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #48bb78;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #38a169;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(72, 187, 120, 0.4);
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .results-container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-card.passed {
+      background: #c6f6d5;
+      border: 2px solid #48bb78;
+    }
+
+    .summary-card.failed {
+      background: #fed7d7;
+      border: 2px solid #f56565;
+    }
+
+    .summary-card.warning {
+      background: #feebc8;
+      border: 2px solid #ed8936;
+    }
+
+    .summary-card h3 {
+      font-size: 32px;
+      margin-bottom: 5px;
+    }
+
+    .summary-card p {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .test-section {
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .test-section-header {
+      background: #f7fafc;
+      padding: 15px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .test-section-header:hover {
+      background: #edf2f7;
+    }
+
+    .test-section-header h3 {
+      color: #2d3748;
+      font-size: 16px;
+    }
+
+    .test-section-content {
+      padding: 20px;
+      display: none;
+    }
+
+    .test-section.expanded .test-section-content {
+      display: block;
+    }
+
+    .test-item {
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #cbd5e0;
+    }
+
+    .test-item.passed {
+      background: #f0fff4;
+      border-left-color: #48bb78;
+    }
+
+    .test-item.failed {
+      background: #fff5f5;
+      border-left-color: #f56565;
+    }
+
+    .test-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .test-item-title {
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .test-item-status {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-passed {
+      background: #48bb78;
+      color: white;
+    }
+
+    .status-failed {
+      background: #f56565;
+      color: white;
+    }
+
+    .test-item-details {
+      font-size: 14px;
+      color: #4a5568;
+      line-height: 1.6;
+    }
+
+    .test-item-issues {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff5f5;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #c53030;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .requirement-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #e6fffa;
+      color: #234e52;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .expand-icon {
+      transition: transform 0.3s ease;
+    }
+
+    .test-section.expanded .expand-icon {
+      transform: rotate(180deg);
+    }
+
+    @media (max-width: 768px) {
+      .button-group {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .summary-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌐 Cross-Browser Testing Module</h1>
+      <p class="subtitle">Test browser compatibility, device emulation, and responsive layouts</p>
+    </div>
+
+    <div class="test-controls">
+      <div class="button-group">
+        <button class="btn-primary" onclick="runAllTests()">Run All Tests</button>
+        <button class="btn-secondary" onclick="runBrowserTests()">Test Browsers</button>
+        <button class="btn-secondary" onclick="runDeviceTests()">Test Devices</button>
+        <button class="btn-secondary" onclick="runViewportTests()">Test Viewports</button>
+        <button class="btn-secondary" onclick="runPWATests()">Test PWA</button>
+        <button class="btn-secondary" onclick="runTouchTests()">Test Touch</button>
+        <button class="btn-secondary" onclick="runResponsiveTests()">Test Responsive</button>
+        <button class="btn-danger" onclick="clearResults()">Clear Results</button>
+      </div>
+    </div>
+
+    <div id="results" class="results-container" style="display: none;">
+      <h2>Test Results</h2>
+      <div id="summary" class="summary-cards"></div>
+      <div id="details"></div>
+    </div>
+  </div>
+
+  <script src="cross-browser-testing-module.js"></script>
+  <script>
+    let testModule;
+    let isRunning = false;
+
+    // Initialize test module
+    function initTestModule() {
+      testModule = new CrossBrowserTestingModule({
+        timeout: 10000
+      });
+    }
+
+    // Run all tests
+    async function runAllTests() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      disableButtons();
+      showLoading();
+      
+      try {
+        initTestModule();
+        
+        // Run all test categories
+        await testModule.testBrowserCompatibility();
+        await testModule.testDeviceEmulation();
+        await testModule.testViewportSizes();
+        await testModule.testPWAInstallation();
+        await testModule.testTouchInteractions();
+        await testModule.testResponsiveLayout();
+        
+        const report = testModule.getCrossBrowserReport();
+        displayResults(report);
+        
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        isRunning = false;
+        enableButtons();
+      }
+    }
+
+    // Run browser compatibility tests
+    async function runBrowserTests() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      disableButtons();
+      showLoading();
+      
+      try {
+        initTestModule();
+        await testModule.testBrowserCompatibility();
+        const report = testModule.getCrossBrowserReport();
+        displayResults(report);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        isRunning = false;
+        enableButtons();
+      }
+    }
+
+    // Run device emulation tests
+    async function runDeviceTests() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      disableButtons();
+      showLoading();
+      
+      try {
+        initTestModule();
+        await testModule.testDeviceEmulation();
+        const report = testModule.getCrossBrowserReport();
+        displayResults(report);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        isRunning = false;
+        enableButtons();
+      }
+    }
+
+    // Run viewport tests
+    async function runViewportTests() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      disableButtons();
+      showLoading();
+      
+      try {
+        initTestModule();
+        await testModule.testViewportSizes();
+        const report = testModule.getCrossBrowserReport();
+        displayResults(report);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        isRunning = false;
+        enableButtons();
+      }
+    }
+
+    // Run PWA tests
+    async function runPWATests() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      disableButtons();
+      showLoading();
+      
+      try {
+        initTestModule();
+        await testModule.testPWAInstallation();
+        const report = testModule.getCrossBrowserReport();
+        displayResults(report);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        isRunning = false;
+        enableButtons();
+      }
+    }
+
+    // Run touch interaction tests
+    async function runTouchTests() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      disableButtons();
+      showLoading();
+      
+      try {
+        initTestModule();
+        await testModule.testTouchInteractions();
+        const report = testModule.getCrossBrowserReport();
+        displayResults(report);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        isRunning = false;
+        enableButtons();
+      }
+    }
+
+    // Run responsive layout tests
+    async function runResponsiveTests() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      disableButtons();
+      showLoading();
+      
+      try {
+        initTestModule();
+        await testModule.testResponsiveLayout();
+        const report = testModule.getCrossBrowserReport();
+        displayResults(report);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        isRunning = false;
+        enableButtons();
+      }
+    }
+
+    // Display results
+    function displayResults(report) {
+      const resultsDiv = document.getElementById('results');
+      const summaryDiv = document.getElementById('summary');
+      const detailsDiv = document.getElementById('details');
+      
+      resultsDiv.style.display = 'block';
+      
+      // Display summary
+      summaryDiv.innerHTML = `
+        <div class="summary-card ${report.summary.failed === 0 ? 'passed' : 'failed'}">
+          <h3>${report.summary.totalTests}</h3>
+          <p>Total Tests</p>
+        </div>
+        <div class="summary-card passed">
+          <h3>${report.summary.passed}</h3>
+          <p>Passed</p>
+        </div>
+        <div class="summary-card failed">
+          <h3>${report.summary.failed}</h3>
+          <p>Failed</p>
+        </div>
+        <div class="summary-card ${report.passed ? 'passed' : 'failed'}">
+          <h3>${report.successRate}%</h3>
+          <p>Success Rate</p>
+        </div>
+      `;
+      
+      // Display details
+      let detailsHTML = '';
+      
+      // Browser tests
+      if (report.browserTests.length > 0) {
+        detailsHTML += createTestSection('Browser Compatibility Tests', report.browserTests, 'browser');
+      }
+      
+      // Device tests
+      if (report.deviceTests.length > 0) {
+        detailsHTML += createTestSection('Device Emulation Tests', report.deviceTests, 'device');
+      }
+      
+      // Viewport tests
+      if (report.viewportTests.length > 0) {
+        detailsHTML += createTestSection('Viewport Tests', report.viewportTests, 'viewport');
+      }
+      
+      // PWA tests
+      if (report.pwaTests.length > 0) {
+        detailsHTML += createTestSection('PWA Installation Tests', report.pwaTests, 'platform');
+      }
+      
+      // Touch tests
+      if (report.touchTests.length > 0) {
+        detailsHTML += createTestSection('Touch Interaction Tests', report.touchTests, 'test');
+      }
+      
+      // Responsive tests
+      if (report.responsiveTests.length > 0) {
+        detailsHTML += createTestSection('Responsive Layout Tests', report.responsiveTests, 'test');
+      }
+      
+      detailsDiv.innerHTML = detailsHTML;
+      
+      // Add click handlers for expandable sections
+      document.querySelectorAll('.test-section-header').forEach(header => {
+        header.addEventListener('click', function() {
+          this.parentElement.classList.toggle('expanded');
+        });
+      });
+    }
+
+    // Create test section HTML
+    function createTestSection(title, tests, nameKey) {
+      const passed = tests.filter(t => t.passed).length;
+      const total = tests.length;
+      
+      let html = `
+        <div class="test-section">
+          <div class="test-section-header">
+            <h3>${title} (${passed}/${total} passed)</h3>
+            <span class="expand-icon">▼</span>
+          </div>
+          <div class="test-section-content">
+      `;
+      
+      tests.forEach(test => {
+        const name = test[nameKey] || test.name || 'Test';
+        const requirement = test.requirement || '';
+        
+        html += `
+          <div class="test-item ${test.passed ? 'passed' : 'failed'}">
+            <div class="test-item-header">
+              <span class="test-item-title">
+                ${name}
+                ${requirement ? `<span class="requirement-badge">Req: ${requirement}</span>` : ''}
+              </span>
+              <span class="test-item-status ${test.passed ? 'status-passed' : 'status-failed'}">
+                ${test.passed ? '✓ PASSED' : '✗ FAILED'}
+              </span>
+            </div>
+            <div class="test-item-details">
+              ${test.message || (test.passed ? 'Test passed successfully' : 'Test failed')}
+            </div>
+            ${test.issues && test.issues.length > 0 ? `
+              <div class="test-item-issues">
+                <strong>Issues:</strong><br>
+                ${test.issues.map(issue => `• ${issue}`).join('<br>')}
+              </div>
+            ` : ''}
+            ${test.error ? `
+              <div class="test-item-issues">
+                <strong>Error:</strong> ${test.error}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      
+      html += `
+          </div>
+        </div>
+      `;
+      
+      return html;
+    }
+
+    // Show loading state
+    function showLoading() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Running cross-browser tests...</p>
+        </div>
+      `;
+    }
+
+    // Show error
+    function showError(message) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = `
+        <div class="test-item failed">
+          <div class="test-item-header">
+            <span class="test-item-title">Test Error</span>
+            <span class="test-item-status status-failed">✗ ERROR</span>
+          </div>
+          <div class="test-item-details">
+            ${message}
+          </div>
+        </div>
+      `;
+    }
+
+    // Clear results
+    function clearResults() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'none';
+      if (testModule) {
+        testModule.reset();
+      }
+    }
+
+    // Disable buttons
+    function disableButtons() {
+      document.querySelectorAll('button').forEach(btn => {
+        btn.disabled = true;
+      });
+    }
+
+    // Enable buttons
+    function enableButtons() {
+      document.querySelectorAll('button').forEach(btn => {
+        btn.disabled = false;
+      });
+    }
+  </script>
+</body>
+</html>

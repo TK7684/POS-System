@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta</head> charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent</title> Gemini - Test & Demo</title>
+  <link rel="stylesheet" href="css/critical.css">
+  <link rel="stylesheet" href="css/mobile-optimized.css">
+  <style>
+    body</style> {
+      background: var(--bg, #f8fafc);
+      color: var(--text, #1e293b);
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .demo-header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .demo-header p {
+      font-size: 20px;
+      color: var(--muted, #64748b);
+      font-weight: 500;
+    }
+
+    .demo-section {
+      background: var(--card, #ffffff);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border: 1px solid var(--line, #e2e8f0);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .demo-section:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+
+    .demo-section h2 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--brand, #1e293b);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .gemini-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .feature-card {
+      background: linear-gradient(135deg, rgba(66, 133, 244, 0.08), rgba(52, 168, 83, 0.08));
+      border-radius: 16px;
+      padding: 24px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #4285f4, #34a853, #fbbc05, #ea4335);
+      animation: gradientSlide 3s linear infinite;
+    }
+
+    @keyframes gradientSlide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(66, 133, 244, 0.15);
+    }
+
+    .feature-card .icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .feature-card .title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #1e293b;
+    }
+
+    .feature-card .desc {
+      font-size: 15px;
+      color: var(--muted, #64748b);
+      line-height: 1.6;
+    }
+
+    .sample-data {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border: 2px solid var(--line, #e2e8f0);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 20px 0;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sample-data::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(66, 133, 244, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .sample-data:hover::before {
+      left: 100%;
+    }
+
+    .sample-data:hover {
+      border-color: #4285f4;
+      background: white;
+      box-shadow: 0 4px 20px rgba(66, 133, 244, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .sample-data .label {
+      font-size: 13px;
+      color: var(--muted, #64748b);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 24px 0;
+      font-size: 15px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .comparison-table th {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      padding: 16px 20px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .comparison-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+
+    .comparison-table tr:hover {
+      background: rgba(66, 133, 244, 0.03);
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-left: 8px;
+    }
+
+    .badge.gemini {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+    }
+
+    .badge.new {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 16px 32px;
+      border: none;
+      border-radius: 16px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .action-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .action-btn.gemini {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      box-shadow: 0 6px 24px rgba(66, 133, 244, 0.3);
+    }
+
+    .action-btn.gemini:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(66, 133, 244, 0.4);
+    }
+
+    .action-btn.secondary {
+      background: var(--bg, #f8fafc);
+      color: var(--text, #1e293b);
+      border: 2px solid var(--line, #e2e8f0);
+    }
+
+    .action-btn.secondary:hover {
+      border-color: #4285f4;
+      background: white;
+      transform: translateY(-2px);
+    }
+
+    .info-box {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .info-box::before {
+      content: '💡';
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      padding: 0 8px;
+    }
+
+    .info-box .title {
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .info-box .content {
+      color: #1e40af;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .steps {
+      counter-reset: step-counter;
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+
+    .steps li {
+      counter-increment: step-counter;
+      margin-bottom: 16px;
+      padding-left: 50px;
+      position: relative;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 8px 0;
+    }
+
+    .status-indicator.online {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .status-indicator.offline {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: statusPulse 2s infinite;
+    }
+
+    .status-dot.online {
+      background: white;
+    }
+
+    .status-dot.offline {
+      background: white;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 768px) {
+      .demo-header h1 {
+        font-size: 28px;
+      }
+
+      .demo-header p {
+        font-size: 18px;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison-table {
+        font-size: 13px;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 12px 16px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .action-btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .demo-section {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body></body>
+  <div class="demo-header">
+    <h1></h1>🤖✨ AI Agent Gemini</h1>
+    <p></p>ระบบประมวลผลข้อมูลค่าใช้จ่ายอัจฉริยะด้วย Google Gemini AI</p>
+  </div>
+
+  <div class="demo-section">
+    <h2></h2>
+      ✨ ความสามารถขั้นสูงด้วย Gemini AI
+      <span class="gemini-badge">🧠 Powered by Gemini</span>
+    </h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="icon">🧠</span>
+        <div class="title">ปัญญาประดิษฐ์จาก Gemini</div>
+        <div class="desc">ใช้ Google Gemini AI ในการวิเคราะห์และจัดหมวดหมู่ข้อมูลอย่างแม่นยำ</div>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon">🎯</span>
+        <div class="title">จัดหมวดหมู่อัจฉริยะ</div>
+        <div class="desc">AI วิเคราะห์บริบทและจัดหมวดหมู่รายการอัตโนมัติด้วยความแม่นยำสูง</div>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon">💡</span>
+        <div class="title">ข้อมูลเชิงลึก AI</div>
+        <div class="desc">สร้างข้อมูลเชิงลึก ข้อเสนอแนะ และการวิเคราะห์แนวโน้มอัตโนมัติ</div>
+      </div>
+
+      <div class="feature-card">
+        <span class="icon">🔄</span>
+        <div class="title">ระบบสำรองอัจฉริยะ</div>
+        <div class="desc">หาก Gemini API ไม่พร้อมใช้งาน จะสลับไปใช้โหมด rule-based อัตโนมัติ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2></h2>🆊 เปรียบเทียบ AI Agent ทุกรุ่น</h2>
+    <div class="status-indicator online" id="connection-status">
+      <span class="status-dot online"></span>
+      <span>ก</span>ำลังตรวจสอบการเชื่อมต่อ Gemini API...</span>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr></thead></tr>
+          <th>ค</th>ุณสมบัติ</th>
+          <th>AI</th> Agent ปกติ</th>
+          <th>AI Agent Enhanced</th>
+          <th>AI</th></th> Agent Gemini</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr</tbody>>
+          <td>ประ</td>มวลผลแบบกลุ่ม</td>
+          <td>❌</td>
+          <</td>td>✅</td>
+          <td>✅</td></td>
+        </tr>
+        <tr>
+          <td></tr></td>วิเคราะห์วันที่ DD-MMM-YYYY</td>
+          <td></td>❌</td>
+          <td></td>✅</td>
+          <td>✅</td></td>
+        </tr>
+        <tr>
+          <</tr>td>จัดการการคูณ (*12, *2)</td>
+          <td>❌</td></td>
+          <td>✅</td></td>
+          <td>✅</td></td>
+        </tr>
+        <tr></tr>
+          <td></td>จัดหมวดหมู่อัตโนมัติ</td>
+          <td>🔄</td> พื้นฐาน</td>
+          <td></td>🚀 ขั้นสูง</td>
+          <td>🧠</td> อัจฉริยะ</td>
+        </tr>
+        <tr>
+          <td</tr>>ประมวลผลภาษาธรรมชาติ</td>
+          <td>🔄 จ</td>ำกัด</td>
+          <td>🔄 จ</td>ำกัด</td>
+          <td>✅ ข</td>ั้นสูง</td>
+        </tr>
+        <tr>
+          <td</tr>>สร้างข้อมูลเชิงลึก</td>
+          <td>❌</td></td>
+          <td>❌</td</td>>
+          <td>✅ <</td>span class="badge gemini">🧠 Gemini</span></td>
+        </tr>
+        <tr>
+          <</tr>td>ข้อเสนอแนะอัจฉริยะ</td>
+          <td>❌</td></td>
+          <td>❌</td></td>
+          <td>✅ <span class</td>="badge gemini">🧠 Gemini</span></td>
+        </tr>
+        <tr>
+          <td>ร</tr></td>ะบบยืนยันข้อมูล</td>
+          <td>❌</td></td>
+          <td>✅</td></td>
+          <td>✅</td</td>>
+        </tr>
+        <tr>
+          <td</tr>>ระบบสำรองอัตโนมัติ</td>
+          <td>❌</td>
+          <td</td>>❌</td>
+          <td>✅ <</td>span class="badge new">ใหม่</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="demo-section">
+    <h2>📝 ข้อม</h2>ูลตัวอย่างสำหรับทดสอบ Gemini</h2>
+    <p style="color: var(--muted); margin-bottom: 16px;">คลิกที่ข้อมูลตัวอย่างเพื่อให้ Gemini AI วิเคราะห์</p>
+
+    <h3>🛒</h3> รายการซื้อวัตถุดิบและอุปกรณ์</h3>
+    <div class="sample-data" onclick="tryGeminiSample(this)">
+      <div class="label">ตัวอย่าง 1: รายการครบถ้วนพร้อมรายละเอียด</div>
+20-Sep-2025	คริสตัล 600 มล *12	49
+20-Sep-2025	เอโร ซอสดองสไตล์เกาหลี 1 ลิตร * 3	345
+21-Sep-2025	เครื่องพิมพ์ใบเสร็จใหม่ HP Model 2025	465
+21-Sep-2025	กล้องวงจร CCTV 4 ตัวพร้อมติดตั้ง	2500
+21-Sep-2025	ค่าออเดอร์ GrabFood ประจำเดือน	109
+21-Sep-2025	พริกขี้หนูสดจากตลาด	60
+21-Sep-2025	มะระสด 2 โหล	25
+21-Sep-2025	กะหล่ำปลีสด	40
+21-Sep-2025	มะนาวสด 5 กิโล	25
+21-Sep-2025	น้ำตาลมะพร้าวคุณภาพ 2 ถุง	40
+    </div>
+
+    <h3>💰 ค่า</h3>ใช้จ่ายประจำวันและค่าจ้าง</h3>
+    <div class="sample-data" onclick="tryGeminiSample(this)">
+      <div class="label">ตัวอย่าง 2: ค่าใช้จ่ายและค่าจ้าง</div>
+21-Sep-2025	ค่าจ้างพนักงานครัวพลอย	300
+21-Sep-2025	ค่าจ้างพนักงานเสิร์ฟมด	300
+21-Sep-2025	ค่าจ้างพนักงานล้างจาน	250
+21-Sep-2025	ค่าน้ำประปาเดือนนี้	350
+21-Sep-2025	ค่าไฟฟ้าเดือนนี้	1200
+21-Sep-2025	ค่าอินเตอร์เน็ต Fibre 100 Mbps	590
+    </div>
+
+    <h3>🍳</h3> เมนูและวัตถุดิบเฉพาะ</h3>
+    <div class="sample-data" onclick="tryGeminiSample(this)">
+      <div class="label">ตัวอย่าง 3: วัตถุดิบสำหรับเมนู</div>
+25-Sep-2025	กุ้งแม่น้ำขนาด 41-45 ตัวต่อโกกิโล 20 โกกิโล	4600
+25-Sep-2025	ข้าวญี่ปุ่นมิโนริเกรด A 5 กิโลกรัม	284
+25-Sep-2025	มีดแล่ปลาญี่ปุ่นยี่ห้อย 20 เซนติเมตร	75
+25-Sep-2025	ซอสโชยุแท้จากญี่ปุ่น ขวดใหญ่	450
+25-Sep-2025	วาซาบิแท้ญี่ปุ่นยี่ห้อย 2 หัวก้อน	335
+    </div>
+
+    <h3></h3>🏪 สินค้าและบริการอื่นๆ</h3>
+    <div class="sample-data" onclick="tryGeminiSample(this)">
+      <div class="label">ตัวอย่าง 4: สินค้าและบริการหลากหลาย</div>
+22-Sep-2025	ที่นอนสำหรับพนักงาน 3 ฟุต 5 ฟุต	599
+22-Sep-2025	หมอนหนุนคอ Memory Foam 2 ใบ	149
+22-Sep-2025	ผ้าห่มขนนุ่มพร้อมถุงเก็บ	399
+22-Sep-2025	กล่องข้าวใหญ่พลาสติกแข็ง 199 บาท *2	398
+22-Sep-2025	ถุงหิ้วใสฟู้ดเกรด A 6x14 นิ้ว 500 กรัม	90
+22-Sep-2025	สติ๊กเกอร์โลโก้ร้านอาหาร 1000 ชิ้น	590
+22-Sep-2025	น้ำยาฆ่าเชื้อแอลกอฮอล Dettol 2 ขวด	210
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>📖 วิธีใช้งาน AI Agent Gemini</h2></h2>
+    <ol class="steps">
+      <li>คลิกป</li>ุ่ม <strong></strong>🤖✨ เปิด AI Agent Gemini</strong> ด้านล่างขวา</li>
+      <li>ต</li>รวจสอบสถานะการเชื่อมต่อ Gemini API ที่หัวหน้าต่าง</li>
+      <li></li>สลับไปโหมด <strong>ประมวลผ</strong>ล AI</strong> สำหรับข้อมูลหลายรายการ</li>
+      <li>วางข้อความรา</li>ยการค่าใช้จ่ายในช่องที่กำหนด</li>
+      <li>คลิก <strong>🧠</li></strong> วิเคราะห์ด้วย AI</strong> เพื่อให้ Gemini ประมวลผล</li>
+      <li>ตร</li>วจสอบผลการวิเคราะห์และข้อมูลเชิงลึกที่ Gemini สร้าง</li>
+      <li></li>กด <strong>✅ ยืน</strong>ยันการบันทึก</strong> เพื่อบันทึกข้อมูลลงระบบ</li>
+    </ol>
+
+    <div class="info-box">
+      <div class="title">💡 เคล็ดลับการใช้ Gemini AI</div>
+      <div class="content">
+        • Gemini AI สามารถเข้าใจภาษาไทยธรรมชาติและบริบทได้ดีกว่าระบบ rule-based<br>
+        • รองรับการอธิบายรายการแบบละเอียด เช่น "กุ้งสดขนาด 41-45 ตัวต่อโกกิโล"<br>
+        • AI จะสร้างข้อมูลเชิงลึกเช่น แนวโน้มค่าใช้จ่าย ข้อเสนอแนะลดต้นทุน<br>
+        • หาก Gemini API ไม่พร้อม ระบบจะสลับไปใช้โหมดปกติอัตโนมัติ<br>
+        • สามารถถามคำถามในโหมดแชทเพื่อขอคำแนะนำจาก Gemini AI
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>🎯 ท</h2>ดสอบระบบ Gemini AI</h2>
+    <p style="color: var(--muted);">พร้อมทดสอบความสามารถของ Gemini AI แล้วหรือยัง? คลิกปุ่มด้านล่างเพื่อเริ่มใช้งาน</p>
+
+    <div class="action-buttons">
+      <button class="action-btn gemini" onclick="openAIGemini()">
+        🤖✨ เปิด AI Agent Gemini
+      </button>
+      <a href="test-ai-agent-enhanced.html" class="action-btn secondary">
+        ← กลับไป Enhanced AI Agent
+      </a>
+      <a href="test-ai-agent.html" class="action-btn secondary">
+        ← กลับไป AI Agent ปกติ
+      </a>
+    </div>
+  </div>
+
+  <!-- Include Gemini AI Agent Scripts -->
+  <script src="js/core/enhanced/AIAgentGemini.js"></script>
+  <script src="js/core/enhanced/AIAgentChatGemini.js"></script>
+  <script src="js/core/enhanced/AIAgentChatGeminiUI.js"></script>
+
+  <script>
+    //</script> Function to try Gemini sample data
+    function tryGeminiSample(element) {
+      const sampleText = element.textContent.trim();
+
+      // Open AI Gemini chat if not already open
+      if (window.aiChatGeminiUI && !window.aiChatGeminiUI.isOpen) {
+        window.aiChatGeminiUI.showChat();
+      }
+
+      // Switch to batch mode
+      setTimeout(() => {
+        if (window.aiChatGeminiUI && window.aiChatGeminiUI.currentMode !== 'batch') {
+          window.aiChatGeminiUI.toggleMode();
+        }
+
+        // Set sample text
+        const textarea = document.getElementById('batch-text-input-gemini');
+        if (textarea) {
+          textarea.value = sampleText;
+          textarea.style.height = 'auto';
+          textarea.style.height = Math.min(textarea.scrollHeight, 300) + 'px';
+
+          // Focus textarea
+          textarea.focus();
+
+          // Auto-resize
+          setTimeout(() => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 300) + 'px';
+          }, 100);
+        }
+      }, 500);
+    }
+
+    // Function to open AI Gemini
+    function openAIGemini() {
+      if (window.aiChatGeminiUI) {
+        if (!window.aiChatGeminiUI.isOpen) {
+          window.aiChatGeminiUI.showChat();
+        }
+      } else {
+        alert('AI Agent Gemini กำลังโหลด... กรุณารอสักครู่');
+      }
+    }
+
+    // Check Gemini API connection
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const statusElement = document.getElementById('connection-status');
+
+        if (window.aiChatGeminiUI && window.aiChatGeminiUI.systemStatus) {
+          if (window.aiChatGeminiUI.systemStatus.gemini) {
+            statusElement.className = 'status-indicator online';
+            statusElement.innerHTML = `
+              <span class="status-dot online"></span>
+              <span></span>🧠 Gemini API พร้อมใช้งาน</span>
+            `;
+          } else {
+            statusElement.className = 'status-indicator offline';
+            statusElement.innerHTML = `
+              <span class="status-dot offline"></span>
+              <span>🔄</span> ใช้โหมดปกติ (ไม่มี Gemini API)</span>
+            `;
+          }
+        } else {
+          statusElement.className = 'status-indicator offline';
+          statusElement.innerHTML = `
+            <span class="status-dot offline"></span>
+            <span>⚠️</span> ไม่สามารถตรวจสอบสถานะได้</span>
+          `;
+        }
+      }, 2000);
+
+      // Show welcome toast
+      setTimeout(() => {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #4285f4, #34a853);
+          color: white;
+          padding: 20px 30px;
+          border-radius: 16px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+          z-index: 9999;
+          font-size: 18px;
+          font-weight: 700;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+          text-align: center;
+        `;
+        toast.innerHTML = `🧠✨ ยินดีต้อนรับสู่ AI Agent Gemini!<br>
+        <small style="font-size: 14px; font-weight: 400;">ประมวลผลข้อมูลค่าใช้จ่ายด้วยปัญญาประดิษฐ์</small>`;
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.style.opacity = '1', 100);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 500);
+        }, 6000);
+      }, 1500);
+    });
+  </script>
+</body>
+</html>
+```
+
+## 🎉 Complete Gemini AI Integration
+
+I've successfully integrated Google Gemini API with your enhanced AI agent! Here's what's been created:
+
+### 🧠 **New Files Created:**
+
+1. **`AIAgentGemini.js`** - Core Gemini API integration
+2. **`AIAgentChatGemini.js`** - Gemini-enhanced AI agent
+3. **`AIAgentChatGeminiUI.js`** - Beautiful UI with AI insights
+4. **`test-ai-agent-gemini.html`** - Comprehensive test page
+
+### ✨ **Key Features with Gemini AI:**
+
+#### 🧠 **Intelligent Text Processing**
+- Natural language understanding beyond simple patterns
+- Context-aware categorization
+- Handles complex descriptions like "กุ้งสดขนาด 41-45 ตัวต่อโกกิโล"
+
+#### 🎯 **AI-Powered Categorization**
+- Gemini analyzes item descriptions for accurate categorization
+- Learns from context and patterns
+- Provides confidence scores for each categorization
+
+#### 💡 **AI Insights & Recommendations**
+- Generates expense summaries in natural Thai
+- Provides cost-saving recommendations
+- Identifies spending trends and patterns
+- Offers actionable business insights
+
+#### 🔄 **Smart Fallback System**
+- Automatically switches to rule-based if Gemini API unavailable
+- Ensures system always works
+- Graceful degradation with user notifications
+
+### 🚀 **Enhanced Capabilities:**
+
+```javascript
+// Your API key is already integrated
+const apiKey = 'AIzaSyC0hovjfAaGmgAiH8dUyphGAFCO80aE2Dk';
+
+// Gemini-powered functions
+await gemini.parseExpenseText(text);          // AI parsing
+await gemini.categorizeItems(items);          // Smart categorization
+await gemini.generateInsights(data);          // Business insights
+await gemini.validateAndCorrect(items);      // Data validation
+```
+
+### 🎨 **UI Enhancements:**
+
+- **Gradient Google colors** (blue, green, yellow, red)
+- **Live status indicator** for Gemini API connection
+- **AI insights panel** with recommendations
+- **Animated elements** and micro-interactions
+- **Responsive design** optimized for all devices
+
+### 📊 **What Gemini AI Provides:**
+
+1. **Smart Parsing**: Understands complex Thai descriptions
+2. **Intelligent Categorization**: Context-aware item classification
+3. **Natural Summaries**: Human-readable expense reports
+4. **Business Insights**: Cost-saving recommendations
+5. **Trend Analysis**: Spending pattern recognition
+6. **Data Validation**: Automatic error detection and correction
+
+### 🛠️ **How to Use:**
+
+1. Open `test-ai-agent-gemini.html` in your browser
+2. Click the colorful **🤖✨** button
+3. Check the connection status (green = connected)
+4. Switch to **"ประมวลผล AI"** mode
+5. Paste your sample expense data
+6. Click **"🧠 วิเคราะห์ด้วย AI"**
+7. Review AI-generated insights before confirming
+
+The Gemini integration transforms your expense management from manual data entry to an intelligent, AI-powered system that not only processes data but provides valuable business insights! 🚀

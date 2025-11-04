@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropdown Fix Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        select, input, button {
+            padding: 8px 12px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Dropdown Fix Test</h1>
+    <p>This page tests if the dropdown functionality has been fixed across all tabs.</p>
+
+    <div class="test-section">
+        <h2>📋 Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Manual Tests</h2>
+        
+        <h3>Purchase Tab Dropdowns</h3>
+        <label>Ingredient Dropdown:</label>
+        <select id="test-p-ing">
+            <option value="">Loading...</option>
+        </select>
+        
+        <label>Unit Dropdown:</label>
+        <select id="test-p-unit">
+            <option value="">Loading...</option>
+        </select>
+        
+        <h3>Sale Tab Dropdowns</h3>
+        <label>Menu Dropdown:</label>
+        <select id="test-s-menu">
+            <option value="">Loading...</option>
+        </select>
+        
+        <label>Platform Dropdown:</label>
+        <select id="test-s-platform">
+            <option value="">Loading...</option>
+        </select>
+        
+        <h3>Menu Tab Dropdowns</h3>
+        <label>Menu Dropdown:</label>
+        <select id="test-m-menu">
+            <option value="">Loading...</option>
+        </select>
+        
+        <label>Ingredient Dropdown:</label>
+        <select id="test-m-ingredient">
+            <option value="">Loading...</option>
+        </select>
+        
+        <br><br>
+        <button onclick="runTests()">🚀 Run Dropdown Tests</button>
+        <button onclick="testModuleLoading()">📦 Test Module Loading</button>
+        <button onclick="testDropdownManager()">⚙️ Test DropdownManager</button>
+    </div>
+
+    <!-- Load the same scripts as the main app -->
+    <script src="CacheManager.js"></script>
+    <script src="js/critical.js"></script>
+
+    <script>
+        let testResults = [];
+
+        function addTestResult(test, status, message) {
+            testResults.push({ test, status, message });
+            updateTestDisplay();
+        }
+
+        function updateTestDisplay() {
+            const container = document.getElementById('test-results');
+            container.innerHTML = testResults.map(result => 
+                `<div class="test-result ${result.status}">
+                    <strong>${result.test}:</strong> ${result.message}
+                </div>`
+            ).join('');
+        }
+
+        async function runTests() {
+            testResults = [];
+            addTestResult('Starting Tests', 'info', 'Beginning dropdown functionality tests...');
+
+            // Test 1: Check if CacheManager is loaded
+            if (typeof CacheManager !== 'undefined') {
+                addTestResult('CacheManager', 'success', 'CacheManager class is available');
+            } else {
+                addTestResult('CacheManager', 'error', 'CacheManager class is NOT available');
+            }
+
+            // Test 2: Check if critical.js loaded
+            if (typeof window.routeTo === 'function') {
+                addTestResult('Critical.js', 'success', 'Critical.js loaded successfully');
+            } else {
+                addTestResult('Critical.js', 'error', 'Critical.js did NOT load properly');
+            }
+
+            // Test 3: Wait for module loader initialization
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            if (window.moduleLoader) {
+                addTestResult('ModuleLoader', 'success', 'ModuleLoader initialized');
+            } else {
+                addTestResult('ModuleLoader', 'warning', 'ModuleLoader not yet initialized');
+            }
+
+            // Test 4: Check DropdownManager
+            if (window.dropdownManager) {
+                addTestResult('DropdownManager', 'success', 'DropdownManager initialized');
+            } else {
+                addTestResult('DropdownManager', 'warning', 'DropdownManager not yet initialized');
+            }
+
+            // Test 5: Try to populate test dropdowns
+            await testDropdownPopulation();
+        }
+
+        async function testDropdownPopulation() {
+            try {
+                // Wait a bit more for initialization
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                if (window.dropdownManager) {
+                    // Test ingredient dropdown
+                    const ingredientSelect = document.getElementById('test-p-ing');
+                    try {
+                        await window.dropdownManager.populateIngredients(ingredientSelect);
+                        addTestResult('Ingredient Dropdown', 'success', 'Successfully populated ingredient dropdown');
+                    } catch (error) {
+                        addTestResult('Ingredient Dropdown', 'error', `Failed to populate: ${error.message}`);
+                    }
+
+                    // Test menu dropdown
+                    const menuSelect = document.getElementById('test-s-menu');
+                    try {
+                        await window.dropdownManager.populateMenus(menuSelect);
+                        addTestResult('Menu Dropdown', 'success', 'Successfully populated menu dropdown');
+                    } catch (error) {
+                        addTestResult('Menu Dropdown', 'error', `Failed to populate: ${error.message}`);
+                    }
+
+                    // Test platform dropdown
+                    const platformSelect = document.getElementById('test-s-platform');
+                    try {
+                        await window.dropdownManager.populatePlatforms(platformSelect);
+                        addTestResult('Platform Dropdown', 'success', 'Successfully populated platform dropdown');
+                    } catch (error) {
+                        addTestResult('Platform Dropdown', 'error', `Failed to populate: ${error.message}`);
+                    }
+                } else {
+                    addTestResult('Dropdown Population', 'error', 'DropdownManager not available for testing');
+                }
+            } catch (error) {
+                addTestResult('Dropdown Population', 'error', `Test failed: ${error.message}`);
+            }
+        }
+
+        async function testModuleLoading() {
+            addTestResult('Module Loading Test', 'info', 'Testing module loading...');
+            
+            try {
+                // Test loading purchase module
+                if (window.moduleLoader) {
+                    const PurchaseModule = await window.moduleLoader.loadModule('purchase');
+                    if (PurchaseModule) {
+                        addTestResult('Purchase Module', 'success', 'Purchase module loaded successfully');
+                    } else {
+                        addTestResult('Purchase Module', 'error', 'Purchase module failed to load');
+                    }
+                } else {
+                    addTestResult('Module Loading Test', 'error', 'ModuleLoader not available');
+                }
+            } catch (error) {
+                addTestResult('Module Loading Test', 'error', `Module loading failed: ${error.message}`);
+            }
+        }
+
+        async function testDropdownManager() {
+            addTestResult('DropdownManager Test', 'info', 'Testing DropdownManager functionality...');
+            
+            if (window.dropdownManager) {
+                try {
+                    // Test getting ingredients
+                    const ingredients = await window.dropdownManager.getIngredients();
+                    addTestResult('Get Ingredients', 'success', `Retrieved ${ingredients.length} ingredients`);
+                } catch (error) {
+                    addTestResult('Get Ingredients', 'error', `Failed: ${error.message}`);
+                }
+
+                try {
+                    // Test getting menus
+                    const menus = await window.dropdownManager.getMenus();
+                    addTestResult('Get Menus', 'success', `Retrieved ${menus.length} menus`);
+                } catch (error) {
+                    addTestResult('Get Menus', 'error', `Failed: ${error.message}`);
+                }
+            } else {
+                addTestResult('DropdownManager Test', 'error', 'DropdownManager not available');
+            }
+        }
+
+        // Auto-run tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 1000);
+        });
+
+        // Monitor for initialization events
+        window.addEventListener('moduleLoadingStateChange', (event) => {
+            addTestResult('Module Event', 'info', `${event.detail.moduleName} ${event.detail.isLoading ? 'loading' : 'loaded'}`);
+        });
+    </script>
+</body>
+</html>

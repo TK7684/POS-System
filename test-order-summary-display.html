@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Test: Order Summary & Totals Display</title>
+    
+    <!-- Load critical CSS -->
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/mobile-optimized.css">
+    <link rel="stylesheet" href="css/components.css">
+    
+    <style>
+        body {
+            padding: 20px;
+            background: var(--bg);
+        }
+        
+        .test-section {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .test-section h2 {
+            margin: 0 0 16px 0;
+            font-size: var(--fs-lg);
+            color: var(--brand);
+        }
+        
+        .test-info {
+            background: #eff6ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: var(--fs-sm);
+            border: 1px solid #dbeafe;
+        }
+        
+        .test-info h3 {
+            margin: 0 0 8px 0;
+            font-size: var(--fs-base);
+            color: #1e40af;
+        }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0;
+        }
+        
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+        
+        .pass {
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .fail {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        
+        .measurement {
+            display: inline-block;
+            background: #f0fdf4;
+            color: #166534;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .test-result {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .test-result.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .test-result.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header style="margin-bottom: 24px;">
+            <h1 style="margin: 0 0 8px 0; font-size: var(--fs-2xl); color: var(--brand);">
+                Task 10: Order Summary & Totals Display Test
+            </h1>
+            <p style="margin: 0; color: var(--muted); font-size: var(--fs-sm);">
+                Testing mobile-optimized order summary, totals, line items, and submit buttons
+            </p>
+        </header>
+
+        <!-- Test Info -->
+        <div class="test-info">
+            <h3>📋 Test Requirements</h3>
+            <ul style="margin: 8px 0 0 20px; font-size: var(--fs-sm);">
+                <li>Order total font size: --fs-xl (24-28px) ✓</li>
+                <li>Line item text: at least --fs-sm (16-18px) ✓</li>
+                <li>16px vertical spacing between order items ✓</li>
+                <li>Submit/checkout button: 56px height ✓</li>
+            </ul>
+        </div>
+
+        <!-- Test 1: Order Total Display -->
+        <div class="test-section">
+            <h2>Test 1: Order Total Display (24-28px)</h2>
+            <div class="order-summary">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span>฿350.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (7%):</span>
+                    <span>฿24.50</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span class="order-total">฿374.50</span>
+                </div>
+            </div>
+            <div id="test1-result" class="test-result"></div>
+        </div>
+
+        <!-- Test 2: Line Items with Proper Spacing -->
+        <div class="test-section">
+            <h2>Test 2: Line Items (16-18px) with 16px Spacing</h2>
+            <div class="order-items">
+                <div class="line-item">
+                    <span>กุ้งแซ่บ x 2</span>
+                    <span class="price">฿240.00</span>
+                </div>
+                <div class="line-item">
+                    <span>ส้มตำ x 1</span>
+                    <span class="price">฿60.00</span>
+                </div>
+                <div class="line-item">
+                    <span>ข้าวเหนียว x 2</span>
+                    <span class="price">฿50.00</span>
+                </div>
+            </div>
+            <div id="test2-result" class="test-result"></div>
+        </div>
+
+        <!-- Test 3: Menu Ingredients Display -->
+        <div class="test-section">
+            <h2>Test 3: Menu Ingredients with Total</h2>
+            <div id="menu-ingredients-content">
+                <div class="ingredient-item item">
+                    <span>กุ้ง - 0.2 kg</span>
+                    <span>฿80.00</span>
+                </div>
+                <div class="ingredient-item item">
+                    <span>มะละกอ - 0.15 kg</span>
+                    <span>฿15.00</span>
+                </div>
+                <div class="ingredient-item item">
+                    <span>พริก - 0.05 kg</span>
+                    <span>฿5.00</span>
+                </div>
+                <div class="total">
+                    <strong>Total Cost:</strong> ฿100.00
+                </div>
+            </div>
+            <div id="test3-result" class="test-result"></div>
+        </div>
+
+        <!-- Test 4: Report Items Display -->
+        <div class="test-section">
+            <h2>Test 4: Report Items with Revenue Total</h2>
+            <div id="report-content">
+                <div class="report-item item">
+                    <span>กุ้งแซ่บ - 15 orders</span>
+                    <span>฿1,800.00</span>
+                </div>
+                <div class="report-item item">
+                    <span>ส้มตำ - 12 orders</span>
+                    <span>฿720.00</span>
+                </div>
+                <div class="report-item item">
+                    <span>ลาบหมู - 8 orders</span>
+                    <span>฿640.00</span>
+                </div>
+                <div class="total revenue-total">
+                    <strong>Total Revenue:</strong> ฿3,160.00
+                </div>
+            </div>
+            <div id="test4-result" class="test-result"></div>
+        </div>
+
+        <!-- Test 5: Submit/Checkout Buttons -->
+        <div class="test-section">
+            <h2>Test 5: Submit/Checkout Buttons (56px height)</h2>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <button class="btn brand submit">บันทึกการขาย (Submit)</button>
+                <button class="btn brand checkout">ชำระเงิน (Checkout)</button>
+                <button class="btn brand" onclick="onAddSale()">บันทึกการขาย (onAddSale)</button>
+                <button class="btn brand" onclick="generateReport()">สร้างรายงาน (generateReport)</button>
+            </div>
+            <div id="test5-result" class="test-result"></div>
+        </div>
+
+        <!-- Test 6: Stock Items Display -->
+        <div class="test-section">
+            <h2>Test 6: Low Stock Items</h2>
+            <div id="low-stock-content">
+                <div class="stock-item item">
+                    <span>กุ้ง - 0.5 kg remaining</span>
+                    <span class="badge" style="background: #fef2f2; color: #dc2626;">Low</span>
+                </div>
+                <div class="stock-item item">
+                    <span>มะละกอ - 1.2 kg remaining</span>
+                    <span class="badge" style="background: #fef2f2; color: #dc2626;">Low</span>
+                </div>
+            </div>
+            <div id="test6-result" class="test-result"></div>
+        </div>
+
+        <!-- Measurement Results -->
+        <div class="test-section">
+            <h2>📏 Measurement Results</h2>
+            <ul class="checklist" id="measurements"></ul>
+            <button class="btn brand" onclick="runTests()" style="margin-top: 16px;">Run All Tests</button>
+        </div>
+    </div>
+
+    <script>
+        function measureElement(selector, expectedMin, expectedMax, description) {
+            const element = document.querySelector(selector);
+            if (!element) {
+                return { pass: false, message: `Element not found: ${selector}` };
+            }
+            
+            const styles = window.getComputedStyle(element);
+            const fontSize = parseFloat(styles.fontSize);
+            const height = element.offsetHeight;
+            const marginTop = parseFloat(styles.marginTop);
+            const paddingTop = parseFloat(styles.paddingTop);
+            
+            let pass = false;
+            let message = '';
+            
+            if (description.includes('font')) {
+                pass = fontSize >= expectedMin && fontSize <= expectedMax;
+                message = `${description}: ${fontSize.toFixed(1)}px (expected ${expectedMin}-${expectedMax}px)`;
+            } else if (description.includes('height')) {
+                pass = height >= expectedMin;
+                message = `${description}: ${height}px (expected min ${expectedMin}px)`;
+            } else if (description.includes('spacing')) {
+                pass = marginTop >= expectedMin || paddingTop >= expectedMin;
+                message = `${description}: margin-top ${marginTop}px, padding-top ${paddingTop}px (expected ${expectedMin}px)`;
+            }
+            
+            return { pass, message, value: fontSize || height || marginTop };
+        }
+
+        function runTests() {
+            const tests = [
+                // Test 1: Order Total
+                { selector: '.order-total', min: 24, max: 28, desc: 'Order total font size', testId: 'test1' },
+                
+                // Test 2: Line Items
+                { selector: '.line-item', min: 16, max: 18, desc: 'Line item font size', testId: 'test2' },
+                { selector: '.line-item + .line-item', min: 16, max: 20, desc: 'Line item spacing', testId: 'test2' },
+                
+                // Test 3: Menu Ingredients
+                { selector: '#menu-ingredients-content .item', min: 16, max: 18, desc: 'Menu item font size', testId: 'test3' },
+                { selector: '#menu-ingredients-content .total', min: 24, max: 28, desc: 'Menu total font size', testId: 'test3' },
+                
+                // Test 4: Report Items
+                { selector: '#report-content .item', min: 16, max: 18, desc: 'Report item font size', testId: 'test4' },
+                { selector: '#report-content .total', min: 24, max: 28, desc: 'Report total font size', testId: 'test4' },
+                
+                // Test 5: Submit Buttons
+                { selector: '.btn.submit', min: 56, max: 100, desc: 'Submit button height', testId: 'test5' },
+                { selector: '.btn.checkout', min: 56, max: 100, desc: 'Checkout button height', testId: 'test5' },
+                
+                // Test 6: Stock Items
+                { selector: '#low-stock-content .item', min: 16, max: 18, desc: 'Stock item font size', testId: 'test6' }
+            ];
+
+            const measurements = document.getElementById('measurements');
+            measurements.innerHTML = '';
+            
+            const results = {};
+            
+            tests.forEach(test => {
+                const result = measureElement(test.selector, test.min, test.max, test.desc);
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="${result.pass ? 'pass' : 'fail'}">${result.pass ? '✓' : '✗'}</span>
+                    ${result.message}
+                    <span class="measurement">${result.value.toFixed(1)}px</span>
+                `;
+                measurements.appendChild(li);
+                
+                if (!results[test.testId]) {
+                    results[test.testId] = { passed: 0, failed: 0 };
+                }
+                
+                if (result.pass) {
+                    results[test.testId].passed++;
+                } else {
+                    results[test.testId].failed++;
+                }
+            });
+            
+            // Update individual test results
+            Object.keys(results).forEach(testId => {
+                const resultDiv = document.getElementById(`${testId}-result`);
+                const { passed, failed } = results[testId];
+                const total = passed + failed;
+                
+                if (failed === 0) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.textContent = `✓ All checks passed (${passed}/${total})`;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = `✗ ${failed} check(s) failed (${passed}/${total} passed)`;
+                }
+            });
+        }
+
+        // Run tests on load
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>

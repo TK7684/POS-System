@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sheet Verification Module Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9f9f9;
+      border-left: 4px solid #2196F3;
+    }
+    .test-result {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .passed {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .failed {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .summary-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .summary-card h3 {
+      margin: 0 0 10px 0;
+      color: #666;
+      font-size: 14px;
+    }
+    .summary-card .value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sheet Verification Module Test</h1>
+    
+    <div class="test-section">
+      <h2>Test Controls</h2>
+      <button onclick="runAllTests()">Run All Tests</button>
+      <button onclick="testVerifyAllSheets()">Test Verify All Sheets</button>
+      <button onclick="testVerifySheetStructure()">Test Sheet Structure</button>
+      <button onclick="testVerifyColumnMappings()">Test Column Mappings</button>
+      <button onclick="testVerifyDataTypes()">Test Data Types</button>
+      <button onclick="testGenerateSheetMap()">Test Generate Sheet Map</button>
+      <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <script src="sheet-verification-module.js"></script>
+  <script>
+    let module;
+
+    function init() {
+      module = new SheetVerificationModule({
+        apiUrl: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
+        timeout: 10000
+      });
+      console.log('Sheet Verification Module initialized');
+    }
+
+    function displayResult(title, result, status = 'passed') {
+      const resultsDiv = document.getElementById('results');
+      const resultDiv = document.createElement('div');
+      resultDiv.className = 'test-section';
+      
+      resultDiv.innerHTML = `
+        <h3>${title}</h3>
+        <div class="test-result ${status}">
+          <strong>Status:</strong> ${status.toUpperCase()}
+        </div>
+        <pre>${JSON.stringify(result, null, 2)}</pre>
+      `;
+      
+      resultsDiv.appendChild(resultDiv);
+    }
+
+    function displaySummary(summary) {
+      const resultsDiv = document.getElementById('results');
+      const summaryDiv = document.createElement('div');
+      summaryDiv.className = 'test-section';
+      
+      summaryDiv.innerHTML = `
+        <h3>Test Summary</h3>
+        <div class="summary">
+          <div class="summary-card">
+            <h3>Total Sheets</h3>
+            <div class="value">${summary.totalSheets}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Sheets Found</h3>
+            <div class="value" style="color: #4CAF50">${summary.sheetsFound}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Sheets Missing</h3>
+            <div class="value" style="color: ${summary.sheetsMissing > 0 ? '#f44336' : '#4CAF50'}">${summary.sheetsMissing}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Total Columns</h3>
+            <div class="value">${summary.totalColumns}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Columns Matched</h3>
+            <div class="value" style="color: #4CAF50">${summary.columnsMatched}</div>
+          </div>
+          <div class="summary-card">
+            <h3>Columns Missing</h3>
+            <div class="value" style="color: ${summary.columnsMissing > 0 ? '#f44336' : '#4CAF50'}">${summary.columnsMissing}</div>
+          </div>
+        </div>
+      `;
+      
+      resultsDiv.insertBefore(summaryDiv, resultsDiv.firstChild);
+    }
+
+    async function testVerifyAllSheets() {
+      console.log('Testing verifyAllSheets...');
+      try {
+        const result = await module.verifyAllSheets();
+        const status = result.passed ? 'passed' : 'failed';
+        displayResult('Verify All Sheets', result, status);
+        displaySummary(result.summary);
+      } catch (error) {
+        displayResult('Verify All Sheets', { error: error.message }, 'failed');
+      }
+    }
+
+    async function testVerifySheetStructure() {
+      console.log('Testing verifySheetStructure...');
+      try {
+        const result = await module.verifySheetStructure('Ingredients');
+        const status = result.status === 'passed' ? 'passed' : 
+                      result.status === 'warning' ? 'warning' : 'failed';
+        displayResult('Verify Sheet Structure (Ingredients)', result, status);
+      } catch (error) {
+        displayResult('Verify Sheet Structure', { error: error.message }, 'failed');
+      }
+    }
+
+    async function testVerifyColumnMappings() {
+      console.log('Testing verifyColumnMappings...');
+      try {
+        const actualColumns = ['id', 'name', 'stock_unit', 'unit_buy', 'buy_to_stock_ratio', 'min_stock'];
+        const result = await module.verifyColumnMappings('Ingredients', actualColumns);
+        const status = result.issues.length === 0 ? 'passed' : 'failed';
+        displayResult('Verify Column Mappings (Ingredients)', result, status);
+      } catch (error) {
+        displayResult('Verify Column Mappings', { error: error.message }, 'failed');
+      }
+    }
+
+    async function testVerifyDataTypes() {
+      console.log('Testing verifyDataTypes...');
+      try {
+        const sampleData = [
+          { id: 'ING0001', name: 'กุ้ง', stock_unit: 'กิโลกรัม', unit_buy: 'กิโลกรัม', buy_to_stock_ratio: 1, min_stock: 5 },
+          { id: 'ING0002', name: 'ข้าวสวย', stock_unit: 'จาน', unit_buy: 'กิโลกรัม', buy_to_stock_ratio: 20, min_stock: 100 }
+        ];
+        const result = await module.verifyDataTypes('Ingredients', sampleData);
+        const status = result.validationsFailed === 0 ? 'passed' : 'failed';
+        displayResult('Verify Data Types (Ingredients)', result, status);
+      } catch (error) {
+        displayResult('Verify Data Types', { error: error.message }, 'failed');
+      }
+    }
+
+    async function testGenerateSheetMap() {
+      console.log('Testing generateSheetMap...');
+      try {
+        const result = await module.generateSheetMap();
+        displayResult('Generate Sheet Map', result, 'passed');
+      } catch (error) {
+        displayResult('Generate Sheet Map', { error: error.message }, 'failed');
+      }
+    }
+
+    async function runAllTests() {
+      clearResults();
+      console.log('Running all tests...');
+      
+      await testVerifyAllSheets();
+      await testVerifySheetStructure();
+      await testVerifyColumnMappings();
+      await testVerifyDataTypes();
+      await testGenerateSheetMap();
+      
+      console.log('All tests completed');
+    }
+
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+    }
+
+    // Initialize on page load
+    window.onload = init;
+  </script>
+</body>
+</html>

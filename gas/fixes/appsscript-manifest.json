@@ -1,0 +1,42 @@
+{
+  "timeZone": "Asia/Bangkok",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/script.container.ui",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/drive.metadata.readonly",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.cache",
+    "https://www.googleapis.com/auth/script.locale",
+    "https://www.googleapis.com/auth/logging.read"
+  ],
+  "addOns": {
+    "common": {
+      "name": "AI POS System",
+      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/restaurant_black_48dp.png",
+      "layoutProperties": {
+        "primaryColor": "#0f766e",
+        "secondaryColor": "#14b8a6"
+      }
+    }
+  },
+  "webapp": {
+    "access": "ANYONE",
+    "executeAs": "USER_ACCESSING"
+  },
+  "executionOrder": "SERIAL"
+}
+```
+
+### 4. **Create deployment guide:**
+<tool_call>edit_file
+<arg_key>display_description</arg_key>
+<arg_value>Create comprehensive deployment guide for Apps Script fixes</arg_value>
+<arg_key>path</arg_key>
+<arg_value>POS-API\gas\fixes\DEPLOYMENT-GUIDE.md</arg_value>
+<arg_key>mode</arg_key>
+<arg_value>create</arg_value>
+</tool_call>

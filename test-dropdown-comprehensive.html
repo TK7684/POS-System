@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Dropdown Testing</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { color: #0f766e; }
+        h2 { color: #334155; margin-top: 30px; }
+        h3 { color: #64748b; margin-top: 20px; }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-result {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 4px;
+            font-weight: 500;
+            border-left: 4px solid;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #28a745;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #dc3545;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffc107;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-color: #17a2b8;
+        }
+        
+        .pending {
+            background: #e2e3e5;
+            color: #383d41;
+            border-color: #6c757d;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        select, input {
+            padding: 8px 12px;
+            margin: 5px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+        
+        .scenario {
+            background: #f8fafc;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 3px solid #0f766e;
+            border-radius: 4px;
+        }
+        
+        .scenario-title {
+            font-weight: 700;
+            color: #0f766e;
+            margin-bottom: 10px;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .dropdown-test {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .dropdown-test label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #334155;
+        }
+        
+        .dropdown-test select {
+            width: 100%;
+            margin: 0;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e2e8f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .log-entry {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border-left: 3px solid #94a3b8;
+            background: #f1f5f9;
+        }
+        
+        .log-entry.error {
+            border-color: #dc3545;
+            background: #fee;
+        }
+        
+        .log-entry.success {
+            border-color: #28a745;
+            background: #efe;
+        }
+        
+        .log-entry.warning {
+            border-color: #ffc107;
+            background: #ffe;
+        }
+        
+        #console-output {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 Comprehensive Dropdown Testing Suite</h1>
+    <p>Complete diagnostic testing for dropdown functionality issues</p>
+
+    <!-- Test Statistics -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-label">Total Tests</div>
+            <div class="stat-value" id="stat-total">0</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            <div class="stat-label">Passed</div>
+            <div class="stat-value" id="stat-passed">0</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+            <div class="stat-label">Failed</div>
+            <div class="stat-value" id="stat-failed">0</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+            <div class="stat-label">Warnings</div>
+            <div class="stat-value" id="stat-warnings">0</div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%;">0%</div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="test-section">
+        <h2>🚀 Quick Actions</h2>
+        <button class="btn-primary" onclick="runAllTests()">▶️ Run All Tests</button>
+        <button class="btn-success" onclick="runScenario(1)">Test Scenario 1: Dependencies</button>
+        <button class="btn-success" onclick="runScenario(2)">Test Scenario 2: Initialization</button>
+        <button class="btn-success" onclick="runScenario(3)">Test Scenario 3: API Connection</button>
+        <button class="btn-success" onclick="runScenario(4)">Test Scenario 4: Dropdown Population</button>
+        <button class="btn-danger" onclick="clearResults()">🗑️ Clear Results</button>
+        <button class="btn-warning" onclick="exportResults()">📊 Export Report</button>
+    </div>
+
+    <!-- Test Results -->
+    <div class="test-section">
+        <h2>📋 Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <!-- Scenario 1: Dependency Loading -->
+    <div class="test-section">
+        <h2>📦 Scenario 1: Dependency Loading</h2>
+        <p>Verifying that all required JavaScript files and classes are loaded</p>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 1.1: CacheManager Class</div>
+            <p>Checks if CacheManager class is defined and accessible</p>
+            <div id="result-1-1"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 1.2: Critical.js Functions</div>
+            <p>Verifies core functions from critical.js are available</p>
+            <div id="result-1-2"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 1.3: Module Loader</div>
+            <p>Checks if ModuleLoader is initialized</p>
+            <div id="result-1-3"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 1.4: DropdownManager</div>
+            <p>Verifies DropdownManager is initialized with CacheManager</p>
+            <div id="result-1-4"></div>
+        </div>
+    </div>
+
+    <!-- Scenario 2: Initialization Sequence -->
+    <div class="test-section">
+        <h2>⚙️ Scenario 2: Initialization Sequence</h2>
+        <p>Testing the proper initialization order and timing</p>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 2.1: DOM Ready</div>
+            <p>Checks if DOM is fully loaded before initialization</p>
+            <div id="result-2-1"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 2.2: CacheManager Instance</div>
+            <p>Verifies window.cacheManager is created</p>
+            <div id="result-2-2"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 2.3: DropdownManager Instance</div>
+            <p>Verifies window.dropdownManager is created with proper dependencies</p>
+            <div id="result-2-3"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 2.4: Module Instances</div>
+            <p>Checks if screen modules can be instantiated</p>
+            <div id="result-2-4"></div>
+        </div>
+    </div>
+
+    <!-- Scenario 3: API Connection -->
+    <div class="test-section">
+        <h2>🔌 Scenario 3: API Connection</h2>
+        <p>Testing connection to Google Apps Script backend</p>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 3.1: Google Apps Script Available</div>
+            <p>Checks if google.script.run is available</p>
+            <div id="result-3-1"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 3.2: Fetch Ingredients Data</div>
+            <p>Attempts to fetch ingredients from backend</p>
+            <div id="result-3-2"></div>
+            <button class="btn-primary" onclick="testFetchIngredients()">🔄 Test Now</button>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 3.3: Fetch Menus Data</div>
+            <p>Attempts to fetch menus from backend</p>
+            <div id="result-3-3"></div>
+            <button class="btn-primary" onclick="testFetchMenus()">🔄 Test Now</button>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 3.4: Error Handling</div>
+            <p>Tests error handling for failed API calls</p>
+            <div id="result-3-4"></div>
+        </div>
+    </div>
+
+    <!-- Scenario 4: Dropdown Population -->
+    <div class="test-section">
+        <h2>📝 Scenario 4: Dropdown Population</h2>
+        <p>Testing actual dropdown population with data</p>
+        
+        <div class="test-grid">
+            <div class="dropdown-test">
+                <label>Purchase - Ingredient</label>
+                <select id="test-p-ing">
+                    <option value="">Loading...</option>
+                </select>
+                <div id="result-4-1"></div>
+            </div>
+            
+            <div class="dropdown-test">
+                <label>Purchase - Unit</label>
+                <select id="test-p-unit">
+                    <option value="">Loading...</option>
+                </select>
+                <div id="result-4-2"></div>
+            </div>
+            
+            <div class="dropdown-test">
+                <label>Sale - Menu</label>
+                <select id="test-s-menu">
+                    <option value="">Loading...</option>
+                </select>
+                <div id="result-4-3"></div>
+            </div>
+            
+            <div class="dropdown-test">
+                <label>Sale - Platform</label>
+                <select id="test-s-platform">
+                    <option value="">Loading...</option>
+                </select>
+                <div id="result-4-4"></div>
+            </div>
+            
+            <div class="dropdown-test">
+                <label>Menu - Menu Select</label>
+                <select id="test-m-menu">
+                    <option value="">Loading...</option>
+                </select>
+                <div id="result-4-5"></div>
+            </div>
+            
+            <div class="dropdown-test">
+                <label>Menu - Ingredient</label>
+                <select id="test-m-ingredient">
+                    <option value="">Loading...</option>
+                </select>
+                <div id="result-4-6"></div>
+            </div>
+        </div>
+        
+        <button class="btn-primary" onclick="testAllDropdowns()">🔄 Populate All Dropdowns</button>
+    </div>
+
+    <!-- Scenario 5: Event Handlers -->
+    <div class="test-section">
+        <h2>🎯 Scenario 5: Event Handlers</h2>
+        <p>Testing dropdown change events and handlers</p>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 5.1: Ingredient Change Handler</div>
+            <p>Tests onIngredientChange functionality</p>
+            <div id="result-5-1"></div>
+        </div>
+        
+        <div class="scenario">
+            <div class="scenario-title">Test 5.2: Menu Change Handler</div>
+            <p>Tests onMenuChange functionality</p>
+            <div id="result-5-2"></div>
+        </div>
+    </div>
+
+    <!-- Console Output -->
+    <div class="test-section">
+        <h2>💻 Console Output</h2>
+        <div id="console-output"></div>
+    </div>
+
+    <!-- Load Dependencies -->
+    <script src="CacheManager.js"></script>
+    <script src="js/critical.js"></script>
+
+    <!-- Test Script -->
+    <script>
+        // Test state
+        let testResults = [];
+        let stats = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            warnings: 0
+        };
+
+        // Console interceptor
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn,
+            info: console.info
+        };
+
+        function interceptConsole() {
+            ['log', 'error', 'warn', 'info'].forEach(method => {
+                console[method] = function(...args) {
+                    originalConsole[method].apply(console, args);
+                    addConsoleOutput(method, args);
+                };
+            });
+        }
+
+        function addConsoleOutput(type, args) {
+            const output = document.getElementById('console-output');
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+            output.appendChild(entry);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Test utilities
+        function addResult(testId, status, message, details = '') {
+            const result = { testId, status, message, details, timestamp: new Date() };
+            testResults.push(result);
+            
+            stats.total++;
+            if (status === 'success') stats.passed++;
+            else if (status === 'error') stats.failed++;
+            else if (status === 'warning') stats.warnings++;
+            
+            updateStats();
+            updateProgress();
+            displayResult(testId, result);
+        }
+
+        function displayResult(testId, result) {
+            const container = document.getElementById(`result-${testId}`);
+            if (!container) return;
+            
+            const icon = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️',
+                pending: '⏳'
+            }[result.status] || '•';
+            
+            container.innerHTML = `
+                <div class="test-result ${result.status}">
+                    ${icon} ${result.message}
+                    ${result.details ? `<div style="margin-top: 8px; font-size: 13px; opacity: 0.9;">${result.details}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-passed').textContent = stats.passed;
+            document.getElementById('stat-failed').textContent = stats.failed;
+            document.getElementById('stat-warnings').textContent = stats.warnings;
+        }
+
+        function updateProgress() {
+            const percentage = stats.total > 0 ? Math.round((stats.passed / stats.total) * 100) : 0;
+            const fill = document.getElementById('progress-fill');
+            fill.style.width = percentage + '%';
+            fill.textContent = percentage + '%';
+        }
+
+        function clearResults() {
+            testResults = [];
+            stats = { total: 0, passed: 0, failed: 0, warnings: 0 };
+            updateStats();
+            updateProgress();
+            document.querySelectorAll('[id^="result-"]').forEach(el => el.innerHTML = '');
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        // Scenario 1: Dependency Loading
+        async function testScenario1() {
+            console.log('=== Starting Scenario 1: Dependency Loading ===');
+            
+            // Test 1.1: CacheManager
+            if (typeof CacheManager !== 'undefined') {
+                addResult('1-1', 'success', 'CacheManager class is defined', 
+                    'CacheManager is available globally');
+            } else {
+                addResult('1-1', 'error', 'CacheManager class is NOT defined',
+                    'Check if CacheManager.js is loaded before critical.js');
+            }
+            
+            // Test 1.2: Critical.js functions
+            const criticalFunctions = ['routeTo', 'toast', 'loading', 'resetPurchase'];
+            const missing = criticalFunctions.filter(fn => typeof window[fn] !== 'function');
+            if (missing.length === 0) {
+                addResult('1-2', 'success', 'All critical.js functions are available',
+                    `Found: ${criticalFunctions.join(', ')}`);
+            } else {
+                addResult('1-2', 'error', 'Some critical.js functions are missing',
+                    `Missing: ${missing.join(', ')}`);
+            }
+            
+            // Wait for async initialization
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Test 1.3: Module Loader
+            if (window.moduleLoader) {
+                addResult('1-3', 'success', 'ModuleLoader is initialized',
+                    `Type: ${typeof window.moduleLoader}`);
+            } else {
+                addResult('1-3', 'warning', 'ModuleLoader not yet initialized',
+                    'It may initialize asynchronously. Check after 500ms.');
+            }
+            
+            // Test 1.4: DropdownManager
+            if (window.dropdownManager) {
+                addResult('1-4', 'success', 'DropdownManager is initialized',
+                    `Has CacheManager: ${!!window.dropdownManager.cacheManager}`);
+            } else {
+                addResult('1-4', 'error', 'DropdownManager is NOT initialized',
+                    'This is the most likely cause of dropdown failures');
+            }
+        }
+
+        // Scenario 2: Initialization Sequence
+        async function testScenario2() {
+            console.log('=== Starting Scenario 2: Initialization Sequence ===');
+            
+            // Test 2.1: DOM Ready
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                addResult('2-1', 'success', 'DOM is ready',
+                    `ReadyState: ${document.readyState}`);
+            } else {
+                addResult('2-1', 'warning', 'DOM may not be fully loaded',
+                    `ReadyState: ${document.readyState}`);
+            }
+            
+            // Test 2.2: CacheManager Instance
+            if (window.cacheManager) {
+                const hasExpectedMethods = ['get', 'set', 'clear'].every(
+                    method => typeof window.cacheManager[method] === 'function'
+                );
+                if (hasExpectedMethods) {
+                    addResult('2-2', 'success', 'window.cacheManager is properly initialized',
+                        'All expected methods are present');
+                } else {
+                    addResult('2-2', 'warning', 'window.cacheManager exists but may be incomplete',
+                        'Some methods are missing');
+                }
+            } else {
+                addResult('2-2', 'error', 'window.cacheManager is NOT created',
+                    'CacheManager instance not found on window object');
+            }
+            
+            // Test 2.3: DropdownManager Instance
+            if (window.dropdownManager) {
+                const hasExpectedMethods = ['populateIngredients', 'populateMenus', 'populatePlatforms'].every(
+                    method => typeof window.dropdownManager[method] === 'function'
+                );
+                if (hasExpectedMethods) {
+                    addResult('2-3', 'success', 'window.dropdownManager is properly initialized',
+                        'All expected methods are present');
+                } else {
+                    addResult('2-3', 'warning', 'window.dropdownManager exists but may be incomplete',
+                        'Some methods are missing');
+                }
+            } else {
+                addResult('2-3', 'error', 'window.dropdownManager is NOT created',
+                    'DropdownManager instance not found - dropdowns will not work');
+            }
+            
+            // Test 2.4: Module Instances
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const modules = ['purchaseInstance', 'saleInstance', 'menuInstance'];
+            const loadedModules = modules.filter(mod => window[mod]);
+            if (loadedModules.length > 0) {
+                addResult('2-4', 'success', `${loadedModules.length} module(s) loaded`,
+                    `Loaded: ${loadedModules.join(', ')}`);
+            } else {
+                addResult('2-4', 'info', 'No modules loaded yet',
+                    'Modules are lazy-loaded when tabs are accessed');
+            }
+        }
+
+        // Scenario 3: API Connection
+        async function testScenario3() {
+            console.log('=== Starting Scenario 3: API Connection ===');
+            
+            // Test 3.1: Google Apps Script
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                addResult('3-1', 'success', 'Google Apps Script API is available',
+                    'Running in Google Apps Script environment');
+            } else {
+                addResult('3-1', 'warning', 'Google Apps Script API is NOT available',
+                    'Running in local/dev environment - API calls will fail');
+            }
+            
+            // Test 3.4: Error Handling
+            if (window.dropdownManager && typeof window.dropdownManager.showError === 'function') {
+                addResult('3-4', 'success', 'Error handling is implemented',
+                    'DropdownManager has error handling methods');
+            } else {
+                addResult('3-4', 'warning', 'Error handling may be incomplete',
+                    'Check DropdownManager error handling implementation');
+            }
+        }
+
+        // Test fetch functions
+        async function testFetchIngredients() {
+            if (!window.dropdownManager) {
+                addResult('3-2', 'error', 'Cannot test - DropdownManager not initialized');
+                return;
+            }
+            
+            try {
+                const ingredients = await window.dropdownManager.getIngredients();
+                addResult('3-2', 'success', `Fetched ${ingredients.length} ingredients`,
+                    `First ingredient: ${ingredients[0]?.name || 'N/A'}`);
+            } catch (error) {
+                addResult('3-2', 'error', 'Failed to fetch ingredients',
+                    `Error: ${error.message}`);
+            }
+        }
+
+        async function testFetchMenus() {
+            if (!window.dropdownManager) {
+                addResult('3-3', 'error', 'Cannot test - DropdownManager not initialized');
+                return;
+            }
+            
+            try {
+                const menus = await window.dropdownManager.getMenus();
+                addResult('3-3', 'success', `Fetched ${menus.length} menus`,
+                    `First menu: ${menus[0]?.name || 'N/A'}`);
+            } catch (error) {
+                addResult('3-3', 'error', 'Failed to fetch menus',
+                    `Error: ${error.message}`);
+            }
+        }
+
+        // Test all dropdowns
+        async function testAllDropdowns() {
+            if (!window.dropdownManager) {
+                addResult('4-1', 'error', 'Cannot populate dropdowns - DropdownManager not initialized');
+                return;
+            }
+            
+            const tests = [
+                { id: '4-1', element: 'test-p-ing', method: 'populateIngredients', name: 'Purchase Ingredient' },
+                { id: '4-3', element: 'test-s-menu', method: 'populateMenus', name: 'Sale Menu' },
+                { id: '4-4', element: 'test-s-platform', method: 'populatePlatforms', name: 'Sale Platform' },
+                { id: '4-5', element: 'test-m-menu', method: 'populateMenus', name: 'Menu Select' },
+                { id: '4-6', element: 'test-m-ingredient', method: 'populateIngredients', name: 'Menu Ingredient' }
+            ];
+            
+            for (const test of tests) {
+                const select = document.getElementById(test.element);
+                try {
+                    await window.dropdownManager[test.method](select);
+                    const optionCount = select.options.length - 1; // Exclude placeholder
+                    if (optionCount > 0) {
+                        addResult(test.id, 'success', `${test.name}: ${optionCount} options loaded`);
+                    } else {
+                        addResult(test.id, 'warning', `${test.name}: No options loaded`);
+                    }
+                } catch (error) {
+                    addResult(test.id, 'error', `${test.name}: Failed to populate`,
+                        `Error: ${error.message}`);
+                }
+            }
+        }
+
+        // Run specific scenario
+        async function runScenario(num) {
+            switch(num) {
+                case 1: await testScenario1(); break;
+                case 2: await testScenario2(); break;
+                case 3: await testScenario3(); break;
+                case 4: await testAllDropdowns(); break;
+            }
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            clearResults();
+            console.log('🚀 Starting comprehensive dropdown tests...');
+            
+            await testScenario1();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            await testScenario2();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            await testScenario3();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            await testAllDropdowns();
+            
+            console.log('✅ All tests completed!');
+            console.log(`Results: ${stats.passed} passed, ${stats.failed} failed, ${stats.warnings} warnings`);
+        }
+
+        // Export results
+        function exportResults() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                stats,
+                tests: testResults,
+                environment: {
+                    userAgent: navigator.userAgent,
+                    hasGoogleScript: typeof google !== 'undefined' && !!google.script,
+                    hasCacheManager: typeof CacheManager !== 'undefined',
+                    hasDropdownManager: !!window.dropdownManager,
+                    hasModuleLoader: !!window.moduleLoader
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dropdown-test-report-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize
+        interceptConsole();
+        console.log('Test suite initialized');
+        
+        // Auto-run tests after delay
+        setTimeout(() => {
+            console.log('Auto-running tests in 2 seconds...');
+            setTimeout(runAllTests, 2000);
+        }, 100);
+    </script>
+</body>
+</html>

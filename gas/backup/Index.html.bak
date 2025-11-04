@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title><?= brand ?> · POS</title>
+  <style>
+    :root{
+      --spacing-xs:.25rem; --spacing-sm:.5rem; --spacing-md:1rem; --spacing-lg:1.5rem; --spacing-xl:2rem; --spacing-2xl:3rem;
+      --fs-xs:.75rem; --fs-sm:.875rem; --fs-md:1rem; --fs-lg:1.125rem; --fs-xl:1.25rem; --fs-2xl:1.5rem; --fs-3xl:1.875rem; --fs-4xl:2.25rem;
+      --brand:#2563eb; --brand-ink:#fff; --bg:#fff; --card:#fff; --line:#e5e7eb; --muted:#6b7280;
+    }
+    *{ box-sizing: border-box }
+    html{ font-size:16px; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent }
+    body{ margin:0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color:#111; background:#f6f7fb }
+    .container{ width:100%; max-width:min(1200px, 100vw - 2rem); margin:0 auto; padding: 0 var(--spacing-md) }
+    .title{ font-size: clamp(var(--fs-2xl), 4vw, var(--fs-4xl)); font-weight:700; margin: var(--spacing-lg) 0 var(--spacing-xs) }
+    .subtitle{ font-size: var(--fs-lg); color: var(--muted); margin-bottom: var(--spacing-lg) }
+    .dashboard-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: var(--spacing-lg); margin-bottom: var(--spacing-xl) }
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow: 0 2px 8px rgba(0,0,0,.04) }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; padding: var(--spacing-md) var(--spacing-xl);
+          border:2px solid transparent; border-radius:.75rem; font-size: var(--fs-md); font-weight:600; cursor:pointer; min-height:44px }
+    .btn.brand{ background: var(--brand); color: var(--brand-ink) }
+    .btn.ghost{ background:#fff; border-color: var(--line); color:#111 }
+    .btn.pill{ border-radius:999px; padding:8px 12px; font-size: var(--fs-sm); background:#f5f7fb; border:1px solid #e6e9f0 }
+    .btn.pill:hover{ filter:brightness(0.98) }
+    .input{ width:100%; padding: var(--spacing-md); border:2px solid #e5e7eb; border-radius:.75rem; font-size: var(--fs-md); background:#fff }
+    .input:focus{ outline:none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.1) }
+    .table-container{ overflow-x:auto; margin-top: var(--spacing-lg); -webkit-overflow-scrolling: touch }
+    .table{ width:100%; border-collapse: collapse; font-size: var(--fs-sm); min-width:600px }
+    .table th,.table td{ padding: var(--spacing-md); text-align:left; border-bottom:1px solid #e5e7eb }
+    .muted{ color: var(--muted) }
+    .hide{ display:none }
+
+    /* AI bubbles */
+    .ai-msg{ display:grid; gap:6px; margin:8px 0 }
+    .ai-msg .who{ font-size: var(--fs-xs); color: var(--muted) }
+    .ai-bubble{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px }
+    .ai-bubble.me{ background:#e6f4ff; border-color:#b3e0ff }
+
+    @media (max-width:768px){
+      :root{ --spacing-md:.75rem; --spacing-lg:1rem; --spacing-xl:1.5rem; --spacing-2xl:2rem }
+      .container{ padding: 0 var(--spacing-sm) }
+      .table{ font-size: var(--fs-xs) }
+      .table th,.table td{ padding: var(--spacing-sm) }
+    }
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{ animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1 class="title"><?= brand ?> POS & Inventory</h1>
+      <p class="subtitle">บันทึกซื้อ/ขาย · สต๊อก · ผู้ช่วย AI</p>
+    </header>
+
+    <section class="dashboard-grid">
+      <div class="card">
+        <h3 style="margin:0 0 8px">วัตถุดิบใกล้หมด</h3>
+        <div id="low-stock">กำลังโหลด…</div>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn ghost" onclick="refreshLowStock()">รีเฟรช</button>
+          <button class="btn brand" onclick="openAgent()">ถามผู้ช่วย AI</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px">บันทึกเร็ว</h3>
+        <div style="display:grid; gap:10px">
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <input id="quick-ing" class="input" placeholder="วัตถุดิบหรือเมนู (เช่น กุ้ง หรือ กะเพราไก่)" />
+            <input id="quick-qty" class="input" placeholder="จำนวน (เช่น 1)" style="max-width:120px" />
+            <input id="quick-price" class="input" placeholder="ราคา/ราคารวม (บาท)" style="max-width:160px" />
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <button class="btn brand" onclick="quickAddPurchase()">ซื้อเข้า (ใช้ buy_unit)</button>
+            <button class="btn ghost" onclick="quickPriceSuggest()">ราคาแนะนำ (วัตถุดิบ)</button>
+            <button class="btn ghost" onclick="quickSellMenu()">ขายเมนู (ใช้สูตร)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Floating AI Agent -->
+  <div id="ai-agent-button" aria-label="ผู้ช่วยอัจฉริยะ" style="
+    position: fixed; right: 16px; bottom: 16px; z-index: 1002; width: 56px; height: 56px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--brand); color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,.25);
+    cursor: pointer; font-size: 24px;">✨</div>
+
+  <div id="ai-agent-panel" class="hide" role="dialog" aria-modal="true" style="
+    position: fixed; right: 12px; bottom: 76px; width: min(420px, calc(100vw - 24px)); max-height: min(70vh, 560px);
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 48px rgba(0,0,0,.35);
+    z-index: 1003; display: flex; flex-direction: column;">
+    <div style="padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;">
+      <strong style="font-size: var(--fs-md);">ผู้ช่วยร้าน · AI</strong>
+      <span class="muted" style="font-size: var(--fs-xs);">พิมพ์คำสั่งหรือคำถาม</span>
+      <div style="flex:1"></div>
+      <button id="ai-close" class="btn ghost" aria-label="ปิด">✖</button>
+    </div>
+
+    <div id="ai-messages" style="padding: 12px; overflow:auto; flex:1;"></div>
+
+    <!-- Quick Replies -->
+    <div id="ai-quick" style="padding:8px; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px;">
+      <button class="btn pill" data-txt="ซื้อ กุ้ง 1 kg 120 บาท จากตลาด">ซื้อ กุ้ง 1 kg 120 บาท</button>
+      <button class="btn pill" data-txt="วัตถุดิบใกล้หมด">วัตถุดิบใกล้หมด</button>
+      <button class="btn pill" data-txt="อัปเดตวัตถุดิบ น้ำปลา min_stock 5">อัปเดต min_stock น้ำปลา</button>
+      <button class="btn pill" data-txt="ขาย กุ้ง 0.5 kg @ 220 บาท ที่ Shopee">ขายกุ้ง 0.5kg @220 Shopee</button>
+      <button class="btn pill" data-txt="แนะนำราคา กุ้ง สำหรับ Shopee">ราคาแนะนำ Shopee</button>
+      <button class="btn pill" data-txt="ขายเมนู กะเพราไก่ 2 @ 89 บาท ที่ Grab">ขายเมนู กะเพราไก่</button>
+    </div>
+
+    <div style="padding: 10px; border-top:1px solid var(--line); display:flex; gap:8px;">
+      <input id="ai-input" class="input" placeholder="เช่น: ซื้อ กุ้ง 2 kg 240 บาท จากตลาด / ขายเมนู กะเพราไก่ 2 @ 89 บาท" />
+      <button id="ai-send" class="btn brand">ส่ง</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== Low Stock widget =====
+    function refreshLowStock(){
+      const el = document.getElementById('low-stock');
+      el.textContent = 'กำลังโหลด…';
+      google.script.run.withSuccessHandler(html=>{ el.innerHTML = html; })
+        .withFailureHandler(err=>{ el.textContent = 'เกิดข้อผิดพลาด: ' + (err && (err.message || err) || 'unknown'); })
+        .getLowStockHTML();
+    }
+    function openAgent(){
+      document.getElementById('ai-agent-panel').classList.remove('hide');
+      document.getElementById('ai-input').focus();
+    }
+
+    // Quick actions (frontend helpers)
+    function quickAddPurchase(){
+      const ing = document.getElementById('quick-ing').value.trim();
+      const qty = Number(document.getElementById('quick-qty').value || '0');
+      const price = Number(document.getElementById('quick-price').value || '0');
+      if (!ing || !(qty>0) || !(price>0)) { alert('กรอกวัตถุดิบ จำนวน และราคารวม'); return; }
+      // We pass unit implicitly as ingredient buy_unit via agent parsing — safer to type explicit unit if needed:
+      window.sendText(`ซื้อ ${ing} ${qty} pcs ${price} บาท`);
+    }
+    function quickPriceSuggest(){
+      const ing = document.getElementById('quick-ing').value.trim();
+      if (!ing) { alert('กรอกชื่อวัตถุดิบก่อน'); return; }
+      window.sendText(`แนะนำราคา ${ing}`);
+    }
+    function quickSellMenu(){
+      const menu = document.getElementById('quick-ing').value.trim();
+      const servings = Number(document.getElementById('quick-qty').value || '1');
+      const priceEach = document.getElementById('quick-price').value.trim();
+      const txt = priceEach ? `ขายเมนู ${menu} ${servings} @ ${priceEach} บาท` : `ขายเมนู ${menu} ${servings}`;
+      window.sendText(txt);
+    }
+
+    // ===== AI Agent front-end =====
+    (function(){
+      const $ = (sel)=>document.querySelector(sel);
+      const msgs = $('#ai-messages');
+      const panel = $('#ai-agent-panel');
+      const btn = $('#ai-agent-button');
+
+      function pushMsg(who, html){
+        const wrap = document.createElement('div');
+        wrap.className = 'ai-msg';
+        wrap.innerHTML = `<div class="who">${who}</div><div class="ai-bubble ${who === 'คุณ' ? 'me':''}">${html}</div>`;
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      function onConfirmResult(res){
+        if (res && res.status === 'applied') {
+          if (res.result && res.result.type === 'html') pushMsg('ผู้ช่วยร้าน', res.result.html);
+          else pushMsg('ผู้ช่วยร้าน', 'เสร็จแล้ว ✅');
+          if (typeof refreshLowStock === 'function') refreshLowStock();
+        } else if (res && res.status === 'noop') {
+          pushMsg('ผู้ช่วยร้าน', res.message || 'ไม่มีการเปลี่ยนแปลง');
+        } else {
+          pushMsg('ผู้ช่วยร้าน', 'เกิดข้อผิดพลาด: ' + (res && res.error ? res.error : 'ไม่ทราบสาเหตุ'));
+        }
+      }
+      function onError(err){ pushMsg('ผู้ช่วยร้าน','เกิดข้อผิดพลาด: ' + (err ? err.message || String(err) : 'unknown')); }
+      function getUserKey(){ try { return localStorage.getItem('userKey') || 'guest'; } catch(e) { return 'guest'; } }
+
+      function pushPlan(summary, token, autoApply){
+        const wrap = document.createElement('div');
+        wrap.className = 'ai-msg';
+        wrap.innerHTML = `
+          <div class="who">ผู้ช่วยร้าน</div>
+          <div class="ai-bubble">
+            <div style="margin-bottom:8px">${summary}</div>
+            <div class="ai-actions" style="display:flex; gap:8px;">
+              <button class="btn brand" data-token="${token}" id="ai-confirm">ยืนยัน</button>
+              <button class="btn" id="ai-cancel">ยกเลิก</button>
+            </div>
+          </div>`;
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+
+        const doConfirm = () => {
+          wrap.querySelector('#ai-confirm').disabled = true;
+          wrap.querySelector('#ai-cancel').disabled = true;
+          google.script.run.withSuccessHandler(onConfirmResult).withFailureHandler(onError)
+            .agentConfirm({ userKey: getUserKey(), token });
+        };
+        wrap.querySelector('#ai-confirm').onclick = doConfirm;
+        wrap.querySelector('#ai-cancel').onclick = () => pushMsg('ผู้ช่วยร้าน','ยกเลิกแล้ว ✅');
+        if (autoApply === true) doConfirm(); // auto for read-only (price suggestions)
+      }
+
+      function sendText(raw){
+        const t = (raw != null ? raw : $('#ai-input').value).trim();
+        if (!t) return;
+        pushMsg('คุณ', t);
+        $('#ai-input').value = '';
+        google.script.run.withSuccessHandler(function(res){
+          if (!res || res.status !== 'ok') { pushMsg('ผู้ช่วยร้าน','ไม่สามารถวางแผนได้: ' + (res && res.error ? res.error : 'unknown')); return; }
+          const { plan, parsed, token } = res;
+          if (!plan) { pushMsg('ผู้ช่วยร้าน','ไม่เข้าใจคำสั่ง ลองพิมพ์ใหม่ หรือพิมพ์ "ช่วยอะไรได้บ้าง"'); return; }
+          const hint = parsed && parsed.intent ? `<div class="muted" style="font-size: var(--fs-xs)">intent: ${parsed.intent}</div>` : '';
+          pushMsg('ผู้ช่วยร้าน', `🔎 <b>สรุป</b>: ${plan.summary}${hint}`);
+          if (plan.applyFn && plan.applyFn !== 'none') pushPlan(plan.summary, token, plan.autoApply === true);
+        }).withFailureHandler(onError).agentPlan({ userKey: getUserKey(), text: t });
+      }
+      window.sendText = sendText;
+
+      // Floating UI + handlers
+      btn.onclick = ()=> { panel.classList.toggle('hide'); if (!panel.classList.contains('hide')) $('#ai-input').focus(); };
+      $('#ai-close').onclick = ()=> panel.classList.add('hide');
+      $('#ai-send').onclick = ()=> sendText();
+      $('#ai-input').addEventListener('keydown', (e)=>{ if (e.key === 'Enter') sendText(); });
+
+      // Quick replies
+      document.querySelectorAll('#ai-quick .btn').forEach(b=> b.addEventListener('click', ()=> sendText(b.getAttribute('data-txt'))));
+
+      // Greeting + initial data
+      setTimeout(()=>{ pushMsg('ผู้ช่วยร้าน','สวัสดีค่ะ ✨ ตัวอย่าง:<br>- ซื้อ กุ้ง 2 kg 240 บาท จากตลาด<br>- อัปเดตวัตถุดิบ น้ำปลา min_stock 3<br>- วัตถุดิบใกล้หมด<br>- ขาย กุ้ง 0.5 kg @ 220 บาท ที่ Shopee<br>- ขายเมนู กะเพราไก่ 2 @ 89 บาท ที่ Grab<br>- แนะนำราคา กุ้ง สำหรับ Shopee'); }, 300);
+      refreshLowStock();
+    })();
+  </script>
+</body>
+</html>

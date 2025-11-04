@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Testing Module - Test Runner</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    
+    .test-controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .test-controls button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    
+    .test-controls button:hover {
+      background-color: #45a049;
+    }
+    
+    .test-controls button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .config-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .config-section label {
+      display: block;
+      margin: 10px 0 5px 0;
+      font-weight: bold;
+      color: #555;
+    }
+    
+    .config-section input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    
+    #results {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .test-result {
+      margin: 15px 0;
+      padding: 15px;
+      border-left: 4px solid #ddd;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+    }
+    
+    .test-result.passed {
+      border-left-color: #4CAF50;
+      background-color: #f1f8f4;
+    }
+    
+    .test-result.failed {
+      border-left-color: #f44336;
+      background-color: #fef1f0;
+    }
+    
+    .test-result h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 16px;
+    }
+    
+    .test-result .metric {
+      display: inline-block;
+      margin-right: 20px;
+      padding: 5px 10px;
+      background: white;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .test-result .message {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .summary h2 {
+      margin: 0 0 15px 0;
+    }
+    
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    
+    .summary-stat {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 15px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .summary-stat .value {
+      font-size: 32px;
+      font-weight: bold;
+      display: block;
+    }
+    
+    .summary-stat .label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .error {
+      background-color: #f44336;
+      color: white;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Performance Testing Module</h1>
+  
+  <div class="config-section">
+    <h2>Configuration</h2>
+    <label for="apiUrl">API URL:</label>
+    <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+    
+    <label for="timeout">Timeout (ms):</label>
+    <input type="number" id="timeout" value="10000">
+  </div>
+  
+  <div class="test-controls">
+    <h2>Test Controls</h2>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="runCacheTests()">Cache Performance</button>
+    <button onclick="runAPITests()">API Response Times</button>
+    <button onclick="runSheetTests()">Sheet Access</button>
+    <button onclick="runLoadTests()">Load Performance</button>
+    <button onclick="runConcurrentTests()">Concurrent Operations</button>
+    <button onclick="runOfflineTests()">Offline Mode</button>
+    <button onclick="runPWATests()">PWA Installation</button>
+    <button onclick="runSearchTests()">Search Performance</button>
+    <button onclick="clearResults()">Clear Results</button>
+  </div>
+  
+  <div id="results"></div>
+  
+  <script src="performance-testing-module.js"></script>
+  <script>
+    let testModule = null;
+    
+    function initModule() {
+      const apiUrl = document.getElementById('apiUrl').value;
+      const timeout = parseInt(document.getElementById('timeout').value);
+      
+      testModule = new PerformanceTestingModule({
+        apiUrl: apiUrl,
+        timeout: timeout
+      });
+    }
+    
+    function showLoading(message = 'Running tests...') {
+      document.getElementById('results').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+    
+    function showError(error) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML += `
+        <div class="error">
+          <strong>Error:</strong> ${error}
+        </div>
+      `;
+    }
+    
+    function displayResults(results, title) {
+      const resultsDiv = document.getElementById('results');
+      
+      // Create summary
+      let summaryHTML = `
+        <div class="summary">
+          <h2>${title}</h2>
+          <div class="summary-stats">
+            <div class="summary-stat">
+              <span class="value">${results.summary.total}</span>
+              <span class="label">Total Tests</span>
+            </div>
+            <div class="summary-stat">
+              <span class="value">${results.summary.passed}</span>
+              <span class="label">Passed</span>
+            </div>
+            <div class="summary-stat">
+              <span class="value">${results.summary.failed}</span>
+              <span class="label">Failed</span>
+            </div>
+            <div class="summary-stat">
+              <span class="value">${results.passed ? '✓' : '✗'}</span>
+              <span class="label">Overall</span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Create individual test results
+      let testsHTML = '';
+      results.results.forEach(test => {
+        const statusClass = test.passed ? 'passed' : 'failed';
+        const statusIcon = test.passed ? '✓' : '✗';
+        
+        let metricsHTML = '';
+        if (test.duration !== undefined) {
+          metricsHTML += `<span class="metric">Duration: ${test.duration.toFixed(2)}ms</span>`;
+        }
+        if (test.threshold !== undefined) {
+          metricsHTML += `<span class="metric">Threshold: ${test.threshold}ms</span>`;
+        }
+        if (test.recordCount !== undefined) {
+          metricsHTML += `<span class="metric">Records: ${test.recordCount}</span>`;
+        }
+        if (test.operations !== undefined) {
+          metricsHTML += `<span class="metric">Operations: ${test.operations}</span>`;
+        }
+        if (test.resultsFound !== undefined) {
+          metricsHTML += `<span class="metric">Results: ${test.resultsFound}</span>`;
+        }
+        
+        testsHTML += `
+          <div class="test-result ${statusClass}">
+            <h3>${statusIcon} ${test.testName}</h3>
+            <div>${metricsHTML}</div>
+            <div class="message">${test.message || test.error || ''}</div>
+            ${test.requirement ? `<div class="message"><em>Requirement: ${test.requirement}</em></div>` : ''}
+          </div>
+        `;
+      });
+      
+      resultsDiv.innerHTML = summaryHTML + testsHTML;
+    }
+    
+    async function runAllTests() {
+      try {
+        initModule();
+        showLoading('Running all performance tests...');
+        
+        const results = await testModule.runAllTests();
+        displayResults({
+          passed: results.passed,
+          summary: results.summary,
+          results: [
+            ...results.results.cache.results,
+            ...results.results.api.results,
+            ...results.results.sheets.results,
+            ...results.results.load.results,
+            ...results.results.concurrent.results,
+            ...results.results.offline.results,
+            ...results.results.pwa.results,
+            ...results.results.search.results
+          ]
+        }, 'All Performance Tests');
+        
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runCacheTests() {
+      try {
+        initModule();
+        showLoading('Running cache performance tests...');
+        const results = await testModule.testCachePerformance();
+        displayResults(results, 'Cache Performance Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runAPITests() {
+      try {
+        initModule();
+        showLoading('Running API response time tests...');
+        const results = await testModule.testAPIResponseTimes();
+        displayResults(results, 'API Response Time Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runSheetTests() {
+      try {
+        initModule();
+        showLoading('Running sheet access tests...');
+        const results = await testModule.testSheetAccess();
+        displayResults(results, 'Sheet Access Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runLoadTests() {
+      try {
+        initModule();
+        showLoading('Running load performance tests...');
+        const results = await testModule.testLoadPerformance();
+        displayResults(results, 'Load Performance Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runConcurrentTests() {
+      try {
+        initModule();
+        showLoading('Running concurrent operations tests...');
+        const results = await testModule.testConcurrentOperations();
+        displayResults(results, 'Concurrent Operations Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runOfflineTests() {
+      try {
+        initModule();
+        showLoading('Running offline mode tests...');
+        const results = await testModule.testOfflineMode();
+        displayResults(results, 'Offline Mode Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runPWATests() {
+      try {
+        initModule();
+        showLoading('Running PWA installation tests...');
+        const results = await testModule.testPWAInstallation();
+        displayResults(results, 'PWA Installation Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    async function runSearchTests() {
+      try {
+        initModule();
+        showLoading('Running search performance tests...');
+        const results = await testModule.testSearchPerformance();
+        displayResults(results, 'Search Performance Tests');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+    
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+    }
+  </script>
+</body>
+</html>

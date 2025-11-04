@@ -1,0 +1,314 @@
+# OpenSpec Configuration for POS System with AI Integration
+# ระบบจัดการคำสั่งและการพัฒนา AI สำหรับร้านอาหาร
+
+spec: "1.0.0"
+name: "pos-ai-system"
+title: "ระบบ POS อัจฉรรย์ด้วย AI Assistant"
+description: "ระบบจัดการขาย-ขายและสต๊อกวัตถุดิบพร้อมผู้ช่วย AI ภาษาไทย"
+
+# สถาปะทูรข้อมูล
+metadata:
+  version: "2.0.0"
+  author: "POS Development Team"
+  created: "2025-01-08"
+  last_updated: "2025-01-08"
+  repository: "https://github.com/your-org/pos-ai-system"
+  documentation: "https://github.com/your-org/pos-ai-system/wiki"
+  license: "MIT"
+
+# ผู้มีส่วนในการพัฒนา
+stakeholders:
+  - name: "ร้านกุ้งแซ่บ"
+    role: "owner"
+    contact: "owner@kungsaab.com"
+  - name: "พนักงาน POS"
+    role: "user"
+    contact: "staff@kungsaab.com"
+  - name: "ผู้จัดการระบบ"
+    role: "maintainer"
+    contact: "admin@kungsaab.com"
+  - name: "AI Assistant"
+    role: "ai_agent"
+    contact: "ai@kungsaab.com"
+
+# ความต้องการ (Epics)
+epics:
+  - id: "pos-operations"
+    title: "การดำเนินงาน POS ประจำวัน"
+    description: "บันทึกการซื้อ ขาย และจัดการสต๊อก"
+    priority: "high"
+
+  - id: "ai-integration"
+    title: "การผสาน AI เข้ากับระบบ"
+    description: "ผู้ช่วย AI สำหรับการบันทึกข้อมูลภาษาธรรมชาติ"
+    priority: "high"
+
+  - id: "inventory-management"
+    title: "การจัดการสต๊อกวัตถุดิบ"
+    description: "ติดตามสต๊อก การแจ้งเตือน และการสั่งซื้ออัตโนมัติ"
+    priority: "medium"
+
+  - id: "reporting-analytics"
+    title: "รายงานและการวิเคราะ"
+    description: "สร้างรายงานยอดขาย กำไร และการวิเคราะประสิทธิ์"
+    priority: "medium"
+
+# คุณสมบัญญัก (Features) - แยกตาม Epics
+features:
+  # POS Operations Features
+  - id: "purchase-management"
+    epic: "pos-operations"
+    title: "การจัดการการซื้อวัตถุดิบ"
+    description: "บันทึกการซื้อวัตถุดิบพร้อมการตรวจสอบราคาและการป้องกันการซื้อซ้ำ"
+    acceptance_criteria:
+      - "สามารถบันทึกการซื้อผ่าน web interface"
+      - "สามารถบันทึกการซื้อผ่านคำสั่งภาษาไทย"
+      - "ระบบตรวจสอบและป้องกันการซื้อซ้ำใน 24 ชั่วโมง"
+      - "คำนวณณราคาต่อหน่วยอัตโนมัติ"
+    user_stories:
+      - "เมื่อซื้อวัตถุดิบ ระบบต้องบันทึกวันที่ จำนวน ราคา และผู้ขาย"
+      - "ระบบต้องตรวจสอบราคาวัตถุดิบล่าสุด"
+      - "เมื่อบันทึกข้อมูลต้องมีการแจ้งเตือนสำเร็จ"
+
+  - id: "sales-management"
+    epic: "pos-operations"
+    title: "การบันทึกการขาย"
+    description: "บันทึกการขายสินค้าและคำนวณณต้นทุน FIFO"
+    acceptance_criteria:
+      - "สามารถบันทึกการขายผ่าน web interface"
+      - "ระบบตัดสต๊อกวัตถุดิบอัตโนมัติ"
+      - "คำนวณณกำไรและราคาแนะนำ"
+      - "บันทึกข้อมูลแพลตฟอร์มและช่องการขาย"
+    user_stories:
+      - "เมื่อขายสินค้า ระบบต้องคำนวณณต้นทุนและตัดสต๊อกอัตโนมัติ"
+      - "ระบบต้องแสดงประวมการขายแบบ real-time"
+      - "คำนวณณกำไรและกำไรต่อจาน"
+
+  - id: "inventory-tracking"
+    epic: "inventory-management"
+    title: "การติดตามสต๊อก"
+    description: "แสดงสถานะสต๊อกปัจจุบัน พร้อมการแจ้งเตือนเมื่อใกล้หมด"
+    acceptance_criteria:
+      - "แสดงสถานะสต๊อกวัตถุดิบแบบ real-time"
+      - "แจ้งเตือนเมื่อสต๊อกใกล้หมด"
+      - "สามารถค้นหาและกรองข้อมูลสต๊อก"
+      - "คำนวณณอายุการสต๊อกที่เหลือ"
+    user_stories:
+      - "แสดงสต๊อกวัตถุดิบทั้งหมดพร้อมจำนวนคงเหลือ"
+      - "มีฟังก์ชันค้นหาสินค้าและกรองสต๊อก"
+      - "แจ้งเตือนเมื่อมีการซื้อหรือขายสินค้านั้นๆ"
+
+  # AI Integration Features
+  - id: "thai-nlp-processing"
+    epic: "ai-integration"
+    title: "การประมวลผลภาษาไทยธรรมชาติ"
+    description: "AI เข้าใจคำสั่งภาษาไทยและแปลงเป็นคำสั่ง"
+    acceptance_criteria:
+      - "AI เข้าใจคำสั่งซื้อ เช่น 'ซื้อกุ้ง 5 กิโลกรัม 500 บาท'"
+      - "AI เข้าใจคำสั่งค่าใช้จ่าย เช่น 'ค่าไฟฟ้า 1200 บาท'"
+      - "AI สามารถแนะนำวัตถุดิบเมื่อไม่พบชื่อที่ตรงกัน"
+      - "AI คำนวณณต้นทุนเมนูอัตโนมัติ"
+    user_stories:
+      - "พูดคำสั่ง 'ซื้อ กุ้ง, 5 กิโลกรัม, 500 บาท' แล้วแปลงเป็นข้อมูลการซื้อ"
+      - "พูดคำสั่ง 'ค่าไฟฟ้า 1200 บาท' แล้วแปลงเป็นข้อมูลค่าใช้จ่าย"
+      - "AI ตอบกลับด้วยข้อความเป็นภาษาไทย"
+      - "AI แนะนำวิธีการใช้งานเมื่อไม่เข้าใจคำสั่ง"
+
+  - id: "smart-suggestions"
+    epic: "ai-integration"
+    title: "ระบบแนะนำอัจฉรรย์"
+    description: "AI แนะนำชื่อวัตถุดิบ/เมนูเมื่อไม่พบชื่อที่ตรงกัน"
+    acceptance_criteria:
+      - "AI แนะนำรายการที่ใกล้เคียนกันเมื่อค้นหา"
+      - "AI แสดงความแนะนำพร้อมข้อมูลจริง"
+      - "ระบบมี fuzzy matching สำหรับชื่อที่สะกดผิด"
+    user_stories:
+      - "พิมพ์ 'กุ้ง' ผิด AI แนะนำ 'กุ้งแซ่บ, กุ้งสด'"
+      - "พิมพ์ 'พริก' ผิด AI แนะนำ 'พริกขี้หนู, พริกไทย'"
+      - "AI บอกความความคล้ายกันของรายการที่คล้ายกัน"
+
+  - id: "duplicate-prevention"
+    epic: "ai-integration"
+    title: "การป้องกันข้อมูลซ้ำ"
+    description: "ระบบตรวจสอบและป้องกันการบันทึกข้อมูลซ้ำในช่วงเวลา 24 ชั่วโมง"
+    acceptance_criteria:
+      - "ตรวจสอบการซื้อซ้ำก่อน 24 ชั่วโมง"
+      - "แจ้งเตือนเมื่อพบการซื้อที่คล้ายกัน"
+      - "ยืนยันการบันทึกเมื่อผู้ใช้ยืนยัน"
+      - "มีตัวเลือกให้ผู้ใช้ยืนยันหรือแก้ไข"
+    user_stories:
+      - "พยายามลองซื้อกุ้ง 5 กิโลกรัม 500 บาท สองวันที่ AI แจ้งเตือน"
+      - "AI ถามว่า 'พบการซื้อที่คล้ายกันใน 24 ชั่วโมง'"
+      - "มีปุ่ม 'ฉันต้องการทำรายการนี้หรือไม่'"
+
+  # Reporting & Analytics Features
+  - id: "daily-reports"
+    epic: "reporting-analytics"
+    title: "รายงานประจำวัน"
+    description: "สร้างรายงานยอดขาย กำไร และสถิติสต๊อก"
+    acceptance_criteria:
+      - "สามารถสร้างรายงานตามช่วงเวลาที่เลือก"
+      - "รายงานแสดงข้อมูลยอดขาย กำไร และกำไรต่อจาน"
+      - "สามารถส่งออกรายรายงาน"
+      - "รายงานมีฟอร์แมต์การกรองข้อมูล"
+    user_stories:
+      - "สร้างรายงานวันที่ 1-15 มกราคม 2025"
+      - "รายงานแสดงยอดขายแยกตามหมวดหมู่"
+      - "สามารถกรองข้อมูลตามแพลตฟอร์ม"
+      - "สามารถ export รายงานเป็น PDF/Excel"
+
+  - id: "cost-analysis"
+    epic: "reporting-analytics"
+    title: "การวิเคราะต้นทุน"
+    description: "คำนวณณต้นทุนเมนู กำไร และวิเคราะสิทธิ์ที่เกี่ยวข้อง"
+    acceptance_criteria:
+      - "คำนวณณต้นทุนเมนูอัตโนมัติ"
+      - "แสดงราคาแนะนำ (GP 60%)"
+      - "แสดงผลต่างที่แบ่ง (GP, กำไรต่อจาน)"
+      - "วิเคราะประสิทธิ์ราคาที่เกี่ยวข้อง"
+    user_stories:
+      - "คำนวณณต้นทุนเมนูกุ้งแช่น้ำปลา"
+      - "AI แนะนำราคาขายที่ควรควรควร"
+      - "รายงานแสดงว่าต้นทุน 70 บาท แนะนำขายที่ 120 บาท"
+
+# ข้อกำหนดทางเทคนิค (Technical Requirements)
+technical_requirements:
+  frontend:
+    framework: "HTML5, CSS3, JavaScript (ES6+)"
+    ui_library: "Vanilla JavaScript (no external dependencies)"
+    responsive: "Mobile-first design with touch optimization"
+    accessibility: "WCAG 2.1 AA compliance"
+    testing: "Manual testing + automated tests"
+
+  backend:
+    platform: "Google Apps Script"
+    database: "Google Sheets"
+    apis: ["Google Sheets API", "Google Drive API"]
+    authentication: "Google Workspace authentication"
+
+  integration:
+    ai_processing: "Natural Language Processing (Thai)"
+    fuzzy_matching: "Levenshtein distance algorithm"
+    caching: "In-memory cache + Google Apps Script Cache"
+    timeout_protection: "30-second operation timeout"
+
+  deployment:
+    environment: "Google Apps Script Web App"
+    permissions: ["spreadsheets", "drive.file", "drive"]
+    security: "Input validation + SQL injection prevention"
+
+# มาตรฐานพัฒนา (Development Workflow)
+workflow:
+  - name: "ai-spec-driven-development"
+    description: "พัฒนาแบบ OpenSpec-driven ให้ AI และนักพัฒนาทำงานร่วมกัน"
+
+  phases:
+    - name: "specification"
+      description: "กำหนดความต้องการผ่าน OpenSpec"
+      tools: ["Claude Code", "Cursor", "GitHub Copilot"]
+
+    - name: "ai-assisted-coding"
+      description: "AI ช่วยเขียนโค้ดตาม spec"
+      validation: "AI code review + manual testing"
+
+    - name: "integration-testing"
+      description: "ทดสอบการทำงานร่วมกันระหว่าง AI และ POS"
+      tools: ["Google Apps Script testing", "Browser testing"]
+
+    - name: "deployment"
+      description: "Deploy ไปยัง Google Apps Script environment"
+      automation: "Automated testing + manual verification"
+
+# การทดสอบ (Testing)
+testing:
+  unit_tests:
+    - "Regex pattern matching for Thai natural language"
+    - "Parameter validation and mapping"
+    - "Permission system functionality"
+    - "AI command processing logic"
+
+  integration_tests:
+    - "AI assistant conversation flow"
+    - "Purchase/expense recording via Thai commands"
+    - "Sheet access and permission handling"
+
+  user_acceptance_tests:
+    - "Thai language command recognition"
+    - "Mobile responsiveness on phones/tablets"
+    - "Error handling and user feedback"
+    - "Data persistence in Google Sheets"
+
+# การปรับใช้ (Deployment)
+deployment:
+  environments:
+    - name: "development"
+      description: "Local testing environment"
+      url: "https://script.google.com/macros/s/your-script-id/dev"
+
+    - name: "production"
+      description: "Live environment for restaurant use"
+      url: "https://script.google.com/macros/s/your-script-id/prod"
+
+    - name: "staging"
+      description: "Testing environment with production data"
+      url: "https://script.google.com/macros/s/your-script-id/staging"
+
+  release_process:
+    - "Code review by senior developer"
+    - "Automated testing suite execution"
+    - "Manual user acceptance testing"
+    - "Deployment to staging environment"
+    - "Production deployment with rollback plan"
+
+# การบำรุงัง (Maintenance)
+maintenance:
+  ai_model_updates:
+    frequency: "quarterly"
+    description: "อัพเดท NLP patterns และคำสั่ง AI"
+
+  performance_monitoring:
+    metrics: ["response_time", "success_rate", "user_satisfaction"]
+    alerts: ["error_rate > 5%", "response_time > 3s"]
+
+  data_backup:
+    frequency: "daily"
+    retention: "2 years"
+    method: "Google Sheets export + Drive backup"
+
+# การวัดและปรับปรับสิทธิ์ (Metrics & Monitoring)
+metrics:
+  kpis:
+    - name: "ai_command_success_rate"
+      target: "> 95%"
+      description: "อัตราการสำเร็จของคำสั่ง AI"
+
+    - name: "thai_language_processing_accuracy"
+      target: "> 90%"
+      description: "ความแม่นยำของการประมวลผลภาษาไทย"
+
+    - name: "user_satisfaction_score"
+      target: "> 4.5/5.0"
+      description: "คะแนนความพึงพอใจของผู้ใช้"
+
+    - name: "system_uptime"
+      target: "> 99.5%"
+      description: "เวลาการทำงานต่อเนื่องของระบบ"
+
+# แผนอนามหน้า (Future Roadmap)
+roadmap:
+  short_term:
+    - "Voice command support for Thai"
+    - "Multi-language support (English/Thai)"
+    - "Advanced cost prediction using ML"
+    - "Integration with popular accounting systems"
+
+  medium_term:
+    - "Mobile app development (React Native/Flutter)"
+    - "Advanced analytics dashboard"
+    - "Supplier management integration"
+
+  long_term:
+    - "Multi-location support"
+    - "Advanced AI recommendations engine"
+    - "Cloud deployment option"
+    - "API for third-party integrations"

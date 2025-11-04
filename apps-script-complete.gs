@@ -10,4 +10,4 @@ const SHEET_MENU = 'Menus';
 const SHEET_ING = 'Ingredients';
 const SHEET_MENU_RECIPES = 'MenuRecipes';
 const SHEET_USERS = 'Users';
-const SHEET_COST_CENTERS = 'Cost
+const SHEET_COST_CENTERS = 'CostCenters';

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA Testing Module - Test Runner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .controls {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      color: white;
+    }
+
+    .btn-info {
+      background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+      color: white;
+    }
+
+    .btn-clear {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .progress {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .progress.active {
+      display: block;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #f0f0f0;
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+
+    .results {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+      display: none;
+    }
+
+    .results.active {
+      display: block;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .summary-card {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-card.passed {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+    }
+
+    .summary-card.failed {
+      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      color: white;
+    }
+
+    .summary-card.warnings {
+      background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
+      color: white;
+    }
+
+    .summary-card.total {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .summary-value {
+      font-size: 3em;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .summary-label {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+
+    .test-category {
+      margin-bottom: 30px;
+    }
+
+    .category-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .category-header:hover {
+      opacity: 0.9;
+    }
+
+    .category-title {
+      font-size: 1.3em;
+      font-weight: 600;
+    }
+
+    .category-badge {
+      padding: 5px 15px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      font-size: 0.9em;
+    }
+
+    .test-list {
+      display: none;
+    }
+
+    .test-list.expanded {
+      display: block;
+    }
+
+    .test-item {
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 4px solid #ddd;
+    }
+
+    .test-item.passed {
+      border-left-color: #38ef7d;
+      background: #f0fdf4;
+    }
+
+    .test-item.failed {
+      border-left-color: #f45c43;
+      background: #fef2f2;
+    }
+
+    .test-item.warning {
+      border-left-color: #f2c94c;
+      background: #fffbeb;
+    }
+
+    .test-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .test-name {
+      font-weight: 600;
+      font-size: 1.1em;
+      color: #333;
+    }
+
+    .test-status {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .test-status.passed {
+      background: #38ef7d;
+      color: white;
+    }
+
+    .test-status.failed {
+      background: #f45c43;
+      color: white;
+    }
+
+    .test-status.warning {
+      background: #f2c94c;
+      color: #333;
+    }
+
+    .test-message {
+      color: #666;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .test-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .test-detail {
+      font-size: 0.9em;
+    }
+
+    .test-detail-label {
+      color: #888;
+      font-weight: 600;
+    }
+
+    .test-detail-value {
+      color: #333;
+      margin-left: 5px;
+    }
+
+    .error-message {
+      background: #fee;
+      border: 1px solid #fcc;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      color: #c33;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+
+    .metrics {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .metrics-title {
+      font-size: 1.2em;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .metric-item {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 3px solid #667eea;
+    }
+
+    .metric-label {
+      color: #888;
+      font-size: 0.9em;
+      margin-bottom: 5px;
+    }
+
+    .metric-value {
+      color: #333;
+      font-size: 1.3em;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .button-group {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .summary {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      h1 {
+        font-size: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 PWA Testing Module</h1>
+      <p class="subtitle">Progressive Web App Capability Testing Suite</p>
+    </div>
+
+    <div class="controls">
+      <div class="button-group">
+        <button class="btn-primary" onclick="runAllTests()">▶ Run All Tests</button>
+        <button class="btn-secondary" onclick="runServiceWorkerTests()">🔧 Service Worker</button>
+        <button class="btn-success" onclick="runOfflineTests()">📴 Offline Mode</button>
+        <button class="btn-warning" onclick="runCacheTests()">💾 Cache Strategy</button>
+        <button class="btn-info" onclick="runSyncTests()">🔄 Sync & Conflicts</button>
+        <button class="btn-clear" onclick="clearResults()">🗑️ Clear Results</button>
+      </div>
+
+      <div class="progress" id="progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="summary" id="summary"></div>
+      <div id="testCategories"></div>
+      <div class="metrics" id="metrics"></div>
+    </div>
+  </div>
+
+  <script src="test-utilities.js"></script>
+  <script src="pwa-testing-module.js"></script>
+  <script>
+    let pwaModule = null;
+    let currentTests = null;
+
+    function initModule() {
+      if (!pwaModule) {
+        pwaModule = new PWATestingModule({
+          serviceWorkerPath: '/sw.js',
+          timeout: 10000,
+          offlineThreshold: 500,
+          syncTimeout: 5000
+        });
+      }
+      return pwaModule;
+    }
+
+    async function runAllTests() {
+      const module = initModule();
+      showProgress();
+      disableButtons();
+
+      try {
+        updateProgress(10, 'Initializing tests...');
+        
+        updateProgress(20, 'Testing service worker...');
+        const swResults = await module.testServiceWorker();
+        
+        updateProgress(40, 'Testing offline capability...');
+        const offlineResults = await module.testOfflineCapability();
+        
+        updateProgress(60, 'Testing cache strategy...');
+        const cacheResults = await module.testCacheStrategy();
+        
+        updateProgress(70, 'Testing offline transactions...');
+        const txnResults = await module.testOfflineTransactions();
+        
+        updateProgress(85, 'Testing background sync...');
+        const syncResults = await module.testBackgroundSync();
+        
+        updateProgress(95, 'Testing sync conflicts...');
+        const conflictResults = await module.testSyncConflicts();
+        
+        updateProgress(100, 'Tests complete!');
+
+        currentTests = {
+          'Service Worker': swResults,
+          'Offline Capability': offlineResults,
+          'Cache Strategy': cacheResults,
+          'Offline Transactions': txnResults,
+          'Background Sync': syncResults,
+          'Sync Conflicts': conflictResults
+        };
+
+        displayResults();
+      } catch (error) {
+        console.error('Test execution error:', error);
+        alert('Error running tests: ' + error.message);
+      } finally {
+        hideProgress();
+        enableButtons();
+      }
+    }
+
+    async function runServiceWorkerTests() {
+      const module = initModule();
+      showProgress();
+      disableButtons();
+
+      try {
+        updateProgress(50, 'Testing service worker...');
+        const results = await module.testServiceWorker();
+        updateProgress(100, 'Complete!');
+
+        currentTests = { 'Service Worker': results };
+        displayResults();
+      } catch (error) {
+        console.error('Test error:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        hideProgress();
+        enableButtons();
+      }
+    }
+
+    async function runOfflineTests() {
+      const module = initModule();
+      showProgress();
+      disableButtons();
+
+      try {
+        updateProgress(50, 'Testing offline capability...');
+        const results = await module.testOfflineCapability();
+        updateProgress(100, 'Complete!');
+
+        currentTests = { 'Offline Capability': results };
+        displayResults();
+      } catch (error) {
+        console.error('Test error:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        hideProgress();
+        enableButtons();
+      }
+    }
+
+    async function runCacheTests() {
+      const module = initModule();
+      showProgress();
+      disableButtons();
+
+      try {
+        updateProgress(50, 'Testing cache strategy...');
+        const results = await module.testCacheStrategy();
+        updateProgress(100, 'Complete!');
+
+        currentTests = { 'Cache Strategy': results };
+        displayResults();
+      } catch (error) {
+        console.error('Test error:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        hideProgress();
+        enableButtons();
+      }
+    }
+
+    async function runSyncTests() {
+      const module = initModule();
+      showProgress();
+      disableButtons();
+
+      try {
+        updateProgress(25, 'Testing offline transactions...');
+        const txnResults = await module.testOfflineTransactions();
+        
+        updateProgress(60, 'Testing background sync...');
+        const syncResults = await module.testBackgroundSync();
+        
+        updateProgress(90, 'Testing sync conflicts...');
+        const conflictResults = await module.testSyncConflicts();
+        
+        updateProgress(100, 'Complete!');
+
+        currentTests = {
+          'Offline Transactions': txnResults,
+          'Background Sync': syncResults,
+          'Sync Conflicts': conflictResults
+        };
+
+        displayResults();
+      } catch (error) {
+        console.error('Test error:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        hideProgress();
+        enableButtons();
+      }
+    }
+
+    function displayResults() {
+      if (!currentTests) return;
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.classList.add('active');
+
+      // Calculate summary
+      let totalTests = 0;
+      let passedTests = 0;
+      let failedTests = 0;
+      let warnings = 0;
+
+      Object.values(currentTests).forEach(category => {
+        totalTests += category.summary.total;
+        passedTests += category.summary.passed;
+        failedTests += category.summary.failed;
+      });
+
+      // Display summary
+      const summaryDiv = document.getElementById('summary');
+      summaryDiv.innerHTML = `
+        <div class="summary-card total">
+          <div class="summary-value">${totalTests}</div>
+          <div class="summary-label">Total Tests</div>
+        </div>
+        <div class="summary-card passed">
+          <div class="summary-value">${passedTests}</div>
+          <div class="summary-label">Passed</div>
+        </div>
+        <div class="summary-card failed">
+          <div class="summary-value">${failedTests}</div>
+          <div class="summary-label">Failed</div>
+        </div>
+        <div class="summary-card warnings">
+          <div class="summary-value">${warnings}</div>
+          <div class="summary-label">Warnings</div>
+        </div>
+      `;
+
+      // Display test categories
+      const categoriesDiv = document.getElementById('testCategories');
+      categoriesDiv.innerHTML = '';
+
+      Object.entries(currentTests).forEach(([categoryName, categoryResults]) => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'test-category';
+        
+        const categoryId = categoryName.replace(/\s+/g, '-').toLowerCase();
+        
+        categoryDiv.innerHTML = `
+          <div class="category-header" onclick="toggleCategory('${categoryId}')">
+            <div class="category-title">${categoryName}</div>
+            <div class="category-badge">${categoryResults.summary.passed}/${categoryResults.summary.total} passed</div>
+          </div>
+          <div class="test-list" id="${categoryId}">
+            ${categoryResults.results.map(test => createTestItem(test)).join('')}
+          </div>
+        `;
+        
+        categoriesDiv.appendChild(categoryDiv);
+      });
+
+      // Display metrics
+      if (pwaModule) {
+        const report = pwaModule.getPWAReport();
+        displayMetrics(report.overallMetrics);
+      }
+    }
+
+    function createTestItem(test) {
+      const status = test.passed ? 'passed' : 'failed';
+      const statusText = test.passed ? 'PASSED' : 'FAILED';
+      
+      let detailsHTML = '';
+      if (test.duration !== undefined) {
+        detailsHTML += `<div class="test-detail"><span class="test-detail-label">Duration:</span><span class="test-detail-value">${test.duration.toFixed(2)}ms</span></div>`;
+      }
+      if (test.threshold !== undefined) {
+        detailsHTML += `<div class="test-detail"><span class="test-detail-label">Threshold:</span><span class="test-detail-value">${test.threshold}ms</span></div>`;
+      }
+      if (test.requirement) {
+        detailsHTML += `<div class="test-detail"><span class="test-detail-label">Requirement:</span><span class="test-detail-value">${test.requirement}</span></div>`;
+      }
+      
+      const errorHTML = test.error ? `<div class="error-message">Error: ${test.error}</div>` : '';
+      
+      return `
+        <div class="test-item ${status}">
+          <div class="test-header">
+            <div class="test-name">${test.testName}</div>
+            <div class="test-status ${status}">${statusText}</div>
+          </div>
+          <div class="test-message">${test.message || ''}</div>
+          ${detailsHTML ? `<div class="test-details">${detailsHTML}</div>` : ''}
+          ${errorHTML}
+        </div>
+      `;
+    }
+
+    function displayMetrics(metrics) {
+      const metricsDiv = document.getElementById('metrics');
+      
+      metricsDiv.innerHTML = `
+        <div class="metrics-title">📊 Performance Metrics</div>
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <div class="metric-label">Service Worker</div>
+            <div class="metric-value">${metrics.serviceWorker.supported ? '✓ Supported' : '✗ Not Supported'}</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">SW State</div>
+            <div class="metric-value">${metrics.serviceWorker.state || 'N/A'}</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Cache API</div>
+            <div class="metric-value">${metrics.cache.supported ? '✓ Supported' : '✗ Not Supported'}</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Cached Resources</div>
+            <div class="metric-value">${metrics.cache.criticalResourcesCached || 0}</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Cache Load Time</div>
+            <div class="metric-value">${(metrics.offline.cacheLoadTime || 0).toFixed(2)}ms</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Cache Retrieval</div>
+            <div class="metric-value">${(metrics.cache.retrievalTime || 0).toFixed(2)}ms</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function toggleCategory(categoryId) {
+      const categoryDiv = document.getElementById(categoryId);
+      categoryDiv.classList.toggle('expanded');
+    }
+
+    function showProgress() {
+      document.getElementById('progress').classList.add('active');
+    }
+
+    function hideProgress() {
+      document.getElementById('progress').classList.remove('active');
+    }
+
+    function updateProgress(percent, message) {
+      const progressFill = document.getElementById('progressFill');
+      progressFill.style.width = percent + '%';
+      progressFill.textContent = message || (percent + '%');
+    }
+
+    function disableButtons() {
+      document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+    }
+
+    function enableButtons() {
+      document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+    }
+
+    function clearResults() {
+      currentTests = null;
+      document.getElementById('results').classList.remove('active');
+      document.getElementById('summary').innerHTML = '';
+      document.getElementById('testCategories').innerHTML = '';
+      document.getElementById('metrics').innerHTML = '';
+      
+      // Clear test data from localStorage
+      localStorage.removeItem('offline_transactions');
+      localStorage.removeItem('sync_conflicts');
+      
+      if (pwaModule) {
+        pwaModule.reset();
+      }
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      console.log('PWA Testing Module loaded');
+      initModule();
+    });
+  </script>
+</body>
+</html>

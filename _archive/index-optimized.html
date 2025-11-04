@@ -1,0 +1,1373 @@
+
+```<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="ระบบบริหารและสต็อกสำหรับร้านอาหาร" />
+
+  <title><?= brand ?> · POS System</title>
+
+  <!-- Preload critical resources -->
+  <link rel="preload" href="src/styles/design-system.css" as="style" />
+  <link rel="preload" href="src/modules/ui/ResponsiveUI.js" as="script" />
+
+  <!-- Critical CSS inline for faster loading -->
+  <style>
+    /* Critical CSS for initial render */
+    :root {
+      --spacing-xs: .25rem; --spacing-sm:.5rem; --spacing-md:1rem; --spacing-lg:1.5rem; --spacing-xl:2rem;
+      --fs-xs:.75rem; --fs-sm:.875rem; --fs-md:1rem; --fs-lg:1.125rem; --fs-xl:1.25rem;
+      --brand:#2563eb; --brand-ink:#fff; --bg:#fff; --card:#fff; --line:#e5e7eb; --muted:#6b7280;
+      --touch-target:44px;
+    }
+    *{ box-sizing:border-box }
+    body{ margin:0; font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; color:#111; background:#f6f7fb;
+           font-size:16px; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent }
+    .container{ width:100%; max-width:min(1200px,100vw - 2rem); margin:0 auto; padding:0 var(--spacing-md) }
+    .title{ font-size:clamp(var(--fs-xl),4vw,var(--fs-3xl)); font-weight:700; margin:var(--spacing-lg)0 var(--spacing-xs) }
+    .subtitle{ font-size:var(--fs-lg); color:var(--muted); margin-bottom:var(--spacing-lg) }
+    .hidden{ display:none }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0);
+            white-space:nowrap; border:0 }
+
+    /* Critical button styles */
+    .btn{ display:inline-flex; align-items:center; justify-content:center; padding:var(--spacing-sm) var(--spacing-md);
+           border:2px solid transparent; border-radius:.75rem; font-size:var(--fs-md); font-weight:600;
+           cursor:pointer; min-height:var(--touch-target); text-decoration:none; min-width:var(--touch-target) }
+    .btn.brand{ background:var(--brand); color:var(--brand-ink) }
+    .btn.ghost{ background:#fff; border-color:var(--line); color:#111 }
+    .btn.pill{ border-radius:999px; padding:8px 12px; font-size:var(--fs-sm); background:#f5f7fb;
+                   border:1px solid #e6e9f0 }
+    .btn.pill:hover{ filter:brightness(.98) }
+
+    /* Critical card styles */
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px;
+            box-shadow:0 2px 8px rgba(0,0,0,.04) }
+
+    /* Critical grid */
+    .dashboard-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+                    gap:var(--spacing-lg); margin-bottom:var(--spacing-xl) }
+
+    /* Loading state */
+    .loading{ opacity:.6; pointer-events:none }
+    .loading::after{ content:''; position:absolute; top:50%; left:50%; width:20px; height:20px;
+                   margin:-10px 0 0 -10px; border:2px solid var(--line); border-top-color:var(--brand);
+                   border-radius:50%; animation:spin 1s linear infinite }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    /* Responsive adjustments */
+    @media (max-width:768px){
+      :root{ --spacing-md:.75rem; --spacing-lg:1rem; --spacing-xl:1.5rem }
+      .container{ padding:0 var(--spacing-sm) }
+      .dashboard-grid{ grid-template-columns:1fr; gap:var(--spacing-md) }
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme:dark){
+      :root{ --bg:#1a1a1a; --card:#2d2d2d; --line:#404040; --muted:#a0a0a0 }
+      body{ background:var(--bg); color:#fff }
+    }
+  </style>
+
+  <!-- Main styles -->
+  <link rel="stylesheet" href="src/styles/design-system.css" />
+
+  <!-- Favicon and icons -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽</text></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽</text></svg>" />
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header hidden-md" id="mobileHeader">
+      <div class="mobile-header-content">
+        <button class="btn btn-ghost mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+          <span class="hamburger-icon">☰</span>
+        </button>
+        <h1 class="mobile-title">POS</h1>
+        <button class="btn btn-ghost" id="mobileUserBtn" aria-label="User menu">
+          <span>👤</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar hidden-sm" id="sidebar">
+      <div class="sidebar-content">
+        <div class="sidebar-header">
+          <h1 class="sidebar-title"><?= brand ?> POS</h1>
+          <button class="btn btn-ghost sidebar-close hidden-sm" id="sidebarClose" aria-label="Close sidebar">
+            ✕
+          </button>
+        </div>
+
+        <nav class="sidebar-nav" role="navigation">
+          <a href="#dashboard" class="nav-item active" data-nav="dashboard" aria-current="page">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Dashboard</span>
+          </a>
+          <a href="#purchase" class="nav-item" data-nav="purchase">
+            <span class="nav-icon">🛒</span>
+            <span class="nav-label">Purchase</span>
+          </a>
+          <a href="#sale" class="nav-item" data-nav="sale">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Sale</span>
+          </a>
+          <a href="#inventory" class="nav-item" data-nav="inventory">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Inventory</span>
+          </a>
+          <a href="#reports" class="nav-item" data-nav="reports">
+            <span class="nav-icon">📈</span>
+            <span class="nav-label">Reports</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="main-content">
+      <!-- Desktop Header -->
+      <header class="desktop-header hidden-sm" id="desktopHeader">
+        <div class="desktop-header-content">
+          <div class="header-left">
+            <h2 class="page-title" id="pageTitle">Dashboard</h2>
+          </div>
+          <div class="header-right">
+            <button class="btn btn-ghost header-btn" id="notificationBtn" aria-label="Notifications">
+              <span class="notification-icon">🔔</span>
+              <span class="notification-badge hidden" id="notificationBadge">3</span>
+            </button>
+            <button class="btn btn-ghost header-btn" id="userMenuBtn" aria-label="User menu">
+              <span>👤</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content-wrapper" id="contentWrapper">
+        <!-- Dashboard View -->
+        <section id="dashboardView" class="view active">
+          <div class="container">
+            <header class="view-header">
+              <h1 class="title"><?= brand ?> POS & Inventory</h1>
+              <p class="subtitle">บันทึกซื้อ/ขาย · สต็อก · ผู้ช่วย AI</p>
+            </header>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+              <!-- Low Stock Alert Card -->
+              <div class="card" id="lowStockCard">
+                <h3 class="card-title">📦 วัตถุดิบใกล้หมด</h3>
+                <div id="low-stock-content" class="card-content">
+                  <div class="loading-placeholder">กำลังโหลด…</div>
+                </div>
+                <div class="card-actions">
+                  <button class="btn btn-ghost btn-sm" onclick="refreshLowStock()">
+                    <span>🔄</span>
+                    <span class="btn-text">รีเฟรช</span>
+                  </button>
+                  <button class="btn btn-primary btn-sm" onclick="openAIAssistant()">
+                    <span>✨</span>
+                    <span class="btn-text">ถาม AI</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick Actions Card -->
+              <div class="card" id="quickActionsCard">
+                <h3 class="card-title">⚡ บันทึกเร็ว</h3>
+                <div class="card-content">
+                  <form class="quick-form" id="quickForm">
+                    <div class="form-row">
+                      <div class="input-group">
+                        <input type="text"
+                               id="quickInput"
+                               class="form-input form-input-lg"
+                               placeholder="วัตถุดิบ, เมนู, หรือคำสั่ง AI..."
+                               autocomplete="off"
+                               aria-label="Quick input">
+                        <div class="input-suggestions hidden" id="inputSuggestions"></div>
+                      </div>
+                    </div>
+                    <div class="quick-actions-grid">
+                      <button type="button" class="btn btn-primary" onclick="quickPurchase()">
+                        <span>🛒</span>
+                        <span class="btn-text">ซื้อ</span>
+                      </button>
+                      <button type="button" class="btn btn-outline" onclick="quickSale()">
+                        <span>💰</span>
+                        <span class="btn-text">ขาย</span>
+                      </button>
+                      <button type="button" class="btn btn-ghost" onclick="quickInventory()">
+                        <span>📦</span>
+                        <span class="btn-text">สต็อก</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Today's Summary Card -->
+              <div class="card" id="summaryCard">
+                <h3 class="card-title">📊 สรุปวันนี้</h3>
+                <div class="card-content">
+                  <div class="summary-stats" id="todayStats">
+                    <div class="stat-item">
+                      <div class="stat-value">-</div>
+                      <div class="stat-label">ยอดขาย</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-value">-</div>
+                      <div class="stat-label">รายได้</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-value">-</div>
+                      <div class="stat-label">กำไร</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Activity Card -->
+              <div class="card" id="recentActivityCard">
+                <h3 class="card-title">🕒 กิจกรรมล่าสุด</h3>
+                <div class="card-content">
+                  <div class="activity-list" id="recentActivity">
+                    <div class="activity-item loading-placeholder">กำลังโหลด…</div>
+                  </div>
+                </div>
+                <div class="card-actions">
+                  <button class="btn btn-ghost btn-sm" onclick="viewAllActivity()">
+                    <span class="btn-text">ดูทั้งหมด</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Purchase View -->
+        <section id="purchaseView" class="view hidden">
+          <div class="container">
+            <header class="view-header">
+              <h1 class="title">🛒 บันทึกการซื้อ</h1>
+              <p class="subtitle">บันทึกรายการซื้อวัตถุดิบและวัสดุ</p>
+            </header>
+
+            <div class="purchase-form-container">
+              <form id="purchaseForm" class="form-responsive">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="purchaseIngredient">วัตถุดิบ *</label>
+                    <div class="input-with-suggestions">
+                      <input type="text"
+                             id="purchaseIngredient"
+                             name="ingredient"
+                             class="form-input"
+                             placeholder="ค้นหาหรือเลือกวัตถุดิบ"
+                             autocomplete="off"
+                             required>
+                      <div class="suggestions-dropdown hidden" id="ingredientSuggestions"></div>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="purchaseQuantity">จำนวน *</label>
+                    <div class="input-with-unit">
+                      <input type="number"
+                             id="purchaseQuantity"
+                             name="quantity"
+                             class="form-input"
+                             placeholder="0.00"
+                             step="0.01"
+                             min="0.01"
+                             required>
+                      <input type="text"
+                             id="purchaseUnit"
+                             name="unit"
+                             class="form-input unit-input"
+                             placeholder="หน่วย"
+                             readonly>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="purchasePrice">ราคารวม *</label>
+                    <input type="number"
+                           id="purchasePrice"
+                           name="price"
+                           class="form-input"
+                           placeholder="0.00"
+                           step="0.01"
+                           min="0.01"
+                           required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="purchaseSupplier">ผู้จำหน่าย</label>
+                    <input type="text"
+                           id="purchaseSupplier"
+                           name="supplier"
+                           class="form-input"
+                           placeholder="ร้านค้าหรือผู้จำหน่าย">
+                  </div>
+
+                  <div class="form-group form-group-full">
+                    <label class="form-label" for="purchaseNote">หมายเหตุ</label>
+                    <textarea id="purchaseNote"
+                              name="note"
+                              class="form-textarea"
+                              placeholder="ข้อมูลเพิ่มเติม..."
+                              rows="3"></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="button" class="btn btn-ghost" onclick="resetPurchaseForm()">
+                    ล้าง
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    <span class="btn-content">บันทึกการซื้อ</span>
+                    <span class="btn-loading hidden">
+                      <span class="spinner"></span>
+                      กำลังบันทึก...
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sale View -->
+        <section id="saleView" class="view hidden">
+          <div class="container">
+            <header class="view-header">
+              <h1 class="title">💰 บันทึกการขาย</h1>
+              <p class="subtitle">บันทึกรายการขายสินค้าและบริการ</p>
+            </header>
+
+            <div class="sale-form-container">
+              <form id="saleForm" class="form-responsive">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="salePlatform">แพลตฟอร์ม *</label>
+                    <select id="salePlatform" name="platform" class="form-select" required>
+                      <option value="">เลือกแพลตฟอร์ม</option>
+                      <option value="ร้าน">🏪 ร้าน</option>
+                      <option value="Line Man">🛵 Line Man</option>
+                      <option value="Grab Food">🏃 Grab Food</option>
+                      <option value="Food Panda">🐼 Food Panda</option>
+                      <option value="Shopee Food">🛍️ Shopee Food</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="saleMenu">เมนู *</label>
+                    <div class="input-with-suggestions">
+                      <input type="text"
+                             id="saleMenu"
+                             name="menu"
+                             class="form-input"
+                             placeholder="ค้นหาหรือเลือกเมนู"
+                             autocomplete="off"
+                             required>
+                      <div class="suggestions-dropdown hidden" id="menuSuggestions"></div>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="saleQuantity">จำนวน *</label>
+                    <input type="number"
+                           id="saleQuantity"
+                           name="quantity"
+                           class="form-input"
+                           placeholder="1"
+                           step="1"
+                           min="1"
+                           value="1"
+                           required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="salePrice">ราคาต่อหน่วย *</label>
+                    <input type="number"
+                           id="salePrice"
+                           name="price"
+                           class="form-input"
+                           placeholder="0.00"
+                           step="0.01"
+                           min="0.01"
+                           required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="saleCustomer">ลูกค้า</label>
+                    <input type="text"
+                           id="saleCustomer"
+                           name="customer"
+                           class="form-input"
+                           placeholder="ชื่อลูกค้า (ไม่ระบุก็ได้)">
+                  </div>
+                </div>
+
+                <div class="sale-summary" id="saleSummary">
+                  <div class="summary-row">
+                    <span class="summary-label">รวม:</span>
+                    <span class="summary-value" id="saleTotal">฿0.00</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">ค่าธรรมเนียม:</span>
+                    <span class="summary-value" id="saleFee">฿0.00</span>
+                  </div>
+                  <div class="summary-row summary-total">
+                    <span class="summary-label">สุทธิ:</span>
+                    <span class="summary-value" id="saleNet">฿0.00</span>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="button" class="btn btn-ghost" onclick="resetSaleForm()">
+                    ล้าง
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    <span class="btn-content">บันทึกการขาย</span>
+                    <span class="btn-loading hidden">
+                      <span class="spinner"></span>
+                      กำลังบันทึก...
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- AI Assistant Floating Button -->
+    <button class="ai-assistant-btn" id="aiAssistantBtn" aria-label="Open AI Assistant">
+      <span class="ai-icon">✨</span>
+      <span class="ai-pulse"></span>
+    </button>
+
+    <!-- AI Assistant Panel -->
+    <div class="ai-assistant-panel hidden" id="aiAssistantPanel" role="dialog" aria-modal="true">
+      <div class="ai-panel-header">
+        <h3 class="ai-panel-title">ผู้ช่วยอัจฉริยะ</h3>
+        <button class="btn btn-ghost ai-close-btn" id="aiCloseBtn" aria-label="Close AI Assistant">
+          ✕
+        </button>
+      </div>
+
+      <div class="ai-panel-messages" id="aiMessages">
+        <div class="ai-message ai-welcome">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-content">
+            <p>สวัสดีค่ะ! ฉันคือผู้ช่วย AI พร้อมช่วยเหลือคุณ</p>
+            <p>ลองพิมพ์คำสั่งเช่น:</p>
+            <ul class="ai-examples">
+              <li>ซื้อ กุ้ง 2 กก. 240 บาท</li>
+              <li>ขายเมนู กะเพราไก่ 2 จาน 89 บาท</li>
+              <li>วัตถุดิบใกล้หมด</li>
+              <li>แนะนำราคา กุ้ง</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-panel-suggestions">
+        <div class="suggestion-chips">
+          <button class="suggestion-chip" onclick="sendAIMessage('วัตถุดิบใกล้หมด')">
+            📦 วัตถุดิบใกล้หมด
+          </button>
+          <button class="suggestion-chip" onclick="sendAIMessage('แนะนำราคา กุ้ง')">
+            💡 แนะนำราคา กุ้ง
+          </button>
+          <button class="suggestion-chip" onclick="sendAIMessage('สรุปวันนี้')">
+            📊 สรุปวันนี้
+          </button>
+          <button class="suggestion-chip" onclick="sendAIMessage('สินค้าขายดี')">
+            🔥 สินค้าขายดี
+          </button>
+        </div>
+      </div>
+
+      <div class="ai-panel-input">
+        <div class="ai-input-container">
+          <input type="text"
+                 id="aiInput"
+                 class="ai-input-field"
+                 placeholder="พิมพ์คำสั่งหรือคำถาม..."
+                 maxlength="200">
+          <button class="btn btn-primary ai-send-btn" id="aiSendBtn" aria-label="Send message">
+            <span>ส่ง</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay for mobile sidebar -->
+  <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script type="module">
+    // Import modules
+    import { stateManager } from './src/core/StateManager.js';
+    import { apiClient } from './src/core/ApiClient.js';
+    import { cacheManager } from './src/core/CacheManager.js';
+    import { createResponsiveGrid, createSidebarLayout, createTabContainer } from './src/components/Layout.js';
+    import { createPrimaryButton, createGhostButton } from './src/components/Button.js';
+    import { createResponsiveModal } from './src/components/Modal.js';
+    import { Input, Select, Form } from './src/components/Form.js';
+    import { debounce, throttle, formatCurrency, formatDate } from './src/utils/utils.js';
+
+    // Initialize app
+    window.POS = {
+      state: stateManager,
+      api: apiClient,
+      cache: cacheManager,
+
+      // UI State
+      currentView: 'dashboard',
+      isMobile: window.innerWidth < 768,
+      sidebarOpen: false,
+      aiOpen: false,
+
+      // Data
+      ingredients: [],
+      menus: [],
+      lowStock: [],
+      todayStats: null,
+
+      // Initialize
+      async init() {
+        console.log('🚀 Initializing POS System...');
+
+        // Setup responsive behavior
+        this.setupResponsive();
+
+        // Setup navigation
+        this.setupNavigation();
+
+        // Setup AI Assistant
+        this.setupAIAssistant();
+
+        // Load initial data
+        await this.loadInitialData();
+
+        // Setup form handlers
+        this.setupForms();
+
+        // Setup real-time updates
+        this.setupRealTimeUpdates();
+
+        console.log('✅ POS System initialized successfully');
+      },
+
+      // Setup responsive behavior
+      setupResponsive() {
+        const handleResize = debounce(() => {
+          const wasMobile = this.isMobile;
+          this.isMobile = window.innerWidth < 768;
+
+          if (wasMobile !== this.isMobile) {
+            this.updateLayoutForDevice();
+          }
+        }, 150);
+
+        window.addEventListener('resize', handleResize);
+        this.updateLayoutForDevice();
+      },
+
+      // Update layout based on device
+      updateLayoutForDevice() {
+        const mobileHeader = document.getElementById('mobileHeader');
+        const desktopHeader = document.getElementById('desktopHeader');
+        const sidebar = document.getElementById('sidebar');
+
+        if (this.isMobile) {
+          mobileHeader.classList.remove('hidden-md');
+          desktopHeader.classList.add('hidden-sm');
+          sidebar.classList.add('hidden-sm');
+        } else {
+          mobileHeader.classList.add('hidden-md');
+          desktopHeader.classList.remove('hidden-sm');
+          sidebar.classList.remove('hidden-sm');
+        }
+      },
+
+      // Setup navigation
+      setupNavigation() {
+        // Navigation items
+        const navItems = document.querySelectorAll('[data-nav]');
+        navItems.forEach(item => {
+          item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const view = item.dataset.nav;
+            this.navigateToView(view);
+          });
+        });
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        if (mobileMenuBtn) {
+          mobileMenuBtn.addEventListener('click', () => this.toggleSidebar());
+        }
+
+        if (sidebarClose) {
+          sidebarClose.addEventListener('click', () => this.closeSidebar());
+        }
+
+        if (sidebarOverlay) {
+          sidebarOverlay.addEventListener('click', () => this.closeSidebar());
+        }
+      },
+
+      // Navigate to view
+      navigateToView(view) {
+        // Hide all views
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+
+        // Show target view
+        const targetView = document.getElementById(`${view}View`);
+        if (targetView) {
+          targetView.classList.remove('hidden');
+          this.currentView = view;
+
+          // Update page title
+          const pageTitle = document.getElementById('pageTitle');
+          if (pageTitle) {
+            pageTitle.textContent = this.getViewTitle(view);
+          }
+
+          // Update active nav
+          document.querySelectorAll('.nav-item').forEach(nav => {
+            nav.classList.remove('active');
+            nav.removeAttribute('aria-current');
+          });
+
+          const activeNav = document.querySelector(`[data-nav="${view}"]`);
+          if (activeNav) {
+            activeNav.classList.add('active');
+            activeNav.setAttribute('aria-current', 'page');
+          }
+
+          // Close mobile sidebar
+          this.closeSidebar();
+        }
+      },
+
+      // Get view title
+      getViewTitle(view) {
+        const titles = {
+          dashboard: 'Dashboard',
+          purchase: 'Purchase',
+          sale: 'Sale',
+          inventory: 'Inventory',
+          reports: 'Reports'
+        };
+        return titles[view] || view;
+      },
+
+      // Setup AI Assistant
+      setupAIAssistant() {
+        const aiBtn = document.getElementById('aiAssistantBtn');
+        const aiPanel = document.getElementById('aiAssistantPanel');
+        const aiCloseBtn = document.getElementById('aiCloseBtn');
+        const aiInput = document.getElementById('aiInput');
+        const aiSendBtn = document.getElementById('aiSendBtn');
+
+        // Toggle AI panel
+        if (aiBtn) {
+          aiBtn.addEventListener('click', () => this.toggleAIAssistant());
+        }
+
+        if (aiCloseBtn) {
+          aiCloseBtn.addEventListener('click', () => this.closeAIAssistant());
+        }
+
+        // Send message
+        const sendMessage = () => {
+          const message = aiInput.value.trim();
+          if (message) {
+            this.sendAIMessage(message);
+            aiInput.value = '';
+          }
+        };
+
+        if (aiSendBtn) {
+          aiSendBtn.addEventListener('click', sendMessage);
+        }
+
+        if (aiInput) {
+          aiInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              sendMessage();
+            }
+          });
+        }
+      },
+
+      // Toggle AI Assistant
+      toggleAIAssistant() {
+        const aiPanel = document.getElementById('aiAssistantPanel');
+        if (this.aiOpen) {
+          this.closeAIAssistant();
+        } else {
+          this.openAIAssistant();
+        }
+      },
+
+      // Open AI Assistant
+      openAIAssistant() {
+        const aiPanel = document.getElementById('aiAssistantPanel');
+        const aiInput = document.getElementById('aiInput');
+
+        aiPanel.classList.remove('hidden');
+        aiInput.focus();
+        this.aiOpen = true;
+      },
+
+      // Close AI Assistant
+      closeAIAssistant() {
+        const aiPanel = document.getElementById('aiAssistantPanel');
+        aiPanel.classList.add('hidden');
+        this.aiOpen = false;
+      },
+
+      // Send AI message
+      async sendAIMessage(message) {
+        const aiMessages = document.getElementById('aiMessages');
+
+        // Add user message
+        const userMessage = document.createElement('div');
+        userMessage.className = 'ai-message ai-user';
+        userMessage.innerHTML = `
+          <div class="ai-avatar">👤</div>
+          <div class="ai-content">
+            <p>${this.escapeHtml(message)}</p>
+          </div>
+        `;
+        aiMessages.appendChild(userMessage);
+
+        // Add typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'ai-message ai-typing';
+        typingIndicator.innerHTML = `
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-content">
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        `;
+        aiMessages.appendChild(typingIndicator);
+
+        // Scroll to bottom
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+
+        try {
+          // Process AI command (simplified for demo)
+          const response = await this.processAICommand(message);
+
+          // Remove typing indicator
+          typingIndicator.remove();
+
+          // Add AI response
+          const aiResponse = document.createElement('div');
+          aiResponse.className = 'ai-message ai-assistant';
+          aiResponse.innerHTML = `
+            <div class="ai-avatar">🤖</div>
+            <div class="ai-content">
+              <p>${response}</p>
+            </div>
+          `;
+          aiMessages.appendChild(aiResponse);
+
+          // Scroll to bottom
+          aiMessages.scrollTop = aiMessages.scrollHeight;
+
+        } catch (error) {
+          console.error('AI command error:', error);
+          typingIndicator.remove();
+
+          // Add error message
+          const errorMessage = document.createElement('div');
+          errorMessage.className = 'ai-message ai-error';
+          errorMessage.innerHTML = `
+            <div class="ai-avatar">❌</div>
+            <div class="ai-content">
+              <p>ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่</p>
+            </div>
+          `;
+          aiMessages.appendChild(errorMessage);
+        }
+      },
+
+      // Process AI command (simplified)
+      async processAICommand(message) {
+        // Simple command processing for demo
+        if (message.includes('วัตถุดิบใกล้หมด')) {
+          const lowStock = await this.api.getLowStockIngredients();
+          if (lowStock.length > 0) {
+            return `วัตถุดิบที่ใกล้หมด:\n${lowStock.map(item => `• ${item.name} (คงเหลือ: ${item.stock})`).join('\n')}`;
+          } else {
+            return 'ไม่มีวัตถุดิบใกล้หมดในขณะนี้';
+          }
+        }
+
+        if (message.includes('สรุปวันนี้')) {
+          const stats = await this.state.getState('data.todaySummary');
+          if (stats) {
+            return `สรุปวันนี้:\n• ยอดขาย: ${stats.totalSales || 0} รายการ\n• รายได้: ${formatCurrency(stats.totalRevenue || 0)}\n• กำไร: ${formatCurrency(stats.totalProfit || 0)}`;
+          } else {
+            return 'ยังไม่มีข้อมูลสรุปวันนี้';
+          }
+        }
+
+        return 'ฉันเข้าใจคำสั่งของคุณ กรุณารอสักครู่สำหรับการดำเนินการต่อไป...';
+      },
+
+      // Toggle sidebar
+      toggleSidebar() {
+        if (this.sidebarOpen) {
+          this.closeSidebar();
+        } else {
+          this.openSidebar();
+        }
+      },
+
+      // Open sidebar
+      openSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        sidebar.classList.remove('hidden-sm');
+        overlay.classList.remove('hidden');
+        this.sidebarOpen = true;
+      },
+
+      // Close sidebar
+      closeSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        sidebar.classList.add('hidden-sm');
+        overlay.classList.add('hidden');
+        this.sidebarOpen = false;
+      },
+
+      // Load initial data
+      async loadInitialData() {
+        try {
+          // Load data in parallel
+          const [ingredients, menus, lowStock, todayStats] = await Promise.all([
+            this.api.getIngredients(),
+            this.api.getMenus(),
+            this.api.getLowStockIngredients(),
+            this.api.getTodaySummary()
+          ]);
+
+          // Store data
+          this.ingredients = ingredients;
+          this.menus = menus;
+          this.lowStock = lowStock;
+          this.todayStats = todayStats;
+
+          // Update state
+          this.state.setState('data.ingredients', ingredients);
+          this.state.setState('data.menus', menus);
+          this.state.setState('data.lowStock', lowStock);
+          this.state.setState('data.todaySummary', todayStats);
+
+          // Update UI
+          this.updateDashboardUI();
+
+        } catch (error) {
+          console.error('Failed to load initial data:', error);
+          this.showToast('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่', 'error');
+        }
+      },
+
+      // Update dashboard UI
+      updateDashboardUI() {
+        // Update low stock
+        const lowStockContent = document.getElementById('low-stock-content');
+        if (lowStockContent && this.lowStock.length > 0) {
+          lowStockContent.innerHTML = this.lowStock.slice(0, 3).map(item => `
+            <div class="stock-item">
+              <span class="stock-name">${item.name}</span>
+              <span class="stock-quantity ${item.stock <= 5 ? 'critical' : 'low'}">${item.stock}</span>
+            </div>
+          `).join('');
+        } else if (lowStockContent) {
+          lowStockContent.innerHTML = '<div class="no-stock-alert">✅ ไม่มีวัตถุดิบใกล้หมด</div>';
+        }
+
+        // Update today's stats
+        if (this.todayStats) {
+          const statsContainer = document.getElementById('todayStats');
+          if (statsContainer) {
+            statsContainer.innerHTML = `
+              <div class="stat-item">
+                <div class="stat-value">${this.todayStats.totalSales || 0}</div>
+                <div class="stat-label">ยอดขาย</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${formatCurrency(this.todayStats.totalRevenue || 0)}</div>
+                <div class="stat-label">รายได้</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">${formatCurrency(this.todayStats.totalProfit || 0)}</div>
+                <div class="stat-label">กำไร</div>
+              </div>
+            `;
+          }
+        }
+      },
+
+      // Setup forms
+      setupForms() {
+        // Purchase form
+        const purchaseForm = document.getElementById('purchaseForm');
+        if (purchaseForm) {
+          purchaseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handlePurchaseSubmit(e.target);
+          });
+        }
+
+        // Sale form
+        const saleForm = document.getElementById('saleForm');
+        if (saleForm) {
+          saleForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleSaleSubmit(e.target);
+          });
+
+          // Auto-calculate sale total
+          const quantityInput = document.getElementById('saleQuantity');
+          const priceInput = document.getElementById('salePrice');
+
+          if (quantityInput && priceInput) {
+            const updateTotal = () => {
+              const quantity = parseFloat(quantityInput.value) || 0;
+              const price = parseFloat(priceInput.value) || 0;
+              const total = quantity * price;
+
+              document.getElementById('saleTotal').textContent = formatCurrency(total);
+
+              // Calculate fee based on platform
+              const platform = document.getElementById('salePlatform').value;
+              const feeRate = this.getPlatformFee(platform);
+              const fee = total * feeRate;
+              const net = total - fee;
+
+              document.getElementById('saleFee').textContent = formatCurrency(fee);
+              document.getElementById('saleNet').textContent = formatCurrency(net);
+            };
+
+            quantityInput.addEventListener('input', updateTotal);
+            priceInput.addEventListener('input', updateTotal);
+            document.getElementById('salePlatform').addEventListener('change', updateTotal);
+          }
+        }
+      },
+
+      // Handle purchase submit
+      async handlePurchaseSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+
+        try {
+          // Show loading
+          const submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.classList.add('loading');
+          submitBtn.disabled = true;
+
+          // Add to API
+          const result = await this.api.addPurchase(data);
+
+          if (result.success) {
+            this.showToast('บันทึกการซื้อเรียบร้อย', 'success');
+            form.reset();
+            this.loadInitialData(); // Refresh data
+          } else {
+            this.showToast(result.error || 'เกิดข้อผิดพลาด', 'error');
+          }
+
+        } catch (error) {
+          console.error('Purchase submit error:', error);
+          this.showToast('ไม่สามารถบันทึกการซื้อได้', 'error');
+        } finally {
+          // Hide loading
+          const submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.classList.remove('loading');
+          submitBtn.disabled = false;
+        }
+      },
+
+      // Handle sale submit
+      async handleSaleSubmit(form) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+
+        try {
+          // Show loading
+          const submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.classList.add('loading');
+          submitBtn.disabled = true;
+
+          // Add to API
+          const result = await this.api.addSale(data);
+
+          if (result.success) {
+            this.showToast('บันทึกการขายเรียบร้อย', 'success');
+            form.reset();
+            this.loadInitialData(); // Refresh data
+          } else {
+            this.showToast(result.error || 'เกิดข้อผิดพลาด', 'error');
+          }
+
+        } catch (error) {
+          console.error('Sale submit error:', error);
+          this.showToast('ไม่สามารถบันทึกการขายได้', 'error');
+        } finally {
+          // Hide loading
+          const submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.classList.remove('loading');
+          submitBtn.disabled = false;
+        }
+      },
+
+      // Get platform fee
+      getPlatformFee(platform) {
+        const fees = {
+          'ร้าน': 0,
+          'Line Man': 0.15,
+          'Food Panda': 0.18,
+          'Grab Food': 0.20,
+          'Shopee Food': 0.15
+        };
+        return fees[platform] || 0;
+      },
+
+      // Setup real-time updates
+      setupRealTimeUpdates() {
+        // Update every 30 seconds
+        setInterval(async () => {
+          try {
+            const [lowStock, todayStats] = await Promise.all([
+              this.api.getLowStockIngredients(),
+              this.api.getTodaySummary()
+            ]);
+
+            this.lowStock = lowStock;
+            this.todayStats = todayStats;
+
+            // Update state
+            this.state.setState('data.lowStock', lowStock);
+            this.state.setState('data.todaySummary', todayStats);
+
+            // Update UI if on dashboard
+            if (this.currentView === 'dashboard') {
+              this.updateDashboardUI();
+            }
+
+          } catch (error) {
+            console.error('Real-time update error:', error);
+          }
+        }, 30000);
+      },
+
+      // Show toast notification
+      showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+          <div class="toast-content">
+            <span class="toast-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+            <span class="toast-message">${this.escapeHtml(message)}</span>
+          </div>
+          <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+        `;
+
+        container.appendChild(toast);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+          if (toast.parentElement) {
+            toast.remove();
+          }
+        }, 5000);
+      },
+
+      // Escape HTML
+      escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    };
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => POS.init());
+    } else {
+      POS.init();
+    }
+
+    // Global functions for onclick handlers
+    window.refreshLowStock = () => POS.loadInitialData();
+    window.openAIAssistant = () => POS.openAIAssistant();
+    window.quickPurchase = () => POS.navigateToView('purchase');
+    window.quickSale = () => POS.navigateToView('sale');
+    window.quickInventory = () => POS.navigateToView('inventory');
+    window.viewAllActivity = () => POS.navigateToView('reports');
+    window.resetPurchaseForm = () => document.getElementById('purchaseForm')?.reset();
+    window.resetSaleForm = () => document.getElementById('saleForm')?.reset();
+    window.sendAIMessage = (message) => POS.sendAIMessage(message);
+  </script>
+
+  <!-- Additional styles for responsiveness and animations -->
+  <style>
+    /* Mobile-first responsive design */
+    .app-container{ min-height:100vh; display:flex; flex-direction:column }
+
+    /* Headers */
+    .mobile-header{ position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--line);
+                    padding:var(--spacing-sm) var(--spacing-md) }
+    .mobile-header-content{ display:flex; align-items:center; justify-content:space-between }
+    .mobile-title{ font-size:var(--fs-lg); font-weight:600 }
+
+    .desktop-header{ padding:var(--spacing-md) var(--spacing-lg); border-bottom:1px solid var(--line); background:var(--bg) }
+    .desktop-header-content{ display:flex; align-items:center; justify-content:space-between }
+    .page-title{ font-size:var(--fs-xl); font-weight:600 }
+
+    /* Sidebar */
+    .sidebar{ position:fixed; top:0; left:0; width:280px; height:100vh; background:var(--card);
+               border-right:1px solid var(--line); z-index:200; overflow-y:auto;
+               transition:transform .3s ease }
+    .sidebar-content{ padding:var(--spacing-lg) }
+    .sidebar-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-xl) }
+    .sidebar-title{ font-size:var(--fs-xl); font-weight:700 }
+    .sidebar-nav{ display:flex; flex-direction:column; gap:var(--spacing-sm) }
+    .nav-item{ display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-md);
+               border-radius:var(--spacing-sm); text-decoration:none; color:var(--text-primary);
+               transition:all .2s ease }
+    .nav-item:hover{ background:var(--card); }
+    .nav-item.active{ background:var(--brand); color:var(--brand-ink) }
+    .nav-icon{ font-size:var(--fs-lg) }
+    .nav-label{ font-weight:500 }
+
+    /* Main content */
+    .main-content{ flex:1; display:flex; flex-direction:column; min-height:100vh }
+    .content-wrapper{ flex:1; padding:var(--spacing-md) }
+
+    /* Views */
+    .view{ display:none }
+    .view.active{ display:block }
+    .view-header{ margin-bottom:var(--spacing-xl) }
+
+    /* Forms */
+    .form-responsive{ max-width:600px; margin:0 auto }
+    .form-grid{ display:grid; gap:var(--spacing-md) }
+    .form-group{ margin-bottom:var(--spacing-md) }
+    .form-group-full{ grid-column:1 / -1 }
+    .form-label{ display:block; margin-bottom:var(--spacing-xs); font-weight:500 }
+    .form-input{ width:100%; padding:var(--spacing-sm); border:2px solid var(--line); border-radius:var(--spacing-sm);
+                  font-size:var(--fs-md); transition:border-color .2s ease }
+    .form-input:focus{ outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(37,99,235,0.1) }
+    .form-select{ width:100%; padding:var(--spacing-sm); border:2px solid var(--line); border-radius:var(--spacing-sm);
+                   font-size:var(--fs-md); background:#fff }
+    .form-textarea{ width:100%; padding:var(--spacing-sm); border:2px solid var(--line); border-radius:var(--spacing-sm);
+                     font-size:var(--fs-md); resize:vertical; min-height:100px }
+    .form-actions{ display:flex; gap:var(--spacing-sm); margin-top:var(--spacing-lg); justify-content:flex-end }
+
+    /* Input with suggestions */
+    .input-with-suggestions{ position:relative }
+    .suggestions-dropdown{ position:absolute; top:100%; left:0; right:0; max-height:200px; overflow-y:auto;
+                         background:var(--card); border:1px solid var(--line); border-radius:var(--spacing-sm);
+                         box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:10 }
+    .suggestion-item{ padding:var(--spacing-sm); cursor:pointer }
+    .suggestion-item:hover{ background:var(--line) }
+
+    /* Dashboard grid */
+    .dashboard-grid{ display:grid; gap:var(--spacing-lg) }
+    .card-title{ font-size:var(--fs-lg); font-weight:600; margin-bottom:var(--spacing-md) }
+    .card-content{ margin-bottom:var(--spacing-md) }
+    .card-actions{ display:flex; gap:var(--spacing-sm); flex-wrap:wrap }
+
+    /* Stats */
+    .summary-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--spacing-md) }
+    .stat-item{ text-align:center }
+    .stat-value{ font-size:var(--fs-xl); font-weight:700; color:var(--brand) }
+    .stat-label{ font-size:var(--fs-sm); color:var(--muted); margin-top:var(--spacing-xs) }
+
+    /* Activity list */
+    .activity-list{ max-height:200px; overflow-y:auto }
+    .activity-item{ padding:var(--spacing-sm); border-bottom:1px solid var(--line) }
+
+    /* Stock items */
+    .stock-item{ display:flex; justify-content:space-between; align-items:center; padding:var(--spacing-xs) }
+    .stock-name{ font-weight:500 }
+    .stock-quantity{ font-weight:600; padding:2px 6px; border-radius:var(--spacing-xs); font-size:var(--fs-sm) }
+    .stock-quantity.low{ background:#fef3c7; color:#92400e }
+    .stock-quantity.critical{ background:#fef2f2; color:#991b1b }
+
+    /* Sale summary */
+    .sale-summary{ background:var(--card); border:1px solid var(--line); border-radius:var(--spacing-sm);
+                    padding:var(--spacing-md); margin-bottom:var(--spacing-md) }
+    .summary-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--spacing-xs) }
+    .summary-row:last-child{ margin-bottom:0 }
+    .summary-total{ font-weight:700; font-size:var(--fs-lg); border-top:1px solid var(--line);
+                       padding-top:var(--spacing-xs); margin-top:var(--spacing-xs) }
+    .summary-label{ color:var(--muted) }
+    .summary-value{ font-weight:500 }
+
+    /* AI Assistant */
+    .ai-assistant-btn{ position:fixed; bottom:20px; right:20px; width:60px; height:60px;
+                       border-radius:50%; background:var(--brand); color:white; border:none;
+                       font-size:24px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.2);
+                       z-index:1000; transition:all .3s ease }
+    .ai-assistant-btn:hover{ transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,.3) }
+    .ai-pulse{ position:absolute; top:0; left:0; right:0; bottom:0; border-radius:50%;
+                  border:2px solid var(--brand); animation:pulse 2s infinite }
+    @keyframes pulse{ 0%{ transform:scale(1); opacity:1 } 50%{ transform:scale(1.1); opacity:.5 } 100%{ transform:scale(1); opacity:1 } }
+
+    .ai-assistant-panel{ position:fixed; bottom:90px; right:20px; width:min(400px,90vw); max-height:70vh;
+                        background:var(--card); border:1px solid var(--line); border-radius:var(--spacing-lg);
+                        box-shadow:0 8px 24px rgba(0,0,0,.2); z-index:1000;
+                        display:flex; flex-direction:column; transform:translateY(20px); opacity:0;
+                        transition:all .3s ease }
+    .ai-assistant-panel.show{ transform:translateY(0); opacity:1 }
+
+    .ai-panel-header{ padding:var(--spacing-md); border-bottom:1px solid var(--line);
+                      display:flex; align-items:center; justify-content:space-between }
+    .ai-panel-title{ font-weight:600 }
+
+    .ai-panel-messages{ flex:1; overflow-y:auto; padding:var(--spacing-md); max-height:40vh }
+    .ai-message{ display:flex; gap:var(--spacing-sm); margin-bottom:var(--spacing-md) }
+    .ai-message.ai-welcome{ background:#f0f9ff }
+    .ai-message.ai-user{ justify-content:flex-end }
+    .ai-message.ai-assistant{ justify-content:flex-start }
+    .ai-avatar{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+                  font-size:16px; flex-shrink:0 }
+    .ai-content{ flex:1; max-width:80% }
+    .ai-content p{ margin:0; line-height:1.4 }
+
+    .ai-panel-suggestions{ padding:var(--spacing-sm); border-top:1px solid var(--line) }
+    .suggestion-chips{ display:flex; flex-wrap:wrap; gap:var(--spacing-xs) }
+    .suggestion-chip{ padding:var(--spacing-xs) var(--spacing-sm); border:1px solid var(--line);
+                      border-radius:var(--spacing-xl); background:var(--bg); font-size:var(--fs-sm);
+                      cursor:pointer; transition:all .2s ease }
+    .suggestion-chip:hover{ border-color:var(--brand); background:var(--brand); color:white }
+
+    .ai-panel-input{ padding:var(--spacing-sm); border-top:1px solid var(--line) }
+    .ai-input-container{ display:flex; gap:var(--spacing-sm) }
+    .ai-input-field{ flex:1; padding:var(--spacing-sm); border:1px solid var(--line);
+                     border-radius:var(--spacing-sm); font-size:var(--fs-sm) }
+    .ai-send-btn{ padding:var(--spacing-sm) var(--spacing-md) }
+
+    /* Toast notifications */
+    .toast-container{ position:fixed; top:20px; right:20px; z-index:2000 }
+    .toast{ background:var(--card); border:1px solid var(--line); border-radius:var(--spacing-sm);
+               box-shadow:0 4px 12px rgba(0,0,0,.1); margin-bottom:var(--spacing-sm);
+               min-width:300px; animation:slideIn .3s ease }
+    .toast-content{ display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) }
+    .toast-close{ position:absolute; top:var(--spacing-xs); right:var(--spacing-xs);
+                  background:none; border:none; font-size:var(--fs-sm); cursor:pointer }
+    .toast-success{ border-left:4px solid #22c55e }
+    .toast-error{ border-left:4px solid #ef4444 }
+    .toast-info{ border-left:4px solid #3b82f6 }
+
+    @keyframes slideIn{ from{ transform:translateX(100%); opacity:0 } to{ transform:translateX(0); opacity:1 } }
+
+    /* Loading states */
+    .loading-placeholder{ color:var(--muted); font-style:italic }
+    .btn.loading{ position:relative; color:transparent }
+    .btn.loading::after{ content:''; position:absolute; top:50%; left:50%; width:16px; height:16px;
+                         margin:-8px 0 0 -8px; border:2px solid currentColor; border-radius:50%;
+                         border-top-color:transparent; animation:spin .8s linear infinite }
+    .btn-loading{ display:none }
+    .btn.loading .btn-loading{ display:inline }
+    .btn.loading .btn-content{ display:none }
+
+    /* Quick form */
+    .quick-form{ margin-bottom:var(--spacing-md) }
+    .form-row{ margin-bottom:var(--spacing-md) }
+    .input-group{ position:relative; flex:1 }
+    .quick-actions-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr));
+                        gap:var(--spacing-sm) }
+
+    /* Overlay */
+    .sidebar-overlay{ position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.5);
+                     z-index:150; opacity:0; visibility:hidden; transition:all .3s ease }
+    .sidebar-overlay.show{ opacity:1; visibility:visible }
+
+    /* Responsive breakpoints */
+    @media (min-width:768px){
+      .dashboard-grid{ grid-template-columns:repeat(2,1fr) }
+      .form-grid{ grid-template-columns:1fr 1fr }
+      .form-group-full{ grid-column:span 2 }
+      .ai-assistant-panel{ width:400px }
+    }
+
+    @media (min-width:1024px){
+      .dashboard-grid{ grid-template-columns:repeat(3,1fr) }
+      .ai-assistant-panel{ width:500px }
+    }
+
+    @media (max-width:767px){
+      .sidebar{ transform:translateX(-100%) }
+      .sidebar.mobile-open{ transform:translateX(0) }
+      .dashboard-grid{ grid-template-columns:1fr }
+      .form-grid{ grid-template-columns:1fr }
+      .form-group-full{ grid-column:span 1 }
+      .summary-stats{ grid-template-columns:1fr; gap:var(--spacing-sm) }
+      .ai-assistant-panel{ width:calc(100vw - 40px); right:20px; left:20px }
+      .toast-container{ top:10px; right:10px; left:10px }
+      .toast{ min-width:auto }
+    }
+
+    /* Touch optimizations */
+    @media (hover:none){
+      .btn:active{ transform:scale(.98) }
+      .nav-item:active{ transform:scale(.95) }
+    }
+
+    /* High contrast mode */
+    @media (prefers-contrast:high){
+      :root{ --line:#000; --brand:#0000ff; --bg:#fff }
+      .btn{ border-width:3px }
+      .card{ border-width:2px }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{ animation-duration:.01ms!important; animation-iteration-count:1!important;
+                            transition-duration:.01ms!important }
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Report Generation Module</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .test-container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    button.secondary {
+      background: #6c757d;
+    }
+    
+    button.secondary:hover {
+      background: #545b62;
+    }
+    
+    .output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      border-left: 4px solid #007bff;
+    }
+    
+    .success {
+      border-left-color: #28a745;
+      background: #d4edda;
+    }
+    
+    .error {
+      border-left-color: #dc3545;
+      background: #f8d7da;
+    }
+    
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>Report Generation Module Test</h1>
+    <p>Test the report generation functionality with sample test results.</p>
+    
+    <div class="button-group">
+      <button onclick="generateHTMLReport()">Generate HTML Report</button>
+      <button onclick="generateJSONReport()">Generate JSON Report</button>
+      <button onclick="generateCSVReport()">Generate CSV Report</button>
+      <button onclick="generateAllReports()" class="secondary">Generate All Formats</button>
+    </div>
+    
+    <div id="output"></div>
+  </div>
+
+  <script src="report-generation-module.js"></script>
+  <script>
+    // Sample test results
+    const sampleTestResults = {
+      metadata: {
+        timestamp: new Date().toISOString(),
+        duration: 45230,
+        environment: 'Test Environment',
+        version: '1.0.0'
+      },
+      categories: [
+        {
+          name: 'Sheet Verification',
+          status: 'passed',
+          tests: [
+            {
+              testId: 'sheet-001',
+              name: 'Verify all sheets exist',
+              description: 'Check that all 21 required sheets are present',
+              status: 'passed',
+              duration: 1250,
+              requirements: ['1.1', '1.2'],
+              errors: [],
+              warnings: []
+            },
+            {
+              testId: 'sheet-002',
+              name: 'Verify column mappings',
+              description: 'Validate column names match SHEET_STRUCTURE_REFERENCE.md',
+              status: 'passed',
+              duration: 2340,
+              requirements: ['1.2', '1.3'],
+              errors: [],
+              warnings: []
+            }
+          ],
+          issues: [],
+          recommendations: [
+            { message: 'Consider adding automated column type detection' }
+          ]
+        },
+        {
+          name: 'API Testing',
+          status: 'warning',
+          tests: [
+            {
+              testId: 'api-001',
+              name: 'Test getBootstrapData endpoint',
+              description: 'Verify bootstrap data returns correctly',
+              status: 'passed',
+              duration: 850,
+              requirements: ['2.1'],
+              errors: [],
+              warnings: []
+            },
+            {
+              testId: 'api-002',
+              name: 'Test searchIngredients endpoint',
+              description: 'Verify ingredient search functionality',
+              status: 'warning',
+              duration: 1120,
+              requirements: ['2.2'],
+              errors: [],
+              warnings: ['Response time exceeded 1000ms threshold']
+            }
+          ],
+          issues: [
+            { severity: 'medium', message: 'API response times are higher than expected' }
+          ],
+          recommendations: [
+            { message: 'Implement caching for frequently accessed data' },
+            { message: 'Consider pagination for large result sets' }
+          ]
+        },
+        {
+          name: 'Functional Testing',
+          status: 'failed',
+          tests: [
+            {
+              testId: 'func-001',
+              name: 'Test purchase flow',
+              description: 'Verify complete purchase recording process',
+              status: 'passed',
+              duration: 3450,
+              requirements: ['3.1', '3.5'],
+              errors: [],
+              warnings: []
+            },
+            {
+              testId: 'func-002',
+              name: 'Test sales flow',
+              description: 'Verify sale recording and calculations',
+              status: 'failed',
+              duration: 2890,
+              requirements: ['3.2', '3.3'],
+              errors: [
+                'Profit calculation incorrect for menu item #5',
+                'COGS not properly calculated when using FIFO'
+              ],
+              warnings: []
+            }
+          ],
+          issues: [
+            { severity: 'high', message: 'Sales calculations failing for certain menu items' },
+            { severity: 'critical', message: 'FIFO lot tracking not working correctly' }
+          ],
+          recommendations: [
+            { message: 'Review FIFO calculation logic in sales module' },
+            { message: 'Add unit tests for edge cases in profit calculations' }
+          ]
+        }
+      ],
+      requirements: {
+        covered: ['1.1', '1.2', '1.3', '2.1', '2.2', '3.1', '3.2', '3.3', '3.5'],
+        uncovered: ['4.1', '4.2', '5.1', '5.2'],
+        traceability: {
+          '1.1': { tests: ['sheet-001'], status: 'covered' },
+          '1.2': { tests: ['sheet-001', 'sheet-002'], status: 'covered' },
+          '1.3': { tests: ['sheet-002'], status: 'covered' },
+          '2.1': { tests: ['api-001'], status: 'covered' },
+          '2.2': { tests: ['api-002'], status: 'covered' },
+          '3.1': { tests: ['func-001'], status: 'covered' },
+          '3.2': { tests: ['func-002'], status: 'covered' },
+          '3.3': { tests: ['func-002'], status: 'covered' },
+          '3.5': { tests: ['func-001'], status: 'covered' },
+          '4.1': { tests: [], status: 'uncovered' },
+          '4.2': { tests: [], status: 'uncovered' },
+          '5.1': { tests: [], status: 'uncovered' },
+          '5.2': { tests: [], status: 'uncovered' }
+        }
+      }
+    };
+
+    // Initialize report generator
+    const reportGenerator = new ReportGenerationModule({
+      outputDir: './test-reports',
+      includeScreenshots: false,
+      historyLimit: 10
+    });
+
+    function showOutput(message, type = 'info') {
+      const output = document.getElementById('output');
+      output.className = `output ${type}`;
+      output.innerHTML = message;
+    }
+
+    function generateHTMLReport() {
+      try {
+        const html = reportGenerator.generateHTMLReport(sampleTestResults);
+        
+        // Open in new window
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(html);
+        newWindow.document.close();
+        
+        showOutput('✓ HTML report generated and opened in new window', 'success');
+      } catch (error) {
+        showOutput(`✗ Error generating HTML report: ${error.message}`, 'error');
+      }
+    }
+
+    function generateJSONReport() {
+      try {
+        const json = reportGenerator.generateJSONReport(sampleTestResults);
+        
+        // Download JSON file
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `test-report-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        showOutput('✓ JSON report generated and downloaded', 'success');
+        
+        // Show preview
+        setTimeout(() => {
+          showOutput(`
+            <strong>JSON Report Preview:</strong>
+            <pre>${json.substring(0, 500)}...</pre>
+          `, 'success');
+        }, 500);
+      } catch (error) {
+        showOutput(`✗ Error generating JSON report: ${error.message}`, 'error');
+      }
+    }
+
+    function generateCSVReport() {
+      try {
+        const csv = reportGenerator.generateCSVReport(sampleTestResults);
+        
+        // Download CSV file
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `test-report-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        showOutput('✓ CSV report generated and downloaded', 'success');
+        
+        // Show preview
+        setTimeout(() => {
+          showOutput(`
+            <strong>CSV Report Preview:</strong>
+            <pre>${csv.split('\n').slice(0, 10).join('\n')}...</pre>
+          `, 'success');
+        }, 500);
+      } catch (error) {
+        showOutput(`✗ Error generating CSV report: ${error.message}`, 'error');
+      }
+    }
+
+    async function generateAllReports() {
+      try {
+        showOutput('Generating all report formats...', 'info');
+        
+        const result = await reportGenerator.saveReports(
+          sampleTestResults,
+          ['html', 'json', 'csv']
+        );
+        
+        if (result.success) {
+          const fileList = result.files
+            .map(f => `• ${f.format.toUpperCase()}: ${f.filename} (${f.status})`)
+            .join('<br>');
+          
+          showOutput(`
+            <strong>✓ All reports generated successfully!</strong><br><br>
+            ${fileList}
+          `, 'success');
+        } else {
+          showOutput(`✗ Error generating reports: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        showOutput(`✗ Error generating reports: ${error.message}`, 'error');
+      }
+    }
+
+    // Show initial message
+    showOutput('Click a button above to generate test reports in different formats.', 'info');
+  </script>
+</body>
+</html>

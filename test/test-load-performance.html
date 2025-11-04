@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Load Performance Testing</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    
+    .test-controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .test-controls button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .test-controls button:hover {
+      background-color: #45a049;
+    }
+    
+    .test-controls button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    #results {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .test-category {
+      margin-bottom: 30px;
+      border-left: 4px solid #2196F3;
+      padding-left: 15px;
+    }
+    
+    .test-category h3 {
+      color: #2196F3;
+      margin-top: 0;
+    }
+    
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid #ccc;
+    }
+    
+    .test-result.passed {
+      background-color: #e8f5e9;
+      border-left-color: #4CAF50;
+    }
+    
+    .test-result.failed {
+      background-color: #ffebee;
+      border-left-color: #f44336;
+    }
+    
+    .test-result-header {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .test-result-details {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .summary-card {
+      display: inline-block;
+      background: white;
+      padding: 15px 25px;
+      margin: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .summary-card .value {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    
+    .summary-card .label {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .summary-card.passed .value {
+      color: #4CAF50;
+    }
+    
+    .summary-card.failed .value {
+      color: #f44336;
+    }
+    
+    .summary-card.total .value {
+      color: #2196F3;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .metric-card {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 4px;
+      border-left: 3px solid #4CAF50;
+    }
+    
+    .metric-card h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .metric-card .metric-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Load Performance Testing</h1>
+  
+  <div class="test-controls">
+    <h3>Test Controls</h3>
+    <button onclick="runAllTests()" id="runAllBtn">Run All Tests</button>
+    <button onclick="runLoadTest()">Test Load Performance</button>
+    <button onclick="runConcurrentTest()">Test Concurrent Operations</button>
+    <button onclick="runOfflineTest()">Test Offline Mode</button>
+    <button onclick="runPWATest()">Test PWA Installation</button>
+    <button onclick="runSearchTest()">Test Search Performance</button>
+    <button onclick="clearResults()">Clear Results</button>
+  </div>
+  
+  <div id="results"></div>
+  
+  <script src="test-config.js"></script>
+  <script src="test-utilities.js"></script>
+  <script src="performance-testing-module.js"></script>
+  
+  <script>
+    let performanceModule;
+    
+    // Initialize module
+    function initModule() {
+      performanceModule = new PerformanceTestingModule({
+        apiUrl: TestConfig.environment.apiUrl,
+        timeout: TestConfig.environment.timeout,
+        cacheThreshold: 10,
+        apiThreshold: 2000,
+        sheetThreshold: 100,
+        offlineThreshold: 500,
+        searchThreshold: 300,
+        pwaInstallThreshold: 3000
+      });
+    }
+    
+    // Run all tests
+    async function runAllTests() {
+      const btn = document.getElementById('runAllBtn');
+      btn.disabled = true;
+      btn.textContent = 'Running Tests...';
+      
+      showLoading();
+      initModule();
+      
+      try {
+        const results = await performanceModule.runAllLoadTests();
+        displayResults(results);
+      } catch (error) {
+        displayError(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Run All Tests';
+      }
+    }
+    
+    // Run individual tests
+    async function runLoadTest() {
+      await runIndividualTest('Load Performance', () => performanceModule.testLoadPerformance());
+    }
+    
+    async function runConcurrentTest() {
+      await runIndividualTest('Concurrent Operations', () => performanceModule.testConcurrentOperations());
+    }
+    
+    async function runOfflineTest() {
+      await runIndividualTest('Offline Mode', () => performanceModule.testOfflineMode());
+    }
+    
+    async function runPWATest() {
+      await runIndividualTest('PWA Installation', () => performanceModule.testPWAInstallation());
+    }
+    
+    async function runSearchTest() {
+      await runIndividualTest('Search Performance', () => performanceModule.testSearchPerformance());
+    }
+    
+    async function runIndividualTest(name, testFn) {
+      showLoading();
+      initModule();
+      
+      try {
+        const result = await testFn();
+        displayIndividualResult(name, result);
+      } catch (error) {
+        displayError(error);
+      }
+    }
+    
+    // Display functions
+    function showLoading() {
+      document.getElementById('results').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Running performance tests...</p>
+        </div>
+      `;
+    }
+    
+    function displayResults(results) {
+      const resultsDiv = document.getElementById('results');
+      
+      let html = '<h2>Test Results</h2>';
+      
+      // Summary cards
+      html += '<div style="margin: 20px 0;">';
+      html += `
+        <div class="summary-card total">
+          <div class="label">Total Tests</div>
+          <div class="value">${results.summary.totalTests}</div>
+        </div>
+        <div class="summary-card passed">
+          <div class="label">Passed</div>
+          <div class="value">${results.summary.passed}</div>
+        </div>
+        <div class="summary-card failed">
+          <div class="label">Failed</div>
+          <div class="value">${results.summary.failed}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Success Rate</div>
+          <div class="value" style="color: ${results.passed ? '#4CAF50' : '#f44336'}">
+            ${((results.summary.passed / results.summary.totalTests) * 100).toFixed(1)}%
+          </div>
+        </div>
+      `;
+      html += '</div>';
+      
+      // Individual test categories
+      const categories = [
+        { key: 'loadPerformance', title: 'Load Performance Tests' },
+        { key: 'concurrentOperations', title: 'Concurrent Operations Tests' },
+        { key: 'offlineMode', title: 'Offline Mode Tests' },
+        { key: 'pwaInstallation', title: 'PWA Installation Tests' },
+        { key: 'searchPerformance', title: 'Search Performance Tests' }
+      ];
+      
+      categories.forEach(category => {
+        if (results.results[category.key]) {
+          html += formatTestCategory(category.title, results.results[category.key]);
+        }
+      });
+      
+      // Performance metrics
+      if (results.performanceMetrics) {
+        html += formatPerformanceMetrics(results.performanceMetrics);
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+    
+    function displayIndividualResult(name, result) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = `<h2>${name} Results</h2>` + formatTestCategory(name, result);
+    }
+    
+    function formatTestCategory(title, categoryResult) {
+      let html = `<div class="test-category"><h3>${title}</h3>`;
+      
+      if (categoryResult.results && Array.isArray(categoryResult.results)) {
+        categoryResult.results.forEach(test => {
+          const statusClass = test.passed ? 'passed' : 'failed';
+          const statusIcon = test.passed ? '✓' : '✗';
+          
+          html += `
+            <div class="test-result ${statusClass}">
+              <div class="test-result-header">
+                ${statusIcon} ${test.testName}
+              </div>
+              <div class="test-result-details">
+                ${test.message || ''}
+                ${test.duration ? `<br>Duration: ${test.duration.toFixed(2)}ms` : ''}
+                ${test.threshold ? `<br>Threshold: ${test.threshold}ms` : ''}
+                ${test.recordCount ? `<br>Records: ${test.recordCount}` : ''}
+                ${test.requirement ? `<br>Requirement: ${test.requirement}` : ''}
+                ${test.error ? `<br><span style="color: #f44336;">Error: ${test.error}</span>` : ''}
+              </div>
+            </div>
+          `;
+        });
+      }
+      
+      html += `
+        <div style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+          <strong>Summary:</strong> 
+          ${categoryResult.summary.passed}/${categoryResult.summary.total} tests passed
+          ${categoryResult.passed ? '✓' : '✗'}
+        </div>
+      `;
+      
+      html += '</div>';
+      return html;
+    }
+    
+    function formatPerformanceMetrics(metrics) {
+      let html = '<div class="test-category"><h3>Performance Metrics</h3>';
+      html += '<div class="metric-grid">';
+      
+      // Cache metrics
+      if (metrics.cache && metrics.cache.write) {
+        html += `
+          <div class="metric-card">
+            <h4>Cache Write</h4>
+            <div class="metric-value">${metrics.cache.write.avgPerOperation.toFixed(2)}ms</div>
+            <div>per operation</div>
+          </div>
+        `;
+      }
+      
+      if (metrics.cache && metrics.cache.read) {
+        html += `
+          <div class="metric-card">
+            <h4>Cache Read</h4>
+            <div class="metric-value">${metrics.cache.read.avgPerOperation.toFixed(2)}ms</div>
+            <div>per operation</div>
+          </div>
+        `;
+      }
+      
+      // Concurrent metrics
+      if (metrics.concurrent && metrics.concurrent.api) {
+        html += `
+          <div class="metric-card">
+            <h4>Concurrent API Calls</h4>
+            <div class="metric-value">${metrics.concurrent.api.successful}/${metrics.concurrent.api.requests}</div>
+            <div>successful in ${metrics.concurrent.api.duration.toFixed(2)}ms</div>
+          </div>
+        `;
+      }
+      
+      // Offline metrics
+      if (metrics.offline && metrics.offline.load) {
+        html += `
+          <div class="metric-card">
+            <h4>Offline Data Load</h4>
+            <div class="metric-value">${metrics.offline.load.duration.toFixed(2)}ms</div>
+            <div>${metrics.offline.load.recordsLoaded} records</div>
+          </div>
+        `;
+      }
+      
+      // Search metrics
+      if (metrics.search && metrics.search.simple) {
+        html += `
+          <div class="metric-card">
+            <h4>Simple Search</h4>
+            <div class="metric-value">${metrics.search.simple.duration.toFixed(2)}ms</div>
+            <div>${metrics.search.simple.resultsFound} results found</div>
+          </div>
+        `;
+      }
+      
+      if (metrics.search && metrics.search.realTime) {
+        html += `
+          <div class="metric-card">
+            <h4>Real-time Search</h4>
+            <div class="metric-value">${metrics.search.realTime.avgDuration.toFixed(2)}ms</div>
+            <div>avg, max ${metrics.search.realTime.maxDuration.toFixed(2)}ms</div>
+          </div>
+        `;
+      }
+      
+      html += '</div></div>';
+      return html;
+    }
+    
+    function displayError(error) {
+      document.getElementById('results').innerHTML = `
+        <div class="test-result failed">
+          <div class="test-result-header">✗ Error Running Tests</div>
+          <div class="test-result-details">${error.message}</div>
+        </div>
+      `;
+    }
+    
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+    }
+    
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      console.log('Load Performance Testing page loaded');
+      console.log('Click "Run All Tests" to start testing');
+    });
+  </script>
+</body>
+</html>

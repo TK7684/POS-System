@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mobile Modal Test - POS ร้านกุ้งแซ่บ</title>
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/mobile-optimized.css">
+    <style>
+        body {
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+        
+        .test-section {
+            background: var(--card);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid var(--line);
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: var(--brand);
+            font-size: var(--fs-lg);
+        }
+        
+        .test-section p {
+            color: var(--muted);
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+        }
+        
+        .test-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .demo-content {
+            padding: 20px 0;
+        }
+        
+        .demo-item {
+            padding: 16px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .demo-item h4 {
+            margin: 0 0 8px 0;
+            color: var(--text);
+            font-size: var(--fs-base);
+        }
+        
+        .demo-item p {
+            margin: 0;
+            color: var(--muted);
+            font-size: var(--fs-sm);
+        }
+        
+        .device-info {
+            background: #eff6ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #dbeafe;
+        }
+        
+        .device-info h3 {
+            margin: 0 0 12px 0;
+            color: #1d4ed8;
+            font-size: var(--fs-base);
+        }
+        
+        .device-info p {
+            margin: 4px 0;
+            font-size: var(--fs-sm);
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="appbar">
+            <div class="title">📱 Mobile Modal Test</div>
+        </div>
+        
+        <main>
+            <div class="device-info">
+                <h3>📊 Device Information</h3>
+                <p><strong>Screen Width:</strong> <span id="screen-width"></span>px</p>
+                <p><strong>Viewport Height:</strong> <span id="viewport-height"></span>px</p>
+                <p><strong>Layout Mode:</strong> <span id="layout-mode"></span></p>
+                <p><strong>Safe Area Bottom:</strong> <span id="safe-area"></span>px</p>
+            </div>
+            
+            <div class="test-section">
+                <h2>🎯 Modal System Tests</h2>
+                <p>Test the mobile-optimized modal system with bottom sheet on mobile and centered modal on tablet/desktop.</p>
+                
+                <div class="test-buttons">
+                    <button class="btn brand" onclick="openSimpleModal()">
+                        Open Simple Modal
+                    </button>
+                    <button class="btn brand" onclick="openLargeModal()">
+                        Open Large Modal
+                    </button>
+                    <button class="btn brand" onclick="openScrollableModal()">
+                        Open Scrollable Modal
+                    </button>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>✅ Expected Behavior</h2>
+                <div class="demo-content">
+                    <div class="demo-item">
+                        <h4>📱 Mobile (< 768px)</h4>
+                        <p>• Modal appears as bottom sheet<br>
+                        • Full width with 90vh max height<br>
+                        • 24px rounded top corners<br>
+                        • Respects safe area at bottom<br>
+                        • Close button 48px × 48px at top-right</p>
+                    </div>
+                    
+                    <div class="demo-item">
+                        <h4>💻 Tablet/Desktop (≥ 768px)</h4>
+                        <p>• Modal centered on screen<br>
+                        • Max width 600px (1200px for large)<br>
+                        • 24px rounded all corners<br>
+                        • Scale animation on open<br>
+                        • Close button 48px × 48px at top-right</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Update device info
+        function updateDeviceInfo() {
+            document.getElementById('screen-width').textContent = window.innerWidth;
+            document.getElementById('viewport-height').textContent = window.innerHeight;
+            
+            const layoutMode = window.innerWidth < 768 ? 'Mobile (Bottom Sheet)' : 'Tablet/Desktop (Centered)';
+            document.getElementById('layout-mode').textContent = layoutMode;
+            
+            const safeArea = getComputedStyle(document.documentElement).getPropertyValue('--sa-b') || '0px';
+            document.getElementById('safe-area').textContent = safeArea;
+        }
+        
+        updateDeviceInfo();
+        window.addEventListener('resize', updateDeviceInfo);
+        
+        // Modal functions
+        function openSimpleModal() {
+            const modal = createModal('simple-modal', 'Simple Modal', `
+                <p style="font-size: var(--fs-sm); line-height: 1.6; color: var(--text);">
+                    This is a simple modal with basic content. On mobile devices (< 768px), 
+                    this modal appears as a bottom sheet that slides up from the bottom. 
+                    On larger screens, it appears centered.
+                </p>
+                <p style="font-size: var(--fs-sm); line-height: 1.6; color: var(--muted); margin-top: 16px;">
+                    The close button is 48px × 48px for easy tapping, positioned at the top-right 
+                    with 16px spacing from the edge.
+                </p>
+            `);
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+        
+        function openLargeModal() {
+            const modal = createModal('large-modal', 'Large Modal', `
+                <div style="display: grid; gap: 16px;">
+                    <div style="padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px;">
+                        <h4 style="margin: 0 0 8px 0; font-size: var(--fs-base);">Feature 1</h4>
+                        <p style="margin: 0; font-size: var(--fs-sm); color: var(--muted);">
+                            This large modal demonstrates how content adapts to different screen sizes.
+                        </p>
+                    </div>
+                    <div style="padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px;">
+                        <h4 style="margin: 0 0 8px 0; font-size: var(--fs-base);">Feature 2</h4>
+                        <p style="margin: 0; font-size: var(--fs-sm); color: var(--muted);">
+                            On desktop, this modal can be up to 1200px wide.
+                        </p>
+                    </div>
+                    <div style="padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px;">
+                        <h4 style="margin: 0 0 8px 0; font-size: var(--fs-base);">Feature 3</h4>
+                        <p style="margin: 0; font-size: var(--fs-sm); color: var(--muted);">
+                            The modal respects safe areas on devices with notches.
+                        </p>
+                    </div>
+                </div>
+            `, true);
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+        
+        function openScrollableModal() {
+            let content = '<div style="display: grid; gap: 12px;">';
+            for (let i = 1; i <= 20; i++) {
+                content += `
+                    <div style="padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px;">
+                        <h4 style="margin: 0 0 8px 0; font-size: var(--fs-base);">Item ${i}</h4>
+                        <p style="margin: 0; font-size: var(--fs-sm); color: var(--muted);">
+                            This is item number ${i}. The modal body is scrollable when content exceeds the max height.
+                        </p>
+                    </div>
+                `;
+            }
+            content += '</div>';
+            
+            const modal = createModal('scrollable-modal', 'Scrollable Content', content);
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+        
+        function createModal(id, title, content, isLarge = false) {
+            const modal = document.createElement('div');
+            modal.id = id;
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content${isLarge ? ' large' : ''}">
+                    <div class="modal-header">
+                        <h2>${title}</h2>
+                        <button class="close-btn" onclick="closeModal('${id}')" aria-label="Close modal">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                </div>
+            `;
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(id);
+                }
+            });
+            
+            return modal;
+        }
+        
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.remove(), 300);
+            }
+        }
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal.show');
+                modals.forEach(modal => {
+                    closeModal(modal.id);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

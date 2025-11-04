@@ -4,7 +4,8 @@
  */
 
 class PurchaseModule {
-  constructor() {
+  constructor(dropdownManager = null) {
+    this.dropdownManager = dropdownManager;
     this.initialized = false;
     this.recentIngredients = new Set();
     this.priceMemory = new Map();
@@ -13,15 +14,126 @@ class PurchaseModule {
   /**
    * Initialize purchase module
    */
-  init() {
+  async init() {
     if (this.initialized) return;
     
-    this.setupEventListeners();
-    this.loadRecentData();
-    this.setupSmartSuggestions();
-    this.initialized = true;
-    
-    console.log('Purchase module initialized');
+    try {
+      // Initialize dropdowns if dropdownManager is available
+      if (this.dropdownManager) {
+        await this.initializeDropdowns();
+      }
+      
+      this.setupEventListeners();
+      this.loadRecentData();
+      this.setupSmartSuggestions();
+      this.initialized = true;
+      
+      console.log('Purchase module initialized');
+    } catch (error) {
+      console.error('Failed to initialize Purchase module:', error);
+      this.showInitializationError();
+    }
+  }
+
+  /**
+   * Initialize dropdowns on Purchase screen
+   */
+  async initializeDropdowns() {
+    try {
+      const ingredientSelect = document.getElementById('p_ing');
+      
+      if (!ingredientSelect) {
+        console.warn('Ingredient dropdown not found on Purchase screen');
+        return;
+      }
+      
+      // Populate ingredient dropdown
+      await this.dropdownManager.populateIngredients(ingredientSelect, {
+        includePlaceholder: true,
+        forceRefresh: false
+      });
+      
+      // Set up ingredient change handler for auto-populating unit dropdown
+      this.dropdownManager.onIngredientChange(ingredientSelect, (ingredientData) => {
+        this.handleIngredientChange(ingredientData);
+      });
+      
+      console.log('Purchase screen dropdowns initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Purchase screen dropdowns:', error);
+      this.showDropdownError('ไม่สามารถโหลดข้อมูลวัตถุดิบได้ กรุณาลองใหม่อีกครั้ง');
+      throw error;
+    }
+  }
+
+  /**
+   * Handle ingredient selection change - auto-populate unit dropdown
+   */
+  handleIngredientChange(ingredientData) {
+    try {
+      const unitSelect = document.getElementById('p_unit');
+      
+      if (!unitSelect) {
+        console.warn('Unit dropdown not found');
+        return;
+      }
+      
+      // Clear existing options
+      unitSelect.innerHTML = '';
+      
+      // Add placeholder
+      const placeholderOption = document.createElement('option');
+      placeholderOption.value = '';
+      placeholderOption.textContent = 'เลือก...';
+      unitSelect.appendChild(placeholderOption);
+      
+      // Add buy_unit as the primary option
+      if (ingredientData.buyUnit) {
+        const buyUnitOption = document.createElement('option');
+        buyUnitOption.value = ingredientData.buyUnit;
+        buyUnitOption.textContent = ingredientData.buyUnit;
+        buyUnitOption.selected = true; // Auto-select buy_unit
+        unitSelect.appendChild(buyUnitOption);
+      }
+      
+      // Add stock_unit as alternative option
+      if (ingredientData.stockUnit && ingredientData.stockUnit !== ingredientData.buyUnit) {
+        const stockUnitOption = document.createElement('option');
+        stockUnitOption.value = ingredientData.stockUnit;
+        stockUnitOption.textContent = ingredientData.stockUnit;
+        unitSelect.appendChild(stockUnitOption);
+      }
+      
+      // Add to recent ingredients for smart suggestions
+      this.recentIngredients.add(ingredientData.id);
+      this.saveRecentData();
+      
+      // Load suggested price if available
+      this.loadSuggestedPrice(ingredientData.id);
+      
+      console.log(`Unit dropdown auto-populated for ingredient: ${ingredientData.name}`);
+    } catch (error) {
+      console.error('Error handling ingredient change:', error);
+      this.showDropdownError('เกิดข้อผิดพลาดในการเลือกวัตถุดิบ');
+    }
+  }
+
+  /**
+   * Show initialization error message
+   */
+  showInitializationError() {
+    if (window.POS && window.POS.critical && window.POS.critical.toast) {
+      window.POS.critical.toast('⚠️ ไม่สามารถเริ่มต้นหน้าจอการซื้อได้ กรุณาลองใหม่อีกครั้ง');
+    }
+  }
+
+  /**
+   * Show dropdown error message
+   */
+  showDropdownError(message) {
+    if (window.POS && window.POS.critical && window.POS.critical.toast) {
+      window.POS.critical.toast(`❌ ${message}`);
+    }
   }
 
   /**
@@ -64,7 +176,8 @@ class PurchaseModule {
   }
 
   /**
-   * Handle ingredient selection change
+   * Handle ingredient selection change (legacy event handler)
+   * Note: This is kept for backward compatibility with existing code
    */
   onIngredientChange(event) {
     const ingredientId = event.target.value;

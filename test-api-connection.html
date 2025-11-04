@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Connection</title>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 POS API Connection Test</h1>
+
+        <div class="test-section info">
+            <h3>📋 API Configuration</h3>
+            <p><strong>⚠️ Important:</strong> Make sure your Google Apps Script is deployed as a Web App with "Execute
+                as: Me" and "Who has access: Anyone"</p>
+            <label for="apiUrl">Google Apps Script URL:</label>
+            <input type="url" id="apiUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+            <button onclick="saveApiUrl()">� Save URL<v /button>
+                    <button onclick="loadSavedUrl()">📂 Load Saved URL</button>
+                    <button onclick="showDeploymentInstructions()">📖 Deployment Instructions</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 API Tests</h3>
+            <button onclick="testConnectivity()">🌐 Test Basic Connectivity</button>
+            <button onclick="testGetBootstrapData()">Test getBootstrapData</button>
+            <button onclick="testSearchIngredients()">Test searchIngredients</button>
+            <button onclick="testGetIngredientMap()">Test getIngredientMap</button>
+            <button onclick="testAddPurchase()">Test addPurchase</button>
+            <button onclick="testAllEndpoints()">🚀 Test All Endpoints</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let apiUrl = '';
+
+        // Load saved URL on page load
+        window.onload = function () {
+            loadSavedUrl();
+        };
+
+        function saveApiUrl() {
+            const url = document.getElementById('apiUrl').value;
+            if (url) {
+                localStorage.setItem('pos-api-url', url);
+                apiUrl = url;
+                showResult('✅ API URL saved successfully', 'success');
+            } else {
+                showResult('❌ Please enter a valid URL', 'error');
+            }
+        }
+
+        function loadSavedUrl() {
+            const saved = localStorage.getItem('pos-api-url');
+            if (saved) {
+                document.getElementById('apiUrl').value = saved;
+                apiUrl = saved;
+                showResult('📂 Loaded saved API URL', 'info');
+            }
+        }
+
+        async function makeApiRequest(action, params = {}) {
+            if (!apiUrl) {
+                throw new Error('Please set API URL first');
+            }
+
+            const requestData = { action, ...params };
+
+            try {
+                console.log('Making API request:', { url: apiUrl, data: requestData });
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                    mode: 'cors'
+                });
+
+                console.log('Response status:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('Response data:', data);
+                return data;
+
+            } catch (error) {
+                console.error('API Request failed:', error);
+
+                // Provide more specific error messages
+                if (error.message.includes('Failed to fetch')) {
+                    throw new Error('Failed to connect to API. Please check:\n1. Apps Script is deployed as Web App\n2. URL is correct\n3. Permissions are set to "Anyone"\n4. Internet connection is working');
+                }
+
+                throw error;
+            }
+        }
+
+        async function testGetBootstrapData() {
+            try {
+                showResult('🔄 Testing getBootstrapData...', 'info');
+                const result = await makeApiRequest('getBootstrapData');
+                showResult('✅ getBootstrapData Success', 'success', result);
+            } catch (error) {
+                showResult('❌ getBootstrapData Failed: ' + error.message, 'error', error);
+            }
+        }
+
+        async function testSearchIngredients() {
+            try {
+                showResult('🔄 Testing searchIngredients...', 'info');
+                const result = await makeApiRequest('searchIngredients', {
+                    query: 'กุ้ง',
+                    limit: 5
+                });
+                showResult('✅ searchIngredients Success', 'success', result);
+            } catch (error) {
+                showResult('❌ searchIngredients Failed: ' + error.message, 'error', error);
+            }
+        }
+
+        async function testGetIngredientMap() {
+            try {
+                showResult('🔄 Testing getIngredientMap...', 'info');
+                const result = await makeApiRequest('getIngredientMap');
+                showResult('✅ getIngredientMap Success', 'success', result);
+            } catch (error) {
+                showResult('❌ getIngredientMap Failed: ' + error.message, 'error', error);
+            }
+        }
+
+        async function testAddPurchase() {
+            try {
+                showResult('🔄 Testing addPurchase...', 'info');
+                const result = await makeApiRequest('addPurchase', {
+                    ingredient_id: 'ING001',
+                    qtyBuy: 5,
+                    totalPrice: 1000,
+                    unitPrice: 200,
+                    unit: 'กก.',
+                    supplierNote: 'Test purchase'
+                });
+                showResult('✅ addPurchase Success', 'success', result);
+            } catch (error) {
+                showResult('❌ addPurchase Failed: ' + error.message, 'error', error);
+            }
+        }
+
+        async function testConnectivity() {
+            if (!apiUrl) {
+                showResult('❌ Please set API URL first', 'error');
+                return;
+            }
+
+            showResult('🌐 Testing basic connectivity...', 'info');
+            showResult('📝 Remember: If you made changes to your Apps Script, you need to create a NEW deployment (not update existing)', 'info');
+
+            // Test 1: Simple GET request
+            try {
+                showResult('🔄 Testing GET request...', 'info');
+                const getUrl = `${apiUrl}?action=getBootstrapData`;
+                const getResponse = await fetch(getUrl, { method: 'GET', mode: 'cors' });
+
+                if (getResponse.ok) {
+                    const getData = await getResponse.json();
+                    showResult('✅ GET request successful', 'success', getData);
+                } else {
+                    showResult(`⚠️ GET request failed: ${getResponse.status} ${getResponse.statusText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ GET request failed: ${error.message}`, 'error');
+            }
+
+            // Test 2: Simple POST request
+            try {
+                showResult('🔄 Testing POST request...', 'info');
+                const postResponse = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getBootstrapData' }),
+                    mode: 'cors'
+                });
+
+                if (postResponse.ok) {
+                    const postData = await postResponse.json();
+                    showResult('✅ POST request successful', 'success', postData);
+                } else {
+                    showResult(`⚠️ POST request failed: ${postResponse.status} ${postResponse.statusText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ POST request failed: ${error.message}`, 'error');
+                if (error.message.includes('Failed to fetch')) {
+                    showResult('💡 Tip: POST requests might fail if the Apps Script needs to be redeployed after code changes. Try creating a new deployment!', 'info');
+                }
+            }
+        }
+
+        async function testAllEndpoints() {
+            const tests = [
+                { name: 'getBootstrapData', action: 'getBootstrapData', params: {} },
+                { name: 'getIngredientMap', action: 'getIngredientMap', params: {} },
+                { name: 'searchIngredients', action: 'searchIngredients', params: { query: 'กุ้ง', limit: 3 } },
+                { name: 'getLowStockHTML', action: 'getLowStockHTML', params: {} },
+                { name: 'getReport', action: 'getReport', params: { type: 'daily' } }
+            ];
+
+            showResult('🚀 Running comprehensive API tests...', 'info');
+
+            for (const test of tests) {
+                try {
+                    showResult(`🔄 Testing ${test.name}...`, 'info');
+                    const result = await makeApiRequest(test.action, test.params);
+                    showResult(`✅ ${test.name} - SUCCESS`, 'success', result);
+                } catch (error) {
+                    showResult(`❌ ${test.name} - FAILED: ${error.message}`, 'error', error);
+                }
+
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            showResult('🏁 All tests completed!', 'info');
+        }
+
+        function showDeploymentInstructions() {
+            const instructions = `
+📖 How to Deploy Google Apps Script as Web App:
+
+1. Open your Google Apps Script project
+2. Click "Deploy" → "New deployment"
+3. Choose type: "Web app"
+4. Set configuration:
+   - Execute as: "Me (your email)"
+   - Who has access: "Anyone"
+5. Click "Deploy"
+6. Copy the Web app URL
+7. Paste it in the URL field above
+
+⚠️ Important Notes:
+- You may need to authorize the script first
+- The URL should end with "/exec"
+- Make sure all functions are saved before deploying
+- If you update the script, create a new deployment or update the existing one
+
+🔧 Troubleshooting:
+- If you get permission errors, check the "Who has access" setting
+- If the URL doesn't work, try creating a new deployment
+- Make sure your Google account has permission to run the script
+            `;
+
+            alert(instructions);
+        }
+
+        function showResult(message, type, data = null) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+
+            let content = `<h4>${message}</h4>`;
+            if (data) {
+                content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+
+            div.innerHTML = content;
+            results.appendChild(div);
+
+            // Scroll to bottom
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Test invalid action to verify error handling
+        async function testInvalidAction() {
+            try {
+                showResult('🔄 Testing invalid action...', 'info');
+                const result = await makeApiRequest('invalidAction');
+                showResult('❌ Should have failed but got result', 'error', result);
+            } catch (error) {
+                showResult('✅ Invalid action properly rejected: ' + error.message, 'success');
+            }
+        }
+    </script>
+</body>
+
+</html>

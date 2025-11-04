@@ -1,899 +1,1273 @@
 <!doctype html>
 <html lang="th">
-<head>
-  <meta charset="utf-8" />
-  <title>POS ร้านกุ้งแซ่บ</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <title>POS System</title>
 
-  <!-- Critical for responsive behaviour -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0e7a5f" />
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
 
-  <!-- Critical CSS inlined for fastest initial render -->
-  <style>
-    /* --------- Critical CSS - Above-the-fold only --------- */
-    *,*::before,*::after{box-sizing:border-box}
-    html,body{height:100%;margin:0;padding:0;width:100%;max-width:100vw;overflow-x:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-    body{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    img,svg,video,canvas{display:block;max-width:100%;height:auto}
-    button,input,select,textarea{font:inherit;font-size:16px!important}
-    a{color:inherit;text-decoration:none}
-    
-    /* Force full width for Google Apps Script */
-    html,body,div,.app,#app{width:100%!important;max-width:100vw!important;margin:0!important;padding:0!important;overflow-x:hidden!important}
+        <!-- Firebase Integration -->
+        <script>
+            // Initialize Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyDummyKeyForDevelopment",
+                authDomain: "pos-agent-8767b.firebaseapp.com",
+                projectId: "pos-agent-8767b",
+                storageBucket: "pos-agent-8767b.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:abcdef",
+            };
 
-    /* --------- Design tokens --------- */
-    :root{
-      --bg:#f8fafc; --card:#ffffff; --text:#1e293b; --muted:#64748b;
-      --brand:#0f766e; --brand-2:#14b8a6; --danger:#dc2626; --ok:#059669;
-      --line:#e2e8f0; --radius:12px;
-      --appbar-h:60px; --tabbar-h:70px; --touch:52px;
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
 
-      /* dynamic viewport fix (set in JS) */
-      --vh:1vh;
+            // Mock data for development
+            const mockData = {
+                ingredients: [
+                    {
+                        id: 1,
+                        name: "กุ้ง",
+                        current_stock: 5,
+                        min_stock: 3,
+                        unit: "kg",
+                    },
+                    {
+                        id: 2,
+                        name: "ไก่",
+                        current_stock: 2,
+                        min_stock: 5,
+                        unit: "kg",
+                    },
+                    {
+                        id: 3,
+                        name: "น้ำปลา",
+                        current_stock: 1,
+                        min_stock: 3,
+                        unit: "ขวด",
+                    },
+                    {
+                        id: 4,
+                        name: "หอมแดง",
+                        current_stock: 0.5,
+                        min_stock: 1,
+                        unit: "kg",
+                    },
+                    {
+                        id: 5,
+                        name: "กระเทียม",
+                        current_stock: 0.3,
+                        min_stock: 1,
+                        unit: "kg",
+                    },
+                ],
+                menus: [
+                    { id: "A1", name: "กะเพราไก่", price: 89 },
+                    { id: "A2", name: "ข้าวผัดกุ้ง", price: 120 },
+                    { id: "A3", name: "ต้มยำกุ้ง", price: 150 },
+                ],
+            };
 
-      /* safe area for notches */
-      --sa-t: env(safe-area-inset-top);
-      --sa-b: env(safe-area-inset-bottom);
-      --sa-l: env(safe-area-inset-left);
-      --sa-r: env(safe-area-inset-right);
+            // Google Apps Script compatibility layer
+            window.google = window.google || {};
+            window.google.script = window.google.script || {};
 
-      /* fluid type scale - larger for mobile */
-      --fs-xs: clamp(14px, 1rem + 0.2vw, 16px);
-      --fs-sm: clamp(15px, 1.05rem + 0.3vw, 18px);
-      --fs-md: clamp(16px, 1.2rem + 0.5vw, 20px);
-      --fs-lg: clamp(18px, 1.3rem + 0.8vw, 22px);
-      --fs-xl: clamp(20px, 1.4rem + 1vw, 26px);
+            if (window.google.script.run) {
+                console.log("google.script.run already exists, skipping initialization");
+            } else {
+                window.google.script.run = {
+                withSuccessHandler: function (callback) {
+                    return {
+                        withFailureHandler: function (failureCallback) {
+                            return {
+                                getLowStockHTML: function () {
+                                    console.log("Mock: getLowStockHTML called");
+                                    const lowStock =
+                                        mockData.ingredients.filter(
+                                            (item) =>
+                                                item.current_stock <=
+                                                item.min_stock,
+                                        );
+                                    let html = "";
+                                    if (lowStock.length === 0) {
+                                        html =
+                                            '<div class="muted">ไม่มีวัตถุดิบใกล้หมด</div>';
+                                    } else {
+                                        html = lowStock
+                                            .map(
+                                                (item) =>
+                                                    `<div style="padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px; margin-bottom: 4px;">
+                                            <strong>${item.name}</strong> - ${item.current_stock} ${item.unit} (ขั้นต่ำ: ${item.min_stock} ${item.unit})
+                                        </div>`,
+                                            )
+                                            .join("");
+                                    }
+                                    setTimeout(() => callback(html), 300);
+                                },
 
-      /* spacing - larger for mobile */
-      --gap-1: 12px; --gap-2: 16px; --gap-3: 20px; --gap-4: 24px;
-    }
-    @media (prefers-color-scheme: dark){
-      :root{ --bg:#0b0f14; --card:#0f141a; --text:#e5e7eb; --muted:#9ca3af; --line:#1f2937 }
-    }
+                                getIngredients: function () {
+                                    console.log("Mock: getIngredients called");
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                data: mockData.ingredients,
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    /* --------- App shell layout --------- */
-    .app{
-      min-height: calc(var(--vh) * 100);
-      background:var(--bg); color:var(--text);
-      display:flex; flex-direction:column;
-      padding:0 max(var(--sa-l),0px) 0 max(var(--sa-r),0px);
-    }
-    .appbar{
-      height: calc(var(--appbar-h) + var(--sa-t));
-      padding-top: max(var(--sa-t), 0px);
-      display:flex; align-items:center; gap:8px;
-      padding-inline:16px;
-      position:sticky; top:0; z-index:10;
-      background:linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.75));
-      -webkit-backdrop-filter: saturate(140%) blur(8px);
-      backdrop-filter: saturate(140%) blur(8px);
-      border-bottom:1px solid var(--line);
-    }
-    @media (prefers-color-scheme: dark){
-      .appbar{ background:linear-gradient(180deg, rgba(15,20,26,0.85), rgba(15,20,26,0.7)); }
-    }
-    .appbar .title{ font-size:var(--fs-lg); font-weight:700 }
-    .appbar .spacer{ flex:1 }
+                                getMenus: function () {
+                                    console.log("Mock: getMenus called");
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                data: mockData.menus,
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    main{
-      flex:1; min-height:0;
-      padding:16px;
-      padding-bottom: calc(16px + var(--tabbar-h) + max(var(--sa-b), 0px));
-      display:flex; flex-direction:column; gap: var(--gap-3);
-    }
+                                addPurchase: function (data) {
+                                    console.log(
+                                        "Mock: addPurchase called with:",
+                                        data,
+                                    );
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                message:
+                                                    "บันทึกข้อมูลการซื้อเรียบร้อย",
+                                            }),
+                                        500,
+                                    );
+                                },
 
-    /* --------- Bottom Tab Bar --------- */
-    .tabbar{
-      position:fixed; bottom:0; left:0; right:0; z-index:10;
-      height: calc(var(--tabbar-h) + max(var(--sa-b), 0px));
-      padding-bottom: max(var(--sa-b), 0px);
-      border-top:1px solid var(--line);
-      background:linear-gradient(0deg, rgba(255,255,255,0.95), rgba(255,255,255,0.92));
-      backdrop-filter: saturate(140%) blur(8px);
-      display:grid; grid-template-columns: repeat(5, 1fr);
-    }
-    @media (prefers-color-scheme: dark){
-      .tabbar{ background:linear-gradient(0deg, rgba(15,20,26,0.9), rgba(15,20,26,0.86)); }
-    }
-    .tabbtn{
-      -webkit-tap-highlight-color: transparent;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:4px; font-size:var(--fs-xs); border:none; background:none; cursor:pointer;
-      min-height:var(--touch); color:var(--muted);
-    }
-    .tabbtn[aria-current="page"]{ color:var(--brand) }
-    .tabbtn:active{ opacity:.7 }
+                                agentChat: function (data) {
+                                    console.log(
+                                        "Mock: agentChat called with:",
+                                        data,
+                                    );
+                                    const responses = [
+                                        "ได้เลยค่ะ จะบันทึก " +
+                                            (data.message || "คำสั่งของคุณ"),
+                                        "เข้าใจแล้วค่ะ ระบบจะทำการอัปเดตข้อมูล",
+                                        "ตรวจสอบข้อมูลแล้ว พบว่ามีวัตถุดิบบางรายการใกล้หมด",
+                                        "ระบบพร้อมให้บริการค่ะ มีอะไรให้ช่วยเพิ่มเติมไหม?",
+                                    ];
+                                    const randomResponse =
+                                        responses[
+                                            Math.floor(
+                                                Math.random() *
+                                                    responses.length,
+                                            )
+                                        ];
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                message: randomResponse,
+                                            }),
+                                        1000,
+                                    );
+                                },
 
-    /* --------- Cards, Lists, Grids --------- */
-    .card{
-      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-      padding:20px; display:flex; flex-direction:column; gap:16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .row{ display:flex; align-items:center; gap:12px }
-    .grow{ flex:1 }
-    .muted{ color:var(--muted) }
-    .badge{ padding:4px 12px; border-radius:999px; border:1px solid var(--line); font-size:var(--fs-xs); font-weight:600 }
+                                listMissingIngredientPriceData: function (
+                                    params,
+                                ) {
+                                    console.log(
+                                        "Mock: listMissingIngredientPriceData with:",
+                                        params,
+                                    );
+                                    const missingData = [
+                                        {
+                                            ingredient_id: 4,
+                                            name: "หอมแดง",
+                                            unit: "กก.",
+                                            last_updated: null,
+                                        },
+                                        {
+                                            ingredient_id: 5,
+                                            name: "กระเทียม",
+                                            unit: "กก.",
+                                            last_updated: null,
+                                        },
+                                    ];
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                missing: missingData,
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    .grid{ display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) }
-    .tile{
-      background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px;
-      display:flex; flex-direction:column; gap:12px; min-height:120px; cursor:pointer;
-      transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .tile:hover{ transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15) }
-    .tile:active{ transform: scale(0.98); opacity: 0.8 }
-    .tile .title{ font-weight:600; font-size:var(--fs-md); line-height:1.3 }
+                                saveSizeMappings: function (data) {
+                                    console.log(
+                                        "Mock: saveSizeMappings with:",
+                                        data,
+                                    );
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                message:
+                                                    "บันทึกการตั้งค่าขนาดเรียบร้อย",
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    /* --------- Buttons & Inputs --------- */
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      min-height:52px; padding:12px 20px; border-radius:var(--radius); border:1px solid var(--line);
-      background:#fff; cursor:pointer; font-weight:600; font-size:var(--fs-md);
-      transition: all 0.2s ease;
-    }
-    .btn.brand{ background:var(--brand); color:white; border-color:transparent; box-shadow: 0 2px 4px rgba(15,118,110,0.3) }
-    .btn.brand:hover{ background:var(--brand-2); transform: translateY(-1px) }
-    .btn.ghost{ background:transparent; border-color: transparent }
-    .btn:active{ transform: scale(0.98); opacity: 0.8 }
+                                loadDataHealth: function () {
+                                    console.log("Mock: loadDataHealth");
+                                    const healthData = {
+                                        total_ingredients: 5,
+                                        ingredients_with_prices: 3,
+                                        ingredients_without_prices: 2,
+                                        total_menus: 3,
+                                        menus_with_costs: 1,
+                                        menus_without_costs: 2,
+                                        duplicate_records: 0,
+                                        last_updated: new Date().toISOString(),
+                                    };
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                data: healthData,
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    .field{ display:grid; gap:8px }
-    .label{ font-size:var(--fs-sm); font-weight:600; color:var(--text) }
-    .input, .select{
-      width:100%; min-height:52px; padding:14px 16px;
-      border-radius:var(--radius); border:2px solid var(--line); background:var(--card); color:inherit;
-      font-size:var(--fs-md); transition: border-color 0.2s ease;
-    }
-    .input:focus, .select:focus{ border-color:var(--brand); outline:none }
-    .input::placeholder{ color:var(--muted); opacity:0.7 }
-    
-    /* Prevent iOS zoom */
-    input, select, textarea, button { font-size: 16px !important }
+                                getMenuIngredients: function (params) {
+                                    console.log(
+                                        "Mock: getMenuIngredients with:",
+                                        params,
+                                    );
+                                    const menuIngredients = {
+                                        A1: [
+                                            {
+                                                name: "ไก่",
+                                                qty: 0.2,
+                                                unit: "กก.",
+                                            },
+                                            {
+                                                name: "ใบกะเพรา",
+                                                qty: 50,
+                                                unit: "กรัม",
+                                            },
+                                            {
+                                                name: "น้ำมัน",
+                                                qty: 20,
+                                                unit: "มล.",
+                                            },
+                                        ],
+                                    };
+                                    const ingredients =
+                                        menuIngredients[params.menu_id] || [];
+                                    const html =
+                                        ingredients.length > 0
+                                            ? ingredients
+                                                  .map(
+                                                      (ing) =>
+                                                          `<div style="padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+                                            <span>${ing.name}</span>
+                                            <span style="float: right; color: #6b7280;">${ing.qty} ${ing.unit}</span>
+                                        </div>`,
+                                                  )
+                                                  .join("")
+                                            : '<div class="muted">ไม่มีวัตถุดิบในเมนูนี้</div>';
+                                    setTimeout(() => callback(html), 300);
+                                },
 
-    /* --------- Responsive table -> cards on small --------- */
-    .table{ width:100%; border-collapse:collapse; font-size:var(--fs-sm); }
-    .table th, .table td{ padding:10px; border-bottom:1px solid var(--line) }
-    .table th{ text-align:left; font-weight:700 }
-    @media (max-width: 640px){
-      .table{ display:block }
-      .table thead{ display:none }
-      .table tbody{ display:grid; gap:12px }
-      .table tr{ display:grid; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px }
-      .table td{ display:grid; grid-template-columns: 120px 1fr; gap:8px; border:none }
-      .table td::before{ content: attr(data-label); font-weight:600; color:var(--muted) }
-    }
+                                getCostingData: function (params) {
+                                    console.log(
+                                        "Mock: getCostingData with:",
+                                        params,
+                                    );
+                                    const costingData = {
+                                        menu_name: "กะเพราไก่",
+                                        menu_price: 89,
+                                        gp_percentage: 60,
+                                        ingredients: [
+                                            {
+                                                name: "ไก่",
+                                                qty: 0.2,
+                                                unit: "กก.",
+                                                unit_price: 120,
+                                                cost: 24,
+                                            },
+                                            {
+                                                name: "ใบกะเพรา",
+                                                qty: 50,
+                                                unit: "กรัม",
+                                                unit_price: 40,
+                                                cost: 2,
+                                            },
+                                        ],
+                                        total_cost: 35.6,
+                                        recommended_price: 89,
+                                        current_gp: 60,
+                                    };
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                data: costingData,
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    /* --------- Motion & focus --------- */
-    :focus-visible{ outline:2px solid var(--brand-2); outline-offset:2px }
-    @media (prefers-reduced-motion: reduce){
-      *{ animation:none!important; transition:none!important; scroll-behavior:auto!important }
-    }
+                                agentConfirm: function (data) {
+                                    console.log(
+                                        "Mock: agentConfirm with:",
+                                        data,
+                                    );
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                message: "การดำเนินการสำเร็จ",
+                                                confirmed: true,
+                                            }),
+                                        500,
+                                    );
+                                },
 
-    /* --------- Utility --------- */
-    .hide{ display:none!important }
-    .center{ display:grid; place-items:center }
-    .right{ text-align:right }
-    .pill{ border-radius:999px }
+                                saveIngredientPref: function (data) {
+                                    console.log(
+                                        "Mock: saveIngredientPref with:",
+                                        data,
+                                    );
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                message:
+                                                    "บันทึกค่ากำหนดไว้เรียบร้อย",
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    /* --------- POS Specific Styles --------- */
-    .kpi{ 
-      background:linear-gradient(135deg,var(--brand),var(--brand-2)); 
-      color:#fff; padding:20px; border-radius:var(--radius); text-align:center;
-      box-shadow: 0 4px 12px rgba(15,118,110,0.3);
-    }
-    .kpi .v{ font-size:28px; font-weight:700; margin-bottom:8px; line-height:1 }
-    .kpi .l{ font-size:var(--fs-sm); opacity:0.9; font-weight:500 }
-    .toast{ 
-      position:fixed; top:20px; left:50%; transform:translateX(-50%); 
-      background:var(--card); border:1px solid var(--line); border-radius:var(--radius); 
-      padding:16px 24px; box-shadow:0 8px 24px rgba(0,0,0,.2); z-index:1001; 
-      opacity:0; transition:opacity 0.3s ease; font-size:var(--fs-md); font-weight:500;
-      max-width: calc(100vw - 40px);
-    }
-    .toast.show{ opacity:1 }
-    .loading{ 
-      position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.6); 
-      display:none; align-items:center; justify-content:center; z-index:1000;
-      backdrop-filter: blur(4px);
-    }
-    .loading.show{ display:flex }
-    .spinner{ 
-      width:48px; height:48px; border:4px solid rgba(255,255,255,.3); 
-      border-top:4px solid #fff; border-radius:50%; animation:spin 1s linear infinite 
-    }
-    @keyframes spin{ 0%{ transform:rotate(0deg) } 100%{ transform:rotate(360deg) } }
-    
-    /* Critical performance optimizations */
-    .appbar,.tabbar{contain:layout style}
-    main{contain:layout}
-    .tabbtn:active,.tile:active,.btn:active{transform:scale(0.98);will-change:transform}
-    .tile:hover{transform:translateY(-2px);will-change:transform}
-    .loading,.toast{will-change:opacity,transform}
-    .spinner{will-change:transform}
-    
-    /* Critical mobile optimizations */
-    @media (max-width: 480px) {
-      main{padding:12px;padding-bottom:calc(12px + var(--tabbar-h) + max(var(--sa-b), 0px))}
-      .card{padding:16px;font-size:var(--fs-sm)}
-      .grid{grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));gap:12px}
-      .tile{padding:14px;min-height:100px}
-      .kpi{padding:16px}
-      .kpi .v{font-size:24px}
-    }
-    @media (max-width: 360px) {
-      .grid{grid-template-columns:1fr}
-    }
-    @media (prefers-reduced-motion:reduce){
-      *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-    }
-  </style>
-  
-  <!-- Preload critical resources -->
-  <link rel="preload" href="js/critical.js" as="script">
-  <link rel="preload" href="css/components.css" as="style">
-  <link rel="preload" href="css/export.css" as="style">
-  
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  
-  <!-- DNS prefetch for external resources -->
-  <link rel="dns-prefetch" href="//script.google.com">
-  <link rel="dns-prefetch" href="//fonts.googleapis.com">
-</head>
-<body>
-  <div class="app" id="app">
-    <!-- App Bar -->
-    <header class="appbar">
-        <div class="title">POS ร้านกุ้งแซ่บ</div>
-      <div class="spacer"></div>
-      <button class="btn ghost" id="themeBtn" aria-label="เปลี่ยนธีม">🌙</button>
-      <button class="btn ghost" id="notificationBtn" aria-label="การแจ้งเตือน" style="position: relative;">
-        🔔
-        <span class="notification-badge" id="notification-badge"></span>
-      </button>
-      <button class="btn ghost" id="syncBtn" aria-label="Sync">⟳</button>
-    </header>
+                                getSizeMappings: function () {
+                                    console.log("Mock: getSizeMappings called");
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                data: {
+                                                    ladle_ml: 15,
+                                                    items: {
+                                                        น้ำจิ้มซีฟู้ด: {
+                                                            เล็ก: { qty: 35 },
+                                                            ใหญ่: { qty: 50 },
+                                                        },
+                                                        น้ำปลา: {
+                                                            ขวด: { qty: 1 },
+                                                            แกลลอน: { qty: 5 },
+                                                        },
+                                                    },
+                                                },
+                                            }),
+                                        300,
+                                    );
+                                },
 
-    <!-- Main content -->
-    <main id="screen">
-      <!-- Home Screen -->
-      <div id="home-screen">
-        <!-- KPIs -->
-        <section class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
-          <div class="kpi">
-            <div class="v" id="kpi-low">0</div>
-            <div class="l">วัตถุดิบใกล้หมด</div>
-          </div>
-          <div class="kpi">
-            <div class="v" id="kpi-menus">7</div>
-            <div class="l">เมนูพร้อมขาย</div>
-          </div>
-        </section>
+                                getIngredientPrefs: function (data) {
+                                    console.log(
+                                        "Mock: getIngredientPrefs with:",
+                                        data,
+                                    );
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                prefs: {
+                                                    default_unit: "กก.",
+                                                    default_qty: 1,
+                                                },
+                                            }),
+                                        300,
+                                    );
+                                },
 
-        <!-- Quick actions -->
-        <section class="adaptive-grid" aria-label="Quick Actions">
-          <button class="tile responsive-card" data-route="purchase">
-            <div class="title">📦 ซื้อวัตถุดิบ</div>
-            <div class="muted">บันทึกการซื้อ</div>
-          </button>
-          <button class="tile responsive-card" data-route="sale">
-            <div class="title">🛒 ขายด่วน</div>
-            <div class="muted">บันทึกการขาย</div>
-          </button>
-          <button class="tile responsive-card" data-route="menu">
-            <div class="title">🍢 จัดการเมนู</div>
-            <div class="muted">BOM & ราคา</div>
-          </button>
-          <button class="tile responsive-card" data-route="reports">
-            <div class="title">📊 รายงาน</div>
-            <div class="muted">กำไร & สต๊อก</div>
-          </button>
-  </section>
+                                processAIMessage: function (data) {
+                                    console.log(
+                                        "Mock: processAIMessage with:",
+                                        data,
+                                    );
+                                    const responses = [
+                                        "ฉันเข้าใจแล้ว จะทำตามที่คุณต้องการ",
+                                        "ได้เลยค่ะ กำลังดำเนินการตามคำสั่ง",
+                                        "ข้อมูลถูกบันทึกเรียบร้อยแล้ว",
+                                        "ตรวจสอบข้อมูลแล้ว ทุกอย่างถูกต้อง",
+                                    ];
+                                    const randomResponse =
+                                        responses[
+                                            Math.floor(
+                                                Math.random() *
+                                                    responses.length,
+                                            )
+                                        ];
+                                    setTimeout(
+                                        () =>
+                                            callback({
+                                                status: "ok",
+                                                message: randomResponse,
+                                                action: "processed",
+                                            }),
+                                        1000,
+                                    );
+                                },
+                            };
+                        },
+                    };
+                },
+            };
+        </script>
 
-        <!-- Low stock alert -->
-        <section class="card">
-      <div class="row">
-            <div class="grow">
-              <div style="font-size:var(--fs-md); font-weight:700">วัตถุดิบใกล้หมด</div>
-              <div class="muted" style="font-size:var(--fs-sm)">ต้องสั่งเพิ่ม</div>
-      </div>
-            <button class="btn brand pill" onclick="refreshLowStock()">รีเฟรช</button>
-      </div>
-          <div id="low-stock-content">
-            <div class="muted">กำลังโหลด...</div>
-    </div>
-  </section>
-      </div>
+        <!-- CSS Styles -->
+        <style>
+            :root {
+                --spacing-xs: 0.25rem;
+                --spacing-sm: 0.5rem;
+                --spacing-md: 1rem;
+                --spacing-lg: 1.5rem;
+                --spacing-xl: 2rem;
+                --spacing-2xl: 3rem;
+                --fs-xs: 0.75rem;
+                --fs-sm: 0.875rem;
+                --fs-md: 1rem;
+                --fs-lg: 1.125rem;
+                --fs-xl: 1.25rem;
+                --fs-2xl: 1.5rem;
+                --fs-3xl: 1.875rem;
+                --fs-4xl: 2.25rem;
+                --brand: #2563eb;
+                --brand-ink: #fff;
+                --bg: #fff;
+                --card: #fff;
+                --line: #e5e7eb;
+                --muted: #6b7280;
+            }
 
-      <!-- Purchase Screen -->
-      <div id="purchase-screen" class="hide">
-        <section class="card responsive-card">
-          <div class="responsive-heading">บันทึกการซื้อวัตถุดิบ</div>
-          <form class="responsive-form">
-            <div class="field">
-              <label class="label" for="p_date">วันที่</label>
-              <input class="input responsive-input" id="p_date" type="date" />
+            * {
+                box-sizing: border-box;
+            }
+
+            html {
+                font-size: 16px;
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            body {
+                margin: 0;
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    "Segoe UI",
+                    Roboto,
+                    sans-serif;
+                color: #111;
+                background: #f6f7fb;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+
+            .container {
+                width: 100%;
+                max-width: min(960px, 100vw - 2rem);
+                margin: 0 auto;
+                padding: 0 var(--spacing-md);
+                padding-left: calc(
+                    var(--spacing-md) + env(safe-area-inset-left)
+                );
+                padding-right: calc(
+                    var(--spacing-md) + env(safe-area-inset-right)
+                );
+            }
+
+            .title {
+                font-size: clamp(var(--fs-2xl), 4vw, var(--fs-4xl));
+                font-weight: 700;
+                margin: var(--spacing-lg) 0 var(--spacing-xs);
+            }
+
+            .subtitle {
+                font-size: var(--fs-lg);
+                color: var(--muted);
+                margin-bottom: var(--spacing-lg);
+            }
+
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: var(--spacing-lg);
+                margin-bottom: var(--spacing-xl);
+            }
+
+            .card {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                padding: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            }
+
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: var(--spacing-md) var(--spacing-xl);
+                border: 2px solid transparent;
+                border-radius: 0.75rem;
+                font-size: var(--fs-md);
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                color: #fff;
+                background: var(--brand);
+                gap: 8px;
+            }
+
+            .btn:hover {
+                background: #1d4ed8;
+                transform: translateY(-1px);
+            }
+
+            .btn.ghost {
+                background: transparent;
+                border-color: var(--brand);
+                color: var(--brand);
+            }
+
+            .btn.ghost:hover {
+                background: var(--brand);
+                color: #fff;
+            }
+
+            .input {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                font-size: var(--fs-md);
+                transition: border-color 0.2s ease;
+            }
+
+            .input:focus {
+                outline: none;
+                border-color: var(--brand);
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            .muted {
+                color: var(--muted);
+                font-size: var(--fs-sm);
+            }
+
+            .hide {
+                display: none !important;
+            }
+
+            /* Tab styles */
+            [role="tab"] {
+                position: relative;
+                cursor: pointer;
+            }
+
+            [role="tab"][aria-selected="true"] {
+                background: var(--brand);
+                color: white;
+            }
+
+            /* AI Agent Panel */
+            #ai-agent-panel {
+                position: fixed;
+                z-index: 1001;
+                background: white;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                max-width: 400px;
+                max-height: 600px;
+            }
+
+            #ai-agent-panel.hide {
+                display: none;
+            }
+
+            /* Mobile responsive */
+            @media (max-width: 640px) {
+                .dashboard-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                #ai-agent-panel {
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    width: 100%;
+                    max-width: 100%;
+                    border-radius: 0;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <main class="container">
+            <header>
+                <h1 class="title">
+                    <?= brand ?>
+                    POS & Inventory
+                </h1>
+                <p class="subtitle">บันทึกซื้อ/ขาย · สต๊อก · ผู้ช่วย AI</p>
+            </header>
+
+            <!-- Quick Actions -->
+            <section class="card">
+                <h3>การดำเนินการเร็ว</h3>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap">
+                    <button class="btn" onclick="showPurchaseForm()">
+                        + บันทึกการซื้อ
+                    </button>
+                    <button class="btn" onclick="showSaleForm()">
+                        + บันทึกการขาย
+                    </button>
+                    <button class="btn ghost" onclick="showReports()">
+                        ดูรายงาน
+                    </button>
+                </div>
+            </section>
+
+            <!-- Dashboard Grid -->
+            <section class="dashboard-grid">
+                <!-- Low Stock Alert -->
+                <div class="card">
+                    <h3>📦 วัตถุดิบใกล้หมด</h3>
+                    <div id="low-stock-content">
+                        <div class="muted">กำลังโหลด…</div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card">
+                    <h3>📊 ภาพรวมข้อมูล</h3>
+                    <div id="data-health" class="muted">กำลังโหลด…</div>
+                </div>
+
+                <!-- AI Assistant -->
+                <div class="card">
+                    <h3>🤖 ผู้ช่วยอัจฉริยะ</h3>
+                    <p style="font-size: var(--fs-sm); margin: 8px 0">
+                        ถามเรื่อง: บันทึกซื้อ, บันทึกขาย, ตรวจสต๊อก, คำนวณต้นทุน
+                    </p>
+                    <button class="btn" onclick="openAIAgent()">
+                        เปิดผู้ช่วย AI
+                    </button>
+                </div>
+            </section>
+
+            <!-- Admin Panel -->
+            <section class="card">
+                <h3>ผู้ดูแลระบบ</h3>
+                <div
+                    role="tablist"
+                    style="
+                        display: flex;
+                        gap: 8px;
+                        flex-wrap: wrap;
+                        margin-bottom: 16px;
+                    "
+                >
+                    <button
+                        class="btn pill"
+                        data-admin-tab="settings"
+                        role="tab"
+                        aria-selected="true"
+                        title="ตั้งค่าขนาดและหน่วย"
+                    >
+                        ตั้งค่า
+                    </button>
+
+                    <button
+                        class="btn pill"
+                        data-admin-tab="missing"
+                        role="tab"
+                        aria-selected="false"
+                        title="รายการวัตถุดิบที่ยังไม่มีราคา"
+                    >
+                        ราคาที่ขาด
+                        <span
+                            id="badge-missing"
+                            style="
+                                margin-left: 6px;
+                                background: #ef4444;
+                                color: #fff;
+                                border-radius: 999px;
+                                padding: 0 8px;
+                                font-size: 12px;
+                                line-height: 18px;
+                                display: none;
+                            "
+                            >0</span
+                        >
+                    </button>
+
+                    <button
+                        class="btn pill"
+                        data-admin-tab="health"
+                        role="tab"
+                        aria-selected="false"
+                        title="ตรวจสุขภาพข้อมูลระบบ"
+                    >
+                        ตรวจสุขภาพ
+                    </button>
+                    <button
+                        class="btn pill"
+                        data-admin-tab="costing"
+                        role="tab"
+                        aria-selected="false"
+                        title="ดูต้นทุนเมนูและราคาแนะนำ"
+                    >
+                        คำนวณต้นทุน
+                    </button>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="tab-settings">
+                    <h4>ตั้งค่าขนาดและหน่วย</h4>
+                    <div style="margin-top: 12px">
+                        <button class="btn ghost" onclick="loadSizeMappings()">
+                            โหลดการตั้งค่า
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Missing Prices Tab -->
+                <div id="tab-missing" class="hide">
+                    <div id="missing-price">
+                        <div class="muted">กำลังโหลด…</div>
+                    </div>
+                    <div
+                        style="
+                            margin-top: 12px;
+                            display: flex;
+                            gap: 8px;
+                            flex-wrap: wrap;
+                        "
+                    >
+                        <button
+                            class="btn ghost"
+                            onclick="loadMissingPriceData()"
+                        >
+                            รีเฟรช
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Data Health Tab -->
+                <div id="tab-health" class="hide">
+                    <div id="data-health-admin" class="muted">กำลังโหลด…</div>
+                    <div style="margin-top: 12px">
+                        <button class="btn ghost" onclick="loadDataHealth()">
+                            ตรวจซ้ำ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Costing Tab -->
+                <div id="tab-costing" class="hide">
+                    <div style="display: grid; gap: 10px">
+                        <div
+                            style="
+                                display: flex;
+                                gap: 8px;
+                                flex-wrap: wrap;
+                                align-items: center;
+                            "
+                        >
+                            <label for="costing-menu" style="min-width: 140px"
+                                >เลือกเมนู</label
+                            >
+                            <select
+                                id="costing-menu"
+                                class="input"
+                                style="max-width: 280px"
+                                title="เลือกเมนูที่ต้องการคำนวณต้นทุน"
+                            ></select>
+                            <input
+                                id="costing-gp"
+                                class="input"
+                                placeholder="GP (%)"
+                                style="max-width: 120px"
+                                inputmode="decimal"
+                                pattern="[0-9]*"
+                                title="เช่น 60"
+                                value="60"
+                            />
+                            <button class="btn" onclick="viewCosting()">
+                                ดูต้นทุน
+                            </button>
+                        </div>
+                        <div id="costing-view" class="muted">
+                            เลือกเมนูแล้วกดดูต้นทุน
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- AI Agent Panel -->
+        <div id="ai-agent-panel" class="hide">
+            <div
+                style="
+                    padding: 16px;
+                    border-bottom: 1px solid var(--line);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                "
+            >
+                <h3 style="margin: 0">🤖 ผู้ช่วยร้าน</h3>
+                <button
+                    id="ai-close"
+                    style="
+                        background: none;
+                        border: none;
+                        font-size: 24px;
+                        cursor: pointer;
+                        color: var(--muted);
+                    "
+                >
+                    ×
+                </button>
             </div>
-            <div class="field">
-              <label class="label" for="p_ing">วัตถุดิบ</label>
-              <select class="select responsive-input" id="p_ing">
-                <option value="">เลือกวัตถุดิบ...</option>
-              </select>
+            <div
+                id="ai-messages"
+                style="
+                    flex: 1;
+                    padding: 16px;
+                    overflow-y: auto;
+                    min-height: 200px;
+                "
+            ></div>
+            <div style="padding: 16px; border-top: 1px solid var(--line)">
+                <input
+                    id="ai-input"
+                    class="input"
+                    placeholder="เช่น: ซื้อ กุ้ง 2 kg 240 บาท"
+                    inputmode="text"
+                    enterkeyhint="send"
+                />
+                <button
+                    id="ai-send"
+                    class="btn"
+                    style="margin-top: 8px; width: 100%"
+                >
+                    ส่ง
+                </button>
             </div>
-            <div class="form-row tablet-horizontal">
-              <div class="field grow">
-                <label class="label" for="p_qty">จำนวน</label>
-                <input class="input responsive-input" id="p_qty" type="number" step="0.01" min="0" inputmode="decimal" placeholder="เช่น 1.5" />
-              </div>
-              <div class="field tablet-fixed">
-                <label class="label" for="p_unit">หน่วย</label>
-                <select class="select responsive-input" id="p_unit">
-                  <option value="">เลือกหน่วย...</option>
-                  <option value="kg">กิโลกรัม (kg)</option>
-                  <option value="g">กรัม (g)</option>
-                  <option value="liter">ลิตร (L)</option>
-                  <option value="ml">มิลลิลิตร (ml)</option>
-                  <option value="piece">ชิ้น (piece)</option>
-                  <option value="pack">แพ็ค (pack)</option>
-                  <option value="box">กล่อง (box)</option>
-                  <option value="bottle">ขวด (bottle)</option>
-                  <option value="bag">ถุง (bag)</option>
-                  <option value="can">กระป๋อง (can)</option>
-                  <option value="dozen">โหล (dozen)</option>
-                  <option value="lb">ปอนด์ (lb)</option>
-                  <option value="oz">ออนซ์ (oz)</option>
-                </select>
-              </div>
-            </div>
-            <div class="field span-2">
-              <label class="label" for="p_actual_yield">จำนวนจริงที่ได้ (สำหรับวัตถุดิบที่มีผลผลิตแปรผัน)</label>
-              <input class="input responsive-input" id="p_actual_yield" type="number" step="1" min="0" placeholder="เช่น 43 ชิ้น (ว่างได้)" />
-            </div>
-            <div class="form-row tablet-horizontal">
-              <div class="field grow">
-                <label class="label" for="p_total_price">ราคารวม (บาท)</label>
-                <input class="input responsive-input" id="p_total_price" type="number" step="0.01" min="0" inputmode="decimal" placeholder="เช่น 240" onchange="calculatePricePerUnit()" />
-              </div>
-              <div class="field tablet-fixed">
-                <label class="label" for="p_price">ราคาต่อหน่วย</label>
-                <input class="input responsive-input" id="p_price" type="number" step="0.01" min="0" inputmode="decimal" readonly placeholder="คำนวณอัตโนมัติ" />
-              </div>
-            </div>
-            <div class="field span-2">
-              <label class="label" for="p_note">ผู้ขาย/หมายเหตุ</label>
-              <input class="input responsive-input" id="p_note" placeholder="Market/Supplier" />
-            </div>
-            <div class="tablet-button-group">
-              <button type="button" class="btn responsive-btn secondary" onclick="resetPurchase()">ล้างฟอร์ม</button>
-              <button type="button" class="btn responsive-btn brand primary" onclick="onAddPurchase()">บันทึกการซื้อ</button>
-            </div>
-          </form>
-          <div class="muted" style="font-size:var(--fs-xs)">
-            💡 <strong>สำหรับวัตถุดิบที่มีผลผลิตแปรผัน:</strong> กรอกจำนวนจริงที่ได้ (เช่น กุ้ง 1 กก. ได้ 43 ตัว) เพื่อความแม่นยำในการคำนวณต้นทุน
-    </div>
-  </section>
-      </div>
-
-      <!-- Sale Screen -->
-      <div id="sale-screen" class="hide">
-        <section class="card">
-          <div style="font-size:var(--fs-lg); font-weight:700">บันทึกการขาย & ตัดสต๊อก (FIFO)</div>
-          <div class="field">
-            <label class="label" for="s_date">วันที่</label>
-            <input class="input" id="s_date" type="date" />
-      </div>
-          <div class="field">
-            <label class="label" for="s_platform">แพลตฟอร์ม</label>
-            <select class="select" id="s_platform">
-              <option value="">เลือกแพลตฟอร์ม...</option>
-              <option value="walkin">Walk-in</option>
-              <option value="grab">Grab</option>
-              <option value="lineman">Line Man</option>
-              <option value="shopee">Shopee Food</option>
-              <option value="foodpanda">Foodpanda</option>
-            </select>
-      </div>
-          <div class="field">
-            <label class="label" for="s_menu">เมนู</label>
-            <select class="select" id="s_menu">
-              <option value="">เลือกเมนู...</option>
-            </select>
-      </div>
-          <div class="row">
-            <div class="field grow">
-              <label class="label" for="s_qty">จำนวนเสิร์ฟ</label>
-              <input class="input" id="s_qty" type="number" step="1" min="1" value="1" placeholder="เช่น 2" />
-            </div>
-            <div class="field" style="width:160px">
-              <label class="label" for="s_price">ราคาขาย</label>
-              <input class="input" id="s_price" type="number" step="0.01" min="0" inputmode="decimal" placeholder="เช่น 120" />
-            </div>
-          </div>
-          <div class="row" style="gap: 12px;">
-            <button class="btn" onclick="resetSale()" style="flex: 1;">ล้างฟอร์ม</button>
-            <button class="btn brand" onclick="onAddSale()" style="flex: 2;">บันทึกการขาย</button>
-          </div>
-        </section>
-    </div>
-
-      <!-- Menu Screen -->
-      <div id="menu-screen" class="hide">
-        <section class="card">
-          <div style="font-size:var(--fs-lg); font-weight:700">จัดการเมนู & BOM</div>
-          <div class="field">
-            <label class="label" for="m_menu">เมนู</label>
-            <select class="select" id="m_menu">
-              <option value="">เลือกเมนู...</option>
-            </select>
-    </div>
-          <div class="field">
-            <label class="label" for="m_ingredient">วัตถุดิบ</label>
-            <select class="select" id="m_ingredient">
-              <option value="">เลือกวัตถุดิบ...</option>
-            </select>
-      </div>
-          <div class="row">
-            <div class="field grow">
-              <label class="label" for="m_qty">จำนวนต่อเสิร์ฟ</label>
-              <input class="input" id="m_qty" type="number" step="0.01" min="0" inputmode="decimal" placeholder="เช่น 0.2" />
-            </div>
-            <div class="field" style="width:160px">
-              <label class="label" for="m_unit">หน่วย</label>
-              <input class="input" id="m_unit" type="text" readonly placeholder="หน่วยสต๊อก" />
-            </div>
-          </div>
-          <div class="row" style="gap: 12px;">
-            <button class="btn" onclick="resetMenuForm()" style="flex: 1;">ล้างฟอร์ม</button>
-            <button class="btn brand" onclick="addMenuIngredient()" style="flex: 2;">เพิ่มในเมนู</button>
-          </div>
-  </section>
-
-        <section class="card">
-      <div class="row">
-            <div class="grow">
-              <div style="font-size:var(--fs-md); font-weight:700">วัตถุดิบในเมนู</div>
-              <div class="muted" style="font-size:var(--fs-sm)">รายการวัตถุดิบที่ใช้</div>
-      </div>
-            <button class="btn brand pill" onclick="calculateMenuCost()">คำนวณต้นทุน</button>
-      </div>
-          <div id="menu-ingredients-content">
-            <div class="muted">เลือกเมนูเพื่อดูวัตถุดิบ</div>
-    </div>
-  </section>
-      </div>
-
-      <!-- Reports Screen -->
-      <div id="reports-screen" class="hide">
-        <section class="card">
-          <div style="font-size:var(--fs-lg); font-weight:700">รายงานกำไร</div>
-      <div class="row">
-            <div class="field grow">
-              <label class="label" for="rp_from">จากวันที่</label>
-              <input class="input" id="rp_from" type="date" />
-      </div>
-            <div class="field grow">
-              <label class="label" for="rp_to">ถึงวันที่</label>
-              <input class="input" id="rp_to" type="date" />
-      </div>
-    </div>
-          <div class="row" style="gap: 12px;">
-            <button class="btn" onclick="resetReportForm()" style="flex: 1;">ล้างฟอร์ม</button>
-            <button class="btn brand" onclick="generateReport()" style="flex: 2;">สร้างรายงาน</button>
-          </div>
-  </section>
-
-        <section class="card">
-      <div class="row">
-            <div class="grow">
-              <div style="font-size:var(--fs-md); font-weight:700">ผลลัพธ์รายงาน</div>
-              <div class="muted" style="font-size:var(--fs-sm)">ข้อมูลกำไรและยอดขาย</div>
         </div>
-            <button class="btn pill" onclick="exportReport()">ส่งออก</button>
-      </div>
-          <div id="report-content">
-            <div class="muted">เลือกช่วงวันที่และกดสร้างรายงาน</div>
-    </div>
-  </section>
-      </div>
-    </main>
 
-    <!-- Bottom navigation -->
-    <nav class="tabbar" role="tablist" aria-label="Main">
-      <button class="tabbtn" aria-current="page" data-route="home">🏠<span>หน้าหลัก</span></button>
-      <button class="tabbtn" data-route="purchase">📦<span>ซื้อ</span></button>
-      <button class="tabbtn" data-route="sale">🛒<span>ขาย</span></button>
-      <button class="tabbtn" data-route="menu">🍢<span>เมนู</span></button>
-      <button class="tabbtn" data-route="reports">📊<span>รายงาน</span></button>
-  </nav>
-  </div>
+        <!-- AI Agent Button -->
+        <button
+            id="ai-agent-button"
+            style="
+                position: fixed;
+                right: 16px;
+                bottom: 16px;
+                z-index: 1002;
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: var(--brand);
+                color: #fff;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+                cursor: pointer;
+                font-size: 24px;
+                border: none;
+            "
+        >
+            ✨
+        </button>
 
-  <!-- Toast & Loading -->
-  <div class="toast" id="toast"></div>
-  <div class="loading" id="loading"><div class="spinner"></div></div>
+        <!-- JavaScript -->
+        <script src="CacheManager.js"></script>
+        <script src="js/critical.js"></script>
 
-  <!-- Load critical JavaScript -->
-  <script src="js/critical.js" defer></script>
-  
-  <!-- Service Worker Registration -->
-  <script>
-    // Register service worker as early as possible
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('[App] Service worker registered:', registration.scope);
-          })
-          .catch(error => {
-            console.error('[App] Service worker registration failed:', error);
-          });
-      });
-    }
-  </script>
-  
-  <!-- Optimized CSS loading -->
-  <script>
-    // Critical path CSS optimization
-    (function() {
-      // Load non-critical CSS asynchronously
-      function loadCSS(href, media) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = href;
-        link.media = media || 'all';
-        link.onload = function() { this.media = 'all'; };
-        document.head.appendChild(link);
-      }
-      
-      // Load CSS when browser is idle
-      function loadCSSWhenIdle() {
-        if (window.requestIdleCallback) {
-          requestIdleCallback(function() {
-            loadCSS('css/components.css');
-            loadCSS('css/responsive-layout.css');
-            loadCSS('css/desktop-enhancements.css');
-            loadCSS('css/export.css');
-            loadCSS('css/analytics.css');
-            loadCSS('css/performance-dashboard.css');
-          }, { timeout: 2000 });
-        } else {
-          setTimeout(function() {
-            loadCSS('css/components.css');
-            loadCSS('css/responsive-layout.css');
-            loadCSS('css/desktop-enhancements.css');
-            loadCSS('css/export.css');
-            loadCSS('css/analytics.css');
-            loadCSS('css/performance-dashboard.css');
-          }, 1000);
-        }
-      }
-      
-      // Load immediately if already loaded, otherwise wait for load event
-      if (document.readyState === 'complete') {
-        loadCSSWhenIdle();
-      } else {
-        window.addEventListener('load', loadCSSWhenIdle);
-      }
-      
-      // Fallback: load on first user interaction
-      const events = ['click', 'touchstart', 'keydown'];
-      const loadOnInteraction = function() {
-        loadCSS('css/components.css');
-        loadCSS('css/responsive-layout.css');
-        loadCSS('css/desktop-enhancements.css');
-        loadCSS('css/export.css');
-        loadCSS('css/analytics.css');
-        loadCSS('css/performance-dashboard.css');
-        events.forEach(event => {
-          document.removeEventListener(event, loadOnInteraction);
-        });
-      };
-      
-      events.forEach(event => {
-        document.addEventListener(event, loadOnInteraction, { once: true, passive: true });
-      });
-    })();
+        <script>
+            // Initialize app
+            // Initialize app when ready
+            document.addEventListener("DOMContentLoaded", function () {
+                console.log("POS System initialized");
 
-    // ---------- 1) Reliable 100vh on iOS + Android ----------
-    function setVH(){
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    }
-    setVH();
-    window.addEventListener('resize', setVH);
-    window.addEventListener('orientationchange', () => {
-      setTimeout(setVH, 250);
-    });
+                // Initialize admin tabs
+                initAdminTabs();
 
-    // ---------- 2) Soft keyboard handling ----------
-    (function () {
-      let focused = false;
-      const app = document.getElementById('app');
-      const screen = document.getElementById('screen');
-      function onFocusIn(e){
-        if(e.target.matches('input, textarea, select')){
-          focused = true;
-          app.style.minHeight = 'auto';
-          screen.style.paddingBottom = '16px';
-        }
-      }
-      function onFocusOut(e){
-        if(e.target.matches('input, textarea, select')){
-          focused = false;
-          app.style.minHeight = 'calc(var(--vh) * 100)';
-          screen.style.paddingBottom = 'calc(12px + var(--tabbar-h) + max(var(--sa-b), 0px))';
-        }
-      }
-      document.addEventListener('focusin', onFocusIn);
-      document.addEventListener('focusout', onFocusOut);
-    })();
+                // Load initial data
+                setTimeout(() => {
+                    refreshLowStock();
+                    loadDataHealth();
+                    loadMissingPriceData();
+                    loadSizeMappings();
+                }, 500);
+            });
 
-    // ---------- 3) Fast tab routing ----------
-    const screen = document.getElementById('screen');
-    function routeTo(name){
-      // Hide all screens
-      document.querySelectorAll('[id$="-screen"]').forEach(s => s.classList.add('hide'));
-      
-      // Show target screen
-      const targetScreen = document.getElementById(name + '-screen');
-      if (targetScreen) {
-        targetScreen.classList.remove('hide');
-      }
-      
-      // Update tab states
-      [...document.querySelectorAll('.tabbtn')].forEach(b=>b.setAttribute('aria-current','false'));
-      const active = document.querySelector(`.tabbtn[data-route="${name}"]`);
-      if(active) active.setAttribute('aria-current','page');
-      
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'instant' });
-      
-      // Load data for specific screens
-      if (name === 'home') {
-        refreshLowStock();
-      } else if (name === 'menu') {
-        loadMenuIngredients();
-      }
-    }
+            // Admin tabs functionality
+            function initAdminTabs() {
+                const buttons = document.querySelectorAll("[data-admin-tab]");
+                const tabs = {
+                    settings: document.getElementById("tab-settings"),
+                    missing: document.getElementById("tab-missing"),
+                    health: document.getElementById("tab-health"),
+                    costing: document.getElementById("tab-costing"),
+                };
 
-    // Event listeners for navigation
-    document.querySelectorAll('[data-route]').forEach(el=>{
-      el.addEventListener('click', ()=> routeTo(el.dataset.route));
-    });
+                function showTab(key) {
+                    Object.keys(tabs).forEach((k) => {
+                        if (tabs[k])
+                            tabs[k].classList.toggle("hide", k !== key);
+                    });
+                    buttons.forEach((b) =>
+                        b.setAttribute(
+                            "aria-selected",
+                            b.getAttribute("data-admin-tab") === key
+                                ? "true"
+                                : "false",
+                        ),
+                    );
+                }
 
-    // ---------- 4) POS Functions ----------
-    const $ = (id) => document.getElementById(id);
-    
-    function toast(msg){ 
-      const t = $('toast'); 
-      t.textContent = msg; 
-      t.classList.add('show'); 
-      setTimeout(() => t.classList.remove('show'), 3000);
-    }
-    
-    function loading(show) {
-      $('loading').classList.toggle('show', show);
-    }
-    
-    // Legacy purchase functions - now handled by PurchaseModule
-    function calculatePricePerUnit() {
-      if (window.purchaseInstance && window.purchaseInstance.calculatePricePerUnit) {
-        window.purchaseInstance.calculatePricePerUnit();
-      } else {
-        // Fallback for immediate use
-        const qty = Number($('p_qty').value || 0);
-        const totalPrice = Number($('p_total_price').value || 0);
-        if (qty > 0 && totalPrice > 0) {
-          $('p_price').value = (totalPrice / qty).toFixed(2);
-        }
-      }
-    }
-    
-    function onAddPurchase() {
-      if (window.purchaseInstance && window.purchaseInstance.onAddPurchase) {
-        window.purchaseInstance.onAddPurchase();
-      } else {
-        toast('กำลังโหลดฟังก์ชันการซื้อ...');
-        // Load module and retry
-        loadScreenModule('purchase').then(() => {
-          if (window.purchaseInstance) {
-            window.purchaseInstance.onAddPurchase();
-          }
-        });
-      }
-    }
-    
-    // Legacy sale functions - now handled by SaleModule
-    function onAddSale() {
-      if (window.saleInstance && window.saleInstance.onAddSale) {
-        window.saleInstance.onAddSale();
-      } else {
-        toast('กำลังโหลดฟังก์ชันการขาย...');
-        // Load module and retry
-        loadScreenModule('sale').then(() => {
-          if (window.saleInstance) {
-            window.saleInstance.onAddSale();
-          }
-        });
-      }
-    }
-    
-    // Legacy menu functions - now handled by MenuModule
-    function addMenuIngredient() {
-      if (window.menuInstance && window.menuInstance.addMenuIngredient) {
-        window.menuInstance.addMenuIngredient();
-      } else {
-        toast('กำลังโหลดฟังก์ชันจัดการเมนู...');
-        // Load module and retry
-        loadScreenModule('menu').then(() => {
-          if (window.menuInstance) {
-            window.menuInstance.addMenuIngredient();
-          }
-        });
-      }
-    }
-    
-    function loadMenuIngredients() {
-      if (window.menuInstance && window.menuInstance.loadMenuIngredients) {
-        window.menuInstance.loadMenuIngredients();
-      } else {
-        // Fallback for immediate use
-        const menuId = $('m_menu').value;
-        if (!menuId) {
-          $('menu-ingredients-content').innerHTML = '<div class="muted">เลือกเมนูเพื่อดูวัตถุดิบ</div>';
-          return;
-        }
-        
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run.withSuccessHandler(html => {
-            $('menu-ingredients-content').innerHTML = html || '<div class="muted">ไม่มีวัตถุดิบในเมนูนี้</div>';
-          }).withFailureHandler(() => {
-            $('menu-ingredients-content').innerHTML = '<div class="muted">ไม่สามารถโหลดข้อมูลได้</div>';
-          }).getMenuIngredientsHTML(menuId);
-        }
-      }
-    }
-    
-    function calculateMenuCost() {
-      if (window.menuInstance && window.menuInstance.calculateMenuCost) {
-        window.menuInstance.calculateMenuCost();
-      } else {
-        toast('กำลังโหลดฟังก์ชันคำนวณต้นทุน...');
-        // Load module and retry
-        loadScreenModule('menu').then(() => {
-          if (window.menuInstance) {
-            window.menuInstance.calculateMenuCost();
-          }
-        });
-      }
-    }ccessHandler(res => {
-        loading(false);
-          const cost = res.totalCost || 0;
-          const suggested = res.suggestedPrice || 0;
-          toast(`💰 ต้นทุน: ${cost.toFixed(2)} บาท | ราคาแนะนำ: ${suggested.toFixed(2)} บาท`);
-            }).withFailureHandler(err => {
-              loading(false);
-          toast(`❌ ${err.message || 'ไม่สามารถคำนวณได้'}`);
-        }).calculateMenuCost({menu_id: menuId, targetGP: 60});
-        } else {
-        loading(false);
-        toast('❌ ไม่สามารถเชื่อมต่อกับ Google Sheets ได้');
-      }
-    }
-    
-    // Legacy report functions - now handled by ReportsModule
-    function resetReportForm() {
-      if (window.reportsInstance && window.reportsInstance.resetForm) {
-        window.reportsInstance.resetForm();
-      } else {
-        // Fallback
-        ['rp_from', 'rp_to'].forEach(id => $(id).value = '');
-        $('report-content').innerHTML = '<div class="muted">เลือกช่วงวันที่และกดสร้างรายงาน</div>';
-      }
-    }
-    
-    function generateReport() {
-      if (window.reportsInstance && window.reportsInstance.generateReport) {
-        window.reportsInstance.generateReport();
-      } else {
-        toast('กำลังโหลดฟังก์ชันรายงาน...');
-        // Load module and retry
-        loadScreenModule('reports').then(() => {
-          if (window.reportsInstance) {
-            window.reportsInstance.generateReport();
-          }
-        });
-      }
-    }
-    
-    function exportReport() {
-      if (window.reportsInstance && window.reportsInstance.exportReport) {
-        window.reportsInstance.exportReport();
-      } else {
-        toast('กำลังโหลดฟังก์ชันส่งออก...');
-        // Load module and retry
-        loadScreenModule('reports').then(() => {
-          if (window.reportsInstance) {
-            window.reportsInstance.exportReport();
-          }
-        });
-      }
-    }
-    
-    // Low stock functions
-    function refreshLowStock() {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(html => {
-          $('low-stock-content').innerHTML = html || '<div class="muted">ไม่มีวัตถุดิบที่ใกล้หมด 👍</div>';
-        }).withFailureHandler(() => {
-          $('low-stock-content').innerHTML = '<div class="muted">ไม่สามารถโหลดข้อมูลได้</div>';
-      }).getLowStockHTML();
-    }
-    }
-    
-    // Theme toggle
-    document.getElementById('themeBtn')?.addEventListener('click', () => {
-      const body = document.body;
-      const currentTheme = body.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      body.setAttribute('data-theme', newTheme);
-      localStorage.setItem('pos-theme', newTheme);
-    });
-    
-    // Load saved theme
-    const savedTheme = localStorage.getItem('pos-theme');
-    if (savedTheme) {
-      document.body.setAttribute('data-theme', savedTheme);
-    }
-    
-    // Sync button
-    document.getElementById('syncBtn')?.addEventListener('click', ()=>{
-      const btn = document.getElementById('syncBtn');
-      const prev = btn.textContent;
-      btn.textContent = '…';
-      setTimeout(()=>{ 
-        btn.textContent = prev; 
-        toast('ซิงค์ข้อมูลแล้ว!'); 
-        refreshLowStock();
-        }, 500);
-      });
-      
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      // Set today's date
-      const today = new Date().toISOString().slice(0, 10);
-      $('p_date').value = today;
-      $('s_date').value = today;
-      
-      // Load initial data
-      refreshLowStock();
-      
-      // Force mobile layout fixes for Google Apps Script deployment
-      forceMobileLayout();
-    });
-    
-    // Force mobile layout for Google Apps Script deployment
-    function forceMobileLayout() {
-      const styles = { width: '100%', maxWidth: '100vw', margin: '0', padding: '0', overflowX: 'hidden' };
-      Object.assign(document.body.style, styles);
-      Object.assign(document.documentElement.style, styles);
-      
-      const app = $('app');
-      if (app) Object.assign(app.style, styles);
-      
-      // Fix any wrapper divs
-      document.querySelectorAll('div').forEach(div => {
-        if (div.style.maxWidth && div.style.maxWidth !== '100vw') div.style.maxWidth = '100vw';
-        if (div.style.width && div.style.width !== '100%') div.style.width = '100%';
-      });
-      
-      setVH();
-    }
+                buttons.forEach((b) =>
+                    b.addEventListener("click", () =>
+                        showTab(b.getAttribute("data-admin-tab")),
+                    ),
+                );
+                showTab("settings");
+            }
 
-    // Disable double-tap zoom (iOS Safari)
-    document.addEventListener('touchend', (e) => {
-      const t = e.target.closest('button,a');
-      if(t) { e.preventDefault(); t.click(); }
-    }, {passive:false});
-  </script>
-</body>
+            // Low stock refresh
+            function refreshLowStock() {
+                if (
+                    !window.google ||
+                    !window.google.script ||
+                    !window.google.script.run
+                ) {
+                    return;
+                }
+
+                const el = document.getElementById("low-stock-content");
+                el.textContent = "กำลังโหลด…";
+
+                window.google.script.run
+                    .withSuccessHandler((html) => {
+                        el.innerHTML = html;
+                    })
+                    .withFailureHandler((err) => {
+                        el.textContent =
+                            "เกิดข้อผิดพลาด: " +
+                            ((err && (err.message || err)) || "unknown");
+                    })
+                    .getLowStockHTML();
+            }
+
+            // Data health
+            function loadDataHealth() {
+                if (
+                    !window.google ||
+                    !window.google.script ||
+                    !window.google.script.run
+                ) {
+                    return;
+                }
+
+                const el = document.getElementById("data-health-admin");
+                el.textContent = "กำลังตรวจสอบ…";
+
+                window.google.script.run
+                    .withSuccessHandler((resp) => {
+                        if (!resp || resp.status !== "ok") {
+                            el.textContent = "ไม่สามารถโหลดข้อมูลได้";
+                            return;
+                        }
+
+                        const data = resp.data;
+                        el.innerHTML = `
+                        <div style="display: grid; gap: 8px;">
+                            <div>วัตถุดิบทั้งหมด: <strong>${data.total_ingredients}</strong></div>
+                            <div>มีราคา: <strong>${data.ingredients_with_prices}</strong></div>
+                            <div>ไม่มีราคา: <strong>${data.ingredients_without_prices}</strong></div>
+                            <div>เมนูทั้งหมด: <strong>${data.total_menus}</strong></div>
+                        </div>
+                    `;
+                    })
+                    .withFailureHandler(() => {
+                        el.textContent = "ไม่สามารถตรวจสอบได้";
+                    })
+                    .loadDataHealth();
+            }
+
+            // Missing price data
+            function loadMissingPriceData() {
+                if (
+                    !window.google ||
+                    !window.google.script ||
+                    !window.google.script.run
+                ) {
+                    return;
+                }
+
+                const box = document.getElementById("missing-price");
+                if (box) box.innerHTML = '<div class="muted">กำลังโหลด…</div>';
+
+                window.google.script.run
+                    .withSuccessHandler((resp) => {
+                        if (!resp || resp.status !== "ok") {
+                            if (box)
+                                box.innerHTML =
+                                    '<div class="muted">โหลดไม่สำเร็จ</div>';
+                            return;
+                        }
+
+                        renderMissingPrice(resp);
+                    })
+                    .withFailureHandler(() => {
+                        if (box)
+                            box.innerHTML =
+                                '<div class="muted">ไม่สามารถโหลดข้อมูลได้</div>';
+                    })
+                    .listMissingIngredientPriceData({ daysBack: 365 });
+            }
+
+            function renderMissingPrice(resp) {
+                var box = document.getElementById("missing-price");
+                if (!box) return;
+
+                var missing = resp.missing || [];
+                var badge = document.getElementById("badge-missing");
+                if (badge) {
+                    badge.textContent = String(missing.length);
+                    badge.style.display = missing.length
+                        ? "inline-block"
+                        : "none";
+                }
+
+                if (missing.length === 0) {
+                    box.innerHTML =
+                        '<div class="muted">ไม่มีข้อมูลที่ขาดหาย</div>';
+                    return;
+                }
+
+                var html = missing
+                    .map(
+                        (item) =>
+                            `<div style="padding: 8px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 8px;">
+                    <strong>${item.name}</strong> - ${item.unit}
+                </div>`,
+                    )
+                    .join("");
+
+                box.innerHTML = html;
+            }
+
+            // Size mappings
+            function loadSizeMappings() {
+                if (
+                    !window.google ||
+                    !window.google.script ||
+                    !window.google.script.run
+                ) {
+                    return;
+                }
+
+                window.google.script.run
+                    .withSuccessHandler((resp) => {
+                        if (!resp || resp.status !== "ok") {
+                            console.error("Failed to load size mappings");
+                            return;
+                        }
+                        console.log("Size mappings loaded:", resp.data);
+                    })
+                    .withFailureHandler(() => {
+                        console.error("Failed to load size mappings");
+                    })
+                    .getSizeMappings();
+            }
+
+            // Costing
+            function viewCosting() {
+                if (
+                    !window.google ||
+                    !window.google.script ||
+                    !window.google.script.run
+                ) {
+                    return;
+                }
+
+                const menuId = document.getElementById("costing-menu").value;
+                const gp = Number(
+                    document.getElementById("costing-gp").value || "60",
+                );
+
+                if (!menuId) {
+                    alert("กรุณาเลือกเมนู");
+                    return;
+                }
+
+                const view = document.getElementById("costing-view");
+                view.innerHTML = '<div class="muted">กำลังคำนวณ…</div>';
+
+                window.google.script.run
+                    .withSuccessHandler((resp) => {
+                        if (!resp || resp.status !== "ok") {
+                            view.innerHTML =
+                                '<div class="muted">ไม่สามารถคำนวณได้</div>';
+                            return;
+                        }
+
+                        const data = resp.data;
+                        view.innerHTML = `
+                        <div style="padding: 16px; border: 1px solid var(--line); border-radius: 8px;">
+                            <h4>${data.menu_name}</h4>
+                            <div style="margin-bottom: 12px;">
+                                <strong>ราคาขาย:</strong> ${data.menu_price} บาท<br>
+                                <strong>ต้นทุนรวม:</strong> ${data.total_cost.toFixed(2)} บาท<br>
+                                <strong>กำไร:</strong> ${(((data.menu_price - data.total_cost) / data.menu_price) * 100).toFixed(1)}%
+                            </div>
+                            <h5>รายการวัตถุดิบ:</h5>
+                            ${data.ingredients
+                                .map(
+                                    (ing) =>
+                                        `<div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                                        <span>${ing.name} ${ing.qty} ${ing.unit}</span>
+                                        <span>${ing.cost.toFixed(2)} บาท</span>
+                                    </div>`,
+                                )
+                                .join("")}
+                        </div>
+                    `;
+                    })
+                    .withFailureHandler(() => {
+                        view.innerHTML =
+                            '<div class="muted">ไม่สามารถคำนวณได้</div>';
+                    })
+                    .getCostingData({ menu_id: menuId, gp: gp });
+            }
+
+            // AI Agent
+            function setupAIAgent() {
+                const panel = document.getElementById("ai-agent-panel");
+                const button = document.getElementById("ai-agent-button");
+                const closeBtn = document.getElementById("ai-close");
+                const sendBtn = document.getElementById("ai-send");
+                const input = document.getElementById("ai-input");
+                const messages = document.getElementById("ai-messages");
+
+                button.addEventListener("click", openAIAgent);
+                closeBtn.addEventListener("click", closeAIAgent);
+                sendBtn.addEventListener("click", sendAIMessage);
+                input.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") sendAIMessage();
+                });
+
+                function openAIAgent() {
+                    panel.classList.remove("hide");
+                    input.focus();
+                }
+
+                function closeAIAgent() {
+                    panel.classList.add("hide");
+                }
+
+                function sendAIMessage() {
+                    const message = input.value.trim();
+                    if (!message) return;
+
+                    // Add user message
+                    messages.innerHTML += `
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: #e5e7eb; padding: 8px 12px; border-radius: 12px 12px 4px 12px; display: inline-block; max-width: 80%;">
+                            <strong>คุณ:</strong> ${message}
+                        </div>
+                    </div>
+                `;
+
+                    input.value = "";
+
+                    // Add loading message
+                    messages.innerHTML += `
+                    <div style="margin-bottom: 12px;">
+                        <div style="background: var(--brand); color: white; padding: 8px 12px; border-radius: 12px 12px 4px 12px; display: inline-block; max-width: 80%;">
+                            <strong>ผู้ช่วยร้าน:</strong> กำลังประมวลผล…
+                        </div>
+                    </div>
+                `;
+
+                    messages.scrollTop = messages.scrollHeight;
+
+                    // Call AI
+                    window.google.script.run
+                        .withSuccessHandler((resp) => {
+                            if (!resp || resp.status !== "ok") return;
+
+                            // Remove loading message and add AI response
+                            messages.innerHTML = messages.innerHTML.replace(
+                                /<div[^>]*>กำลังประมวลผล\.\.\.<\/div>/,
+                                `
+                            <div style="background: var(--brand); color: white; padding: 8px 12px; border-radius: 12px 12px 4px 12px; display: inline-block; max-width: 80%;">
+                                <strong>ผู้ช่วยร้าน:</strong> ${resp.message}
+                            </div>
+                        `,
+                            );
+                            messages.scrollTop = messages.scrollHeight;
+                        })
+                        .withFailureHandler(() => {
+                            // Remove loading message and add error
+                            messages.innerHTML = messages.innerHTML.replace(
+                                /<div[^>]*>กำลังประมวลผล\.\.\.<\/div>/,
+                                `
+                            <div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 12px 12px 4px 12px; display: inline-block; max-width: 80%;">
+                                <strong>ผู้ช่วยร้าน:</strong> เกิดข้อผิดพลาด กรุณาลองใหม่
+                            </div>
+                        `,
+                            );
+                            messages.scrollTop = messages.scrollHeight;
+                        })
+                        .agentChat({ message: message });
+                }
+            }
+
+            function openAIAgent() {
+                setupAIAgent(); // Ensure AI is set up
+                document
+                    .getElementById("ai-agent-panel")
+                    .classList.remove("hide");
+            }
+        </script>
+    </body>
 </html>

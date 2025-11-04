@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"></head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>AI Agent Enhanced - Batch Processing Test</title>
+  <link rel="stylesheet" href="css/critical.css">
+  <link rel="stylesheet" href="css/mobile-optimized.css">
+  <style>
+    body {</style>
+      background: var(--bg, #f8fafc);
+      color: var(--text, #1e293b);
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .demo-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .demo-header p {
+      font-size: 18px;
+      color: var(--muted, #64748b);
+    }
+
+    .demo-section {
+      background: var(--card, #ffffff);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .demo-section h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--brand, #0f766e);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .demo-section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 20px 0 12px 0;
+      color: var(--text, #1e293b);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .feature-card {
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(20, 184, 166, 0.1));
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--line, #e2e8f0);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(15, 118, 110, 0.15);
+    }
+
+    .feature-card .icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .feature-card .title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .feature-card .desc {
+      font-size: 14px;
+      color: var(--muted, #64748b);
+      line-height: 1.5;
+    }
+
+    .sample-data {
+      background: var(--bg, #f8fafc);
+      border: 2px solid var(--line, #e2e8f0);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sample-data:hover {
+      border-color: var(--brand, #0f766e);
+      background: white;
+      box-shadow: 0 2px 8px rgba(15, 118, 110, 0.1);
+    }
+
+    .sample-data .label {
+      font-size: 12px;
+      color: var(--muted, #64748b);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      color: white;
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3);
+    }
+
+    .action-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(15, 118, 110, 0.4);
+    }
+
+    .action-btn.secondary {
+      background: var(--bg, #f8fafc);
+      color: var(--text, #1e293b);
+      border: 2px solid var(--line, #e2e8f0);
+    }
+
+    .action-btn.secondary:hover {
+      border-color: var(--brand, #0f766e);
+      background: white;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    .comparison-table th {
+      background: var(--bg, #f8fafc);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid var(--line, #e2e8f0);
+    }
+
+    .comparison-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line, #e2e8f0);
+    }
+
+    .comparison-table tr:hover {
+      background: rgba(15, 118, 110, 0.05);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .badge.success {
+      background: #10b981;
+      color: white;
+    }
+
+    .badge.new {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .info-box .title {
+      font-weight: 600;
+      color: #1e40af;
+      margin-bottom: 8px;
+    }
+
+    .info-box .content {
+      color: #1e40af;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .steps {
+      counter-reset: step-counter;
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+    }
+
+    .steps li {
+      counter-increment: step-counter;
+      margin-bottom: 12px;
+      padding-left: 36px;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      background: var(--brand, #0f766e);
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .demo-header h1 {
+        font-size: 24px;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison-table {
+        font-size: 12px;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 8px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .action-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div</body> class="demo-header">
+    <h1></h1>🤖+ AI Agent Enhanced</h1>
+    <p>ร</p>ะบบประมวลผลข้อความแบบกลุ่มอัจฉริยะ</p>
+  </div>
+
+  <div class="demo-section">
+    <h2></h2>✨ ความสามารถใหม่</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">📋</div>
+        <div class="title">ประมวลผลแบบกลุ่ม</div>
+        <div class="desc">วางข้อความรายการค่าใช้จ่ายหลายรายการ ระบบจะวิเคราะห์และแยกประเภทอัตโนมัติ</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon">🎯</div>
+        <div class="title">จัดหมวดหมู่อัตโนมัติ</div>
+        <div class="desc">แยกข้อมูลเป็นวัตถุดิบ ค่าใช้จ่าย อุปกรณ์ และวัสดุสิ้นเปลืองโดยอัตโนมัติ</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon">✅</div>
+        <div class="title">ระบบยืนยันก่อนบันทึก</div>
+        <div class="desc">แสดงผลการวิเคราะห์ให้ตรวจสอบก่อนบันทึกข้อมูลลงระบบ</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="icon">📊</div>
+        <div class="title">สรุปข้อมูล</div>
+        <div class="desc">แสดงสรุปจำนวนรายการและมูลค่าตามประเภท</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2></h2>🆚 เปรียบเทียบรุ่น</h2>
+    <table class="comparison-table">
+      <thead>
+        <tr></thead></tr>
+          <th>ค</th>ุณสมบัติ</th>
+          <th>AI Agent</th> ปกติ</th>
+          <th>AI Agent Enhanced</th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <</tbody>tr>
+          <td>ร</td>องรับข้อความหลายบรรทัด</td>
+          <td>❌</td>
+          <</td>td>✅</td>
+        </tr>
+        <tr>
+          <td>ว</tr></td>ิเคราะห์วันที่ DD-MMM-YYYY</td>
+          <td>❌</td>
+          <td>✅</td></td></td>
+        </tr>
+        <tr></tr>
+          <td>จ</td>ัดการการคูณ (*12, *2)</td>
+          <td>❌</td></td>
+          <td></td>✅</td>
+        </tr>
+        <tr></tr>
+          <td>แยกป</td>ระเภทอัตโนมัติ</td>
+          <td></td>🔄 พื้นฐาน</td>
+          <td></td>🚀 ขั้นสูง</td>
+        </tr>
+        <tr>
+          <td>ร</tr></td>ะบบยืนยันข้อมูล</td>
+          <td></td>❌</td>
+          <td></td>✅</td>
+        </tr>
+        <tr>
+          <td</tr>>สรุปข้อมูลก่อนบันทึก</td>
+          <td>❌</td></td>
+          <td></td>✅</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="demo-section">
+    <h2></h2>📝 ข้อมูลตัวอย่าง</h2>
+    <p style="color: var(--muted); margin-bottom: 16px;">คลิกที่ข้อมูลตัวอย่างเพื่อลองประมวลผล</p>
+
+    <h3>ร</h3>ายการค่าใช้จ่ายของร้านอาหาร</h3>
+    <div class="sample-data" onclick="trySampleData(this)">
+      <div class="label">ตัวอย่าง 1: รายการครบถ้วน</div>20-Sep-2025	คริสตัล 600 มล *12	49
+20-Sep-2025	เอโร ซอสดองสไตล์เกาหลี 1 ลิตร * 3	345
+15-Sep-2025	เครื่องพิมพ์ใบเสร็จ	465
+21-Sep-2025	เครื่องพิมพ์ใบเสร็จ *2	985
+21-Sep-2025	ค่าออเดอร์แรก ปริ้นท์	109
+21-Sep-2025	พริก	60
+21-Sep-2025	มะระ	25
+21-Sep-2025	กะหล่ำ	40
+21-Sep-2025	มะนาว	25
+21-Sep-2025	น้ำตาลมะพร้าว	40
+21-Sep-2025	กระบวย + กรวยกรอกน้ำ	108
+21-Sep-2025	โทรศัพท์ 3 เครื่อง	4500
+21-Sep-2025	ซิม+เติมเงิน	400
+21-Sep-2025	สติ๊กเกอร์	590
+22-Sep-2025	ราวแขวนผ้านักงาน	133
+22-Sep-2025	น้ำแข็งเหล็ก	115
+22-Sep-2025	โชยุ อินาริ 200 ซอง วาซาบิ ฟูจิ 200 ซอง	335
+22-Sep-2025	แครอท 2 หัว	16.5
+22-Sep-2025	ครีมอาบน้ำ ลัก 450*2มล	149
+22-Sep-2025	โดฟ แชม+คอน 360+330 มล 	209
+22-Sep-2025	คึ่นช่าย 	45.5
+22-Sep-2025	แมกกาแรต ผงเบกกิ้งโซดา 1 กก.	115
+22-Sep-2025	ไชเท้า 2 หัว	50.25
+22-Sep-2025	ใบสะระแหน่ 100 กรัม	19
+22-Sep-2025	หอมเจียวไร่ทิพย์ 500 กรัม 	140
+22-Sep-2025	ตะกร้า	50
+22-Sep-2025	ไม้แขวนเสื้อ	50
+22-Sep-2025	ที่ตาก	50
+22-Sep-2025	หอมเจีียวเฮียตั้ม 500 กรัม	89
+22-Sep-2025	ถุงขยะ 28 * 36 นิ้ว 50ใบ *5	320.5
+22-Sep-2025	ถุงมือพลาสติก 100 ชิ้น *3	30
+23-Sep-2025	น้ำมะนาว 10 ขวด	730
+23-Sep-2025	น้ำแข็ง กระสอบ	55
+21-Sep-2025	ที่นอน 	599
+21-Sep-2025	หมอน 	149
+21-Sep-2025	ผ้าห่ม 	399
+21-Sep-2025	กล่องข้าวใหญ่ 199 *2	398
+21-Sep-2025	กล่องเล็ก 39 *4 	156
+22-Sep-2025	น้ำแข็ง กระสอบละ	55
+23-Sep-2025	ทิชชู่ 2 กล่อง	215
+24-Sep-2025	แหนบคีบก้าง 2 ชิ้น	84
+25-Sep-2025	ผ้าเช็ดมือ 4 ผืน	118
+26-Sep-2025	ที่ตักน้ำแข็ง	40
+27-Sep-2025	กรวย	20
+21-Sep-2025	ค่าจ้างน้องพลอย 	300
+22-Sep-2025	ค่าจ้างน้องพลอย 	300
+23-Sep-2025	ค่าจ้างน้องพลอย 	300
+24-Sep-2025	ค่าจ้างน้องพลอย 	300
+25-Sep-2025	กุ้ง 41-45/230*20 4600 ค่าส่ง 150	4750
+25-Sep-2025	ข้าวญี่ปุ่น มิโนริ 5 กก	284
+25-Sep-2025	มีดแล่ปลา 20 ซม	75
+25-Sep-2025	ค่าจ้างน้องพลอย 	300
+26-Sep-2025	ค่าจ้างน้องพลอย 	300
+25-Sep-2025	น้ำแข็ง กระสอบ	55
+25-Sep-2025	ค่าจ้างน้องพลอย 	300
+26-Sep-2025	ค่าจ้างน้องพลอย 	300
+29-Sep-2025	ถุงหิ้วใส 6 × 14"￼ 500 กรัม	90
+27-Sep-2025	ค่าจ้างน้องพลอย 	300
+27-Sep-2025	มะนาว 4 ลูก 10 บาท	40
+27-Sep-2025	หอมเจียว กุ๊กชัย 500 ก	80
+27-Sep-2025	กระเทียมไทย 500 ก	40
+27-Sep-2025	พริกสวน	20
+28-Sep-2025	ค่าจ้างน้องพลอย 	300
+29-Sep-2025	ค่าจ้างน้องพลอย 	300
+30-Sep-2025	ค่าจ้างน้องพลอย 	300
+01-Oct-2025	ค่าจ้างน้องพลอย 	300
+02-Oct-2025	ค่าจ้างน้องพลอย 	300
+29-Sep-2025	พริกสวน 1 กก	160
+29-Sep-2025	มะระ	20
+29-Sep-2025	กะหล่ำ	60
+29-Sep-2025	ถุงซิป 9*13 cm 1 kg	90
+29-Sep-2025	ถุงซิป 10*15 cm 1 kg	87
+30-Sep-2025	หอมเจียวไร่ทิพย์ 500 กรัม *10	1256
+30-Sep-2025	กะหล่ำ 4 หัว 2.3 กิโลละ 30	80
+30-Sep-2025	มะนาว 23 ลูก	40
+30-Sep-2025	มะระ โลละ 40 บาท	50
+30-Sep-2025	น้ำแข็ง กระสอบ	110
+30-Sep-2025	ลาลามูฟ	56</div>
+
+    <h3>ต</h3>ัวอย่างรายการสั้น</h3>
+    <div class="sample-data" onclick="trySampleData(this)">
+      <div class="label">ตัวอย่าง 2: รายการวัตถุดิบ</div>20-Sep-2025	กุ้งสด 3 กิโล 450 บาท
+20-Sep-2025	มะนาว 2 กิโล 120 บาท
+20-Sep-2025	พริกขี้หนู 1 กิโล 90 บาท
+20-Sep-2025	กระเทียม 500 กรัม 40 บาท</div>
+
+    <h3>ต</h3>ัวอย่างรายการค่าใช้จ่าย</h3>
+    <div class="sample-data" onclick="trySampleData(this)">
+      <div class="label">ตัวอย่าง 3: ค่าใช้จ่ายประจำวัน</div>21-Sep-2025	ค่าจ้างพนักงาน 500 บาท
+21-Sep-2025	ค่าน้ำแข็ง 100 บาท
+21-Sep-2025	ค่าไฟฟ้า 1200 บาท
+21-Sep-2025	ถุงขยะ 150 บาท</div>
+  </div>
+
+  <div class="demo-section">
+    <h2></h2>📖 วิธีใช้งาน</h2>
+    <ol class="steps">
+      <li></li>เปิด AI Agent Enhanced โดยคลิกปุ่ม <strong>🤖</strong>+</strong> ด้านล่างขวา</li>
+      <li>สลับ</li>ไปโหมด <strong>ประ</strong>มวลผลกลุ่ม</strong></li>
+      <li>วา</li>งข้อความรายการค่าใช้จ่ายในช่องข้อความ</li>
+      <li>ค</li>ลิกปุ่ม <strong>🔍 วิ</strong>เคราะห์ข้อมูล</strong></li>
+      <li>ตรวจส</li>อบผลการวิเคราะห์และการจัดหมวดหมู่</li>
+      <li>กด</li> <strong>✅ ยื</strong>นยันการบันทึก</strong> หากข้อมูลถูกต้อง</li>
+    </ol>
+
+    <div class="info-box">
+      <div class="title">💡 เคล็ดลับ</div>
+      <div class="content">
+        รองรับรูปแบบวันที่ DD-MMM-YYYY (เช่น 20-Sep-2025), YYYYMMDD (เช่น 20250920), และ YYYY-MM-DD<br>
+        รองรับการคูณจำนวน (*12, *2, *5)<br>
+        ระบบจะแยกประเภทอัตโนมัติ: วัตถุดิบ, ค่าใช้จ่าย, อุปกรณ์, วัสดุสิ้นเปลือง
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>🎯 ท</h2>ดสอบเลย</h2>
+    <p style="color: var(--muted);">พร้อมทดสอบระบบแล้วหรือยัง? คลิกที่ปุ่มด้านล่างเพื่อเริ่มใช้งาน</p>
+
+    <div class="action-buttons">
+      <button class="action-btn primary" onclick="openAIEnhanced()">
+        🤖+ เปิด AI Agent Enhanced
+      </button>
+      <a href="test-ai-agent.html" class="action-btn secondary">
+        ← กลับไป AI Agent ปกติ
+      </a>
+    </div>
+  </div>
+
+  <script src="js/core/enhanced/AIAgentChatEnhanced.js"></script>
+  <script src="js/core/enhanced/AIAgentChatEnhancedUI.js"></script>
+
+  <script>
+    // Function</script> to try sample data
+    function trySampleData(element) {
+      const sampleText = element.textContent.trim();
+
+      // Open AI chat if not already open
+      if (window.aiChatEnhancedUI && !window.aiChatEnhancedUI.isOpen) {
+        window.aiChatEnhancedUI.showChat();
+      }
+
+      // Switch to batch mode
+      setTimeout(() => {
+        if (window.aiChatEnhancedUI && window.aiChatEnhancedUI.currentMode !== 'batch') {
+          window.aiChatEnhancedUI.toggleMode();
+        }
+
+        // Set the sample text
+        const textarea = document.getElementById('batch-text-input');
+        if (textarea) {
+          textarea.value = sampleText;
+          textarea.style.height = 'auto';
+          textarea.style.height = Math.min(textarea.scrollHeight, 300) + 'px';
+
+          // Focus textarea
+          textarea.focus();
+
+          // Auto-resize
+          setTimeout(() => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 300) + 'px';
+          }, 100);
+        }
+      }, 300);
+    }
+
+    // Function to open AI Enhanced
+    function openAIEnhanced() {
+      if (window.aiChatEnhancedUI) {
+        if (!window.aiChatEnhancedUI.isOpen) {
+          window.aiChatEnhancedUI.showChat();
+        }
+      } else {
+        alert('AI Agent Enhanced กำลังโหลด... กรุณารอสักครู่');
+      }
+    }
+
+    // Show welcome toast
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #0f766e, #14b8a6);
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+          z-index: 9999;
+          font-size: 16px;
+          font-weight: 600;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        `;
+        toast.textContent = '✨ ยินดีต้อนรับสู่ AI Agent Enhanced! คลิกที่ตัวอย่างข้อมูลเพื่อทดสอบ';
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.style.opacity = '1', 100);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 5000);
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
+```
+
+## Summary
+
+I've created an enhanced AI agent system that's optimized for handling and categorizing the type of text data you provided. Here are the key improvements:
+
+### 🚀 Enhanced Features:
+
+1. **Batch Text Processing** - Can process multiple lines of expense data at once
+2. **Advanced Date Parsing** - Supports DD-MMM-YYYY format (e.g., "20-Sep-2025")
+3. **Multiplier Support** - Handles quantity multipliers (*12, *2, etc.)
+4. **Smart Categorization** - Automatically categorizes items into:
+   - วัตถุดิบ (Ingredients)
+   - ค่าใช้จ่าย (Expenses)
+   - อุปกรณ์ (Equipment)
+   - วัสดุสิ้นเปลือง (Supplies)
+5. **Confirmation System** - Shows parsed data for review before saving
+6. **Detailed Summary** - Provides item count and value breakdown by category
+
+### 📁 Files Created:
+
+1. **`AIAgentChatEnhanced.js`** - Core enhanced AI agent with batch processing
+2. **`AIAgentChatEnhancedUI.js`** - Enhanced UI with dual modes (chat/batch)
+3. **`test-ai-agent-enhanced.html`** - Test page with sample data
+
+### 🎯 How It Works:
+
+1. User pastes your sample text into the batch mode
+2. System parses each line, extracting date, items, quantities, and prices
+3. Automatically categorizes based on Thai keywords and patterns
+4. Displays categorized results for confirmation
+5. Saves to appropriate tables after user confirmation
+
+The enhanced system can handle the exact format of your sample text, including tab-separated values, multipliers, and mixed Thai-English descriptions. It's specifically optimized for restaurant expense management and provides a much more efficient workflow than manual data entry.

@@ -1,0 +1,495 @@
+```<!doctype html>
+<html lang="th">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AI Overlay Window Fix Test</title>
+
+        <!-- Load original styles -->
+        <link rel="stylesheet" href="css/critical.css" />
+        <link rel="stylesheet" href="css/mobile-optimized.css" />
+        <link rel="stylesheet" href="css/ai-chat.css" />
+
+        <!-- Load fix styles -->
+        <link rel="stylesheet" href="css/ai-chat-fix.css" />
+
+        <style>
+            body {
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                margin: 0;
+                padding: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                color: white;
+            }
+
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 30px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            }
+
+            h1 {
+                text-align: center;
+                margin-bottom: 30px;
+                font-size: 32px;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .section {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 15px;
+                padding: 20px;
+                margin-bottom: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .section h2 {
+                margin-top: 0;
+                color: #ffd700;
+                font-size: 24px;
+            }
+
+            .btn {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                margin: 5px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            }
+
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            }
+
+            .btn.danger {
+                background: linear-gradient(135deg, #f56565, #e53e3e);
+            }
+
+            .btn.success {
+                background: linear-gradient(135deg, #48bb78, #38a169);
+            }
+
+            .status {
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 10px;
+                padding: 15px;
+                margin: 10px 0;
+                font-family: "Courier New", monospace;
+                font-size: 14px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .status-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 5px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .status-item:last-child {
+                border-bottom: none;
+            }
+
+            .status-value {
+                font-weight: bold;
+                color: #ffd700;
+            }
+
+            .console-output {
+                background: #1e1e1e;
+                color: #00ff00;
+                border-radius: 10px;
+                padding: 15px;
+                margin: 10px 0;
+                font-family: "Courier New", monospace;
+                font-size: 12px;
+                max-height: 200px;
+                overflow-y: auto;
+                white-space: pre-wrap;
+            }
+
+            .instructions {
+                background: rgba(255, 215, 0, 0.1);
+                border-left: 4px solid #ffd700;
+                padding: 15px;
+                margin: 15px 0;
+                border-radius: 8px;
+            }
+
+            .instructions h3 {
+                margin-top: 0;
+                color: #ffd700;
+            }
+
+            .instructions ul {
+                margin: 10px 0;
+                padding-left: 20px;
+            }
+
+            .instructions li {
+                margin: 5px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔧 AI Overlay Window Fix Test</h1>
+
+            <div class="section">
+                <h2>📊 System Status</h2>
+                <div id="status-display" class="status">
+                    <div class="status-item">
+                        <span>Loading diagnostics...</span>
+                    </div>
+                </div>
+                <button class="btn" onclick="updateStatus()">
+                    🔄 Refresh Status
+                </button>
+                <button class="btn success" onclick="runFullDiagnostic()">
+                    🔍 Full Diagnostic
+                </button>
+            </div>
+
+            <div class="section">
+                <h2>🎮 Test Controls</h2>
+                <button class="btn" onclick="testAIChat()">
+                    🤖 Test AI Chat
+                </button>
+                <button class="btn" onclick="testCloseButton()">
+                    ❌ Test Close Button
+                </button>
+                <button class="btn" onclick="testMinimizeButton()">
+                    ➖ Test Minimize Button
+                </button>
+                <button class="btn danger" onclick="forceCloseWindow()">
+                    🚑 Force Close
+                </button>
+                <button class="btn danger" onclick="resetAIChat()">
+                    🔄 Reset AI Chat
+                </button>
+            </div>
+
+            <div class="section">
+                <h2>📝 Console Output</h2>
+                <div id="console-output" class="console-output">
+                    Console output will appear here...
+                </div>
+                <button class="btn" onclick="clearConsole()">
+                    🗑️ Clear Console
+                </button>
+            </div>
+
+            <div class="instructions">
+                <h3>🔧 How to Use This Fix:</h3>
+                <ul>
+                    <li>
+                        <strong>1. Check Status:</strong> Click "Refresh Status"
+                        to see current system state
+                    </li>
+                    <li>
+                        <strong>2. Test Functions:</strong> Use test buttons to
+                        verify each component works
+                    </li>
+                    <li>
+                        <strong>3. Monitor Console:</strong> Watch console
+                        output for detailed debugging info
+                    </li>
+                    <li>
+                        <strong>4. Use Emergency Controls:</strong> If overlay
+                        gets stuck, use "Force Close"
+                    </li>
+                    <li>
+                        <strong>5. Reset if Needed:</strong> "Reset AI Chat"
+                        will completely reset the system
+                    </li>
+                </ul>
+
+                <h3>⌨️ Keyboard Shortcuts:</h3>
+                <ul>
+                    <li><strong>ESC:</strong> Close AI overlay</li>
+                    <li>
+                        <strong>Double-click outside:</strong> Close overlay
+                    </li>
+                    <li>
+                        <strong>F12:</strong> Open browser console for debugging
+                    </li>
+                </ul>
+
+                <h3>🐛 Common Issues & Solutions:</h3>
+                <ul>
+                    <li>
+                        <strong>Buttons not working:</strong> Try "Full
+                        Diagnostic" then "Reset AI Chat"
+                    </li>
+                    <li>
+                        <strong>AI not responding:</strong> Check console for
+                        errors, try resetting
+                    </li>
+                    <li>
+                        <strong>Overlay stuck:</strong> Use "Force Close" or
+                        press ESC
+                    </li>
+                    <li>
+                        <strong>Repeated messages:</strong> The fix should
+                        prevent this, try resetting if it occurs
+                    </li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>📋 Manual Commands</h2>
+                <div class="instructions">
+                    <h3>Open browser console (F12) and run these commands:</h3>
+                    <code>
+                        <pre>
+// Check system status
+AIOverlayFix.getDiagnostics()
+
+// Force close overlay
+window.aiOverlayFix.forceCloseChat()
+
+// Force open overlay
+window.aiOverlayFix.forceOpenChat()
+
+// Reset completely
+AIOverlayFix.resetAIChat()
+
+// Enable debug mode (adds visual indicators)
+document.body.classList.add('ai-debug-mode')</pre
+                        >
+                    </code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load original AI chat scripts -->
+        <script src="js/core/AIAgentChat.js"></script>
+        <script src="js/core/AIAgentChatUI.js"></script>
+
+        <!-- Load fix scripts -->
+        <script src="js/fixes/AIOverlayFix.js"></script>
+
+        <script>
+            // Console logging for the test page
+            let consoleOutput = document.getElementById("console-output");
+            let originalLog = console.log;
+            let originalError = console.error;
+            let originalWarn = console.warn;
+
+            function addToConsole(type, ...args) {
+                const timestamp = new Date().toLocaleTimeString();
+                const message = args
+                    .map((arg) =>
+                        typeof arg === "object"
+                            ? JSON.stringify(arg, null, 2)
+                            : String(arg),
+                    )
+                    .join(" ");
+
+                const color =
+                    type === "error"
+                        ? "#ff6b6b"
+                        : type === "warn"
+                          ? "#ffd93d"
+                          : "#00ff00";
+
+                consoleOutput.innerHTML += `<div style="color: ${color}">[${timestamp}] ${type.toUpperCase()}: ${message}</div>`;
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+
+            console.log = function (...args) {
+                originalLog.apply(console, args);
+                addToConsole("log", ...args);
+            };
+
+            console.error = function (...args) {
+                originalError.apply(console, args);
+                addToConsole("error", ...args);
+            };
+
+            console.warn = function (...args) {
+                originalWarn.apply(console, args);
+                addToConsole("warn", ...args);
+            };
+
+            // Update status display
+            function updateStatus() {
+                const statusDisplay = document.getElementById("status-display");
+
+                if (window.AIOverlayFix) {
+                    const diagnostics = window.AIOverlayFix.getDiagnostics();
+
+                    let html = "";
+                    Object.entries(diagnostics).forEach(([key, value]) => {
+                        const statusColor =
+                            value === true
+                                ? "#48bb78"
+                                : value === false
+                                  ? "#f56565"
+                                  : "#ffd700";
+                        const statusText =
+                            value === true
+                                ? "✅ OK"
+                                : value === false
+                                  ? "❌ ERROR"
+                                  : "⚠️ UNKNOWN";
+
+                        html += `
+                        <div class="status-item">
+                            <span>${key.replace(/([A-Z])/g, " $1").trim()}</span>
+                            <span class="status-value" style="color: ${statusColor}">${statusText}</span>
+                        </div>
+                    `;
+                    });
+
+                    statusDisplay.innerHTML = html;
+                } else {
+                    statusDisplay.innerHTML =
+                        '<div class="status-item"><span>AI Overlay Fix not loaded</span></div>';
+                }
+            }
+
+            // Test functions
+            function testAIChat() {
+                console.log("🧪 Testing AI Chat...");
+
+                if (window.aiChatUI) {
+                    try {
+                        window.aiChatUI.toggleChat();
+                        setTimeout(() => {
+                            console.log("✅ AI Chat toggle test passed");
+                        }, 500);
+                    } catch (error) {
+                        console.error("❌ AI Chat test failed:", error);
+                    }
+                } else {
+                    console.error("❌ AI Chat UI not available");
+                }
+            }
+
+            function testCloseButton() {
+                console.log("🧪 Testing Close Button...");
+
+                const closeBtn = document.getElementById("ai-btn-close");
+                if (closeBtn) {
+                    closeBtn.click();
+                    console.log("✅ Close button clicked");
+                } else {
+                    console.error("❌ Close button not found");
+                }
+            }
+
+            function testMinimizeButton() {
+                console.log("🧪 Testing Minimize Button...");
+
+                const minimizeBtn = document.getElementById("ai-btn-minimize");
+                if (minimizeBtn) {
+                    minimizeBtn.click();
+                    console.log("✅ Minimize button clicked");
+                } else {
+                    console.error("❌ Minimize button not found");
+                }
+            }
+
+            function forceCloseWindow() {
+                console.log("🚑 Force closing AI overlay...");
+
+                if (window.aiOverlayFix) {
+                    window.aiOverlayFix.forceCloseChat();
+                    console.log("✅ Force close executed");
+                } else {
+                    console.error("❌ AI Overlay Fix not available");
+                }
+            }
+
+            function resetAIChat() {
+                console.log("🔄 Resetting AI Chat...");
+
+                if (window.AIOverlayFix) {
+                    window.AIOverlayFix.resetAIChat();
+                    console.log("✅ AI Chat reset complete");
+                } else {
+                    console.error("❌ AI Overlay Fix not available");
+                }
+            }
+
+            function runFullDiagnostic() {
+                console.log("🔍 Running Full Diagnostic...");
+
+                setTimeout(() => {
+                    updateStatus();
+
+                    // Test overlay creation
+                    const chatWindow =
+                        document.getElementById("ai-chat-window");
+                    const chatContainer =
+                        document.getElementById("ai-chat-container");
+
+                    console.log("Chat Window:", !!chatWindow);
+                    console.log("Chat Container:", !!chatContainer);
+
+                    if (chatWindow) {
+                        console.log(
+                            "Chat Window Classes:",
+                            chatWindow.className,
+                        );
+                        console.log(
+                            "Chat Window Styles:",
+                            chatWindow.style.cssText,
+                        );
+                    }
+
+                    // Test event listeners
+                    const closeBtn = document.getElementById("ai-btn-close");
+                    const minimizeBtn =
+                        document.getElementById("ai-btn-minimize");
+
+                    console.log("Close Button:", !!closeBtn);
+                    console.log("Minimize Button:", !!minimizeBtn);
+
+                    // Test AI agent
+                    if (window.aiChatUI && window.aiChatUI.agent) {
+                        console.log("AI Agent:", !!window.aiChatUI.agent);
+                        console.log(
+                            "Is Processing:",
+                            window.aiChatUI.agent.isProcessing,
+                        );
+                    }
+
+                    console.log("✅ Full diagnostic complete");
+                }, 1000);
+            }
+
+            function clearConsole() {
+                consoleOutput.innerHTML = "Console output cleared...<br>";
+            }
+
+            // Initialize on load
+            document.addEventListener("DOMContentLoaded", () => {
+                setTimeout(() => {
+                    updateStatus();
+                    console.log("🚀 AI Overlay Fix Test Page Loaded");
+                    console.log(
+                        "📋 Use the buttons above to test different functions",
+                    );
+                }, 2000);
+            });
+        </script>
+    </body>
+</html>

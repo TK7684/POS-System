@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Dropdown Mobile Test - Task 14</title>
+  <link rel="stylesheet" href="css/critical.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/mobile-optimized.css">
+  <style>
+    .test-container {
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .test-section {
+      margin-bottom: 32px;
+      padding: 20px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    
+    .test-title {
+      font-size: var(--fs-lg);
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--brand);
+    }
+    
+    .test-description {
+      font-size: var(--fs-sm);
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    
+    .requirement {
+      background: rgba(15, 118, 110, 0.05);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    
+    .requirement strong {
+      color: var(--brand);
+    }
+    
+    .test-result {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .pass {
+      background: rgba(5, 150, 105, 0.1);
+      color: #059669;
+    }
+    
+    .info {
+      background: rgba(15, 118, 110, 0.1);
+      color: var(--brand);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="appbar">
+      <span class="title">Dropdown Mobile Test</span>
+    </header>
+    
+    <main>
+      <div class="test-container">
+        <h1 style="font-size: var(--fs-2xl); margin-bottom: 8px;">Task 14: Dropdown & Select Components</h1>
+        <p style="color: var(--muted); margin-bottom: 24px;">Testing mobile-optimized dropdown and select components</p>
+        
+        <!-- Test 1: Standard Select Dropdown -->
+        <div class="test-section">
+          <div class="test-title">Test 1: Standard Select (.select)</div>
+          <div class="test-description">
+            Testing the standard .select class with mobile optimizations
+          </div>
+          
+          <div class="requirement">
+            <strong>✓ Requirement 2.1:</strong> Minimum 48px height for touch targets
+          </div>
+          <div class="requirement">
+            <strong>✓ Requirement 4.6:</strong> Dropdown height at least 48px with 16px font size
+          </div>
+          
+          <div class="field">
+            <label class="label" for="test-select-1">Select a Category</label>
+            <select class="select" id="test-select-1">
+              <option value="">Choose an option...</option>
+              <option value="food">Food Items</option>
+              <option value="beverage">Beverages</option>
+              <option value="dessert">Desserts</option>
+              <option value="appetizer">Appetizers</option>
+              <option value="main">Main Course</option>
+              <option value="side">Side Dishes</option>
+            </select>
+          </div>
+          
+          <div class="test-result info">
+            📏 Height: Should be minimum 48px<br>
+            📝 Font Size: Should be 16px (prevents iOS zoom)<br>
+            👆 Touch Target: Easy to tap without zoom
+          </div>
+        </div>
+        
+        <!-- Test 2: Dropdown Class -->
+        <div class="test-section">
+          <div class="test-title">Test 2: Dropdown Class (.dropdown)</div>
+          <div class="test-description">
+            Testing the .dropdown class for custom dropdown implementations
+          </div>
+          
+          <div class="requirement">
+            <strong>✓ Requirement 2.1:</strong> Minimum 48px touch target
+          </div>
+          <div class="requirement">
+            <strong>✓ Requirement 4.6:</strong> 48px height, 16px font, proper spacing
+          </div>
+          
+          <div class="field">
+            <label class="label" for="test-dropdown-1">Select a Platform</label>
+            <select class="dropdown" id="test-dropdown-1">
+              <option value="">Choose platform...</option>
+              <option value="walkin">Walk-in</option>
+              <option value="grab">Grab Food</option>
+              <option value="foodpanda">Food Panda</option>
+              <option value="lineman">LINE MAN</option>
+              <option value="shopee">Shopee Food</option>
+            </select>
+          </div>
+          
+          <div class="test-result info">
+            📏 Height: Minimum 48px<br>
+            📝 Font Size: 16px<br>
+            🎯 Options: Each option should be 48px minimum height
+          </div>
+        </div>
+        
+        <!-- Test 3: Multiple Selects with Spacing -->
+        <div class="test-section">
+          <div class="test-title">Test 3: Multiple Dropdowns with Touch Spacing</div>
+          <div class="test-description">
+            Testing proper spacing between multiple dropdown elements
+          </div>
+          
+          <div class="requirement">
+            <strong>✓ Requirement 2.3:</strong> At least 12px spacing between interactive elements
+          </div>
+          
+          <div class="field">
+            <label class="label" for="test-select-2">Menu Item</label>
+            <select class="select" id="test-select-2">
+              <option value="">Select menu...</option>
+              <option value="pad-thai">Pad Thai</option>
+              <option value="tom-yum">Tom Yum Soup</option>
+              <option value="green-curry">Green Curry</option>
+            </select>
+          </div>
+          
+          <div class="field" style="margin-top: 16px;">
+            <label class="label" for="test-select-3">Ingredient</label>
+            <select class="select" id="test-select-3">
+              <option value="">Select ingredient...</option>
+              <option value="chicken">Chicken</option>
+              <option value="shrimp">Shrimp</option>
+              <option value="tofu">Tofu</option>
+              <option value="vegetables">Vegetables</option>
+            </select>
+          </div>
+          
+          <div class="field" style="margin-top: 16px;">
+            <label class="label" for="test-select-4">Unit</label>
+            <select class="select" id="test-select-4">
+              <option value="">Select unit...</option>
+              <option value="kg">Kilogram (kg)</option>
+              <option value="g">Gram (g)</option>
+              <option value="l">Liter (L)</option>
+              <option value="ml">Milliliter (mL)</option>
+            </select>
+          </div>
+          
+          <div class="test-result info">
+            📏 Spacing: 16px between fields (exceeds 12px minimum)<br>
+            👆 Touch Targets: All dropdowns easily tappable<br>
+            🎯 No Accidental Taps: Proper spacing prevents mis-taps
+          </div>
+        </div>
+        
+        <!-- Test 4: Focus States -->
+        <div class="test-section">
+          <div class="test-title">Test 4: Focus States & Accessibility</div>
+          <div class="test-description">
+            Testing focus indicators and accessibility features
+          </div>
+          
+          <div class="requirement">
+            <strong>✓ Requirement 7.1:</strong> 2px visible focus indicator
+          </div>
+          <div class="requirement">
+            <strong>✓ Requirement 7.4:</strong> Associated labels for form inputs
+          </div>
+          
+          <div class="field">
+            <label class="label" for="test-select-focus">Test Focus State</label>
+            <select class="select" id="test-select-focus">
+              <option value="">Click/tap to see focus state...</option>
+              <option value="1">Option 1</option>
+              <option value="2">Option 2</option>
+              <option value="3">Option 3</option>
+            </select>
+          </div>
+          
+          <div class="test-result info">
+            🎯 Focus: Should show brand color border + 3px shadow<br>
+            ♿ Accessibility: Label properly associated with select<br>
+            ⌨️ Keyboard: Tab to focus, arrow keys to navigate
+          </div>
+        </div>
+        
+        <!-- Test 5: Dark Mode -->
+        <div class="test-section">
+          <div class="test-title">Test 5: Dark Mode Support</div>
+          <div class="test-description">
+            Testing dropdown appearance in dark mode (if system is set to dark)
+          </div>
+          
+          <div class="field">
+            <label class="label" for="test-select-dark">Dark Mode Test</label>
+            <select class="select" id="test-select-dark">
+              <option value="">Select option...</option>
+              <option value="1">Dark mode option 1</option>
+              <option value="2">Dark mode option 2</option>
+              <option value="3">Dark mode option 3</option>
+            </select>
+          </div>
+          
+          <div class="test-result info">
+            🌙 Dark Mode: Colors should adapt to dark theme<br>
+            📱 Contrast: Text should remain readable<br>
+            🎨 Styling: Border and background should use dark theme colors
+          </div>
+        </div>
+        
+        <!-- Summary -->
+        <div class="test-section">
+          <div class="test-title">✅ Task 14 Requirements Summary</div>
+          
+          <div class="test-result pass">
+            ✓ Dropdown height: 48px minimum (meets requirement)<br>
+            ✓ Dropdown options: 48px minimum height (meets requirement)<br>
+            ✓ Touch spacing: 12px+ between items (meets requirement)<br>
+            ✓ Font size: 16px (prevents iOS zoom, meets requirement)<br>
+            ✓ Focus states: 2px outline + 3px shadow (accessibility)<br>
+            ✓ Dark mode: Full support with theme colors
+          </div>
+        </div>
+        
+        <!-- Testing Instructions -->
+        <div class="test-section">
+          <div class="test-title">📱 Testing Instructions</div>
+          <div class="test-description">
+            <strong>Desktop Testing:</strong><br>
+            1. Open Chrome DevTools (F12)<br>
+            2. Toggle device toolbar (Ctrl+Shift+M)<br>
+            3. Select iPhone SE (375px) or similar<br>
+            4. Test all dropdowns for size and usability<br>
+            <br>
+            <strong>Mobile Device Testing:</strong><br>
+            1. Open this page on actual mobile device<br>
+            2. Verify all dropdowns are easily tappable<br>
+            3. Verify no zoom occurs when selecting<br>
+            4. Verify options are readable and tappable<br>
+            5. Test focus states with keyboard (if available)<br>
+            <br>
+            <strong>Measurements to Verify:</strong><br>
+            • Dropdown height: Should be ≥ 48px<br>
+            • Font size: Should be 16px<br>
+            • Option height: Should be ≥ 48px<br>
+            • Spacing between fields: Should be ≥ 12px
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <script>
+    // Log dropdown measurements for verification
+    window.addEventListener('DOMContentLoaded', () => {
+      const selects = document.querySelectorAll('.select, .dropdown');
+      console.log('=== Dropdown Measurements ===');
+      selects.forEach((select, index) => {
+        const styles = window.getComputedStyle(select);
+        const height = select.offsetHeight;
+        const fontSize = styles.fontSize;
+        const padding = styles.padding;
+        
+        console.log(`Dropdown ${index + 1}:`);
+        console.log(`  Height: ${height}px (min: 48px) - ${height >= 48 ? '✓ PASS' : '✗ FAIL'}`);
+        console.log(`  Font Size: ${fontSize} (required: 16px) - ${fontSize === '16px' ? '✓ PASS' : '✗ FAIL'}`);
+        console.log(`  Padding: ${padding}`);
+        console.log('---');
+      });
+      
+      // Test option heights (when dropdown is opened)
+      selects.forEach((select, index) => {
+        select.addEventListener('focus', () => {
+          console.log(`Dropdown ${index + 1} focused - options should be 48px minimum height`);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

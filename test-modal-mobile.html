@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mobile Modal Test - POS</title>
+    <link rel="stylesheet" href="css/critical.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        body {
+            padding: 20px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: var(--brand);
+            font-size: var(--fs-lg);
+        }
+        
+        .test-info {
+            background: #eff6ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+        }
+        
+        .device-info {
+            background: #fef3c7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .checklist li {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-size: var(--fs-sm);
+        }
+        
+        .checklist li::before {
+            content: '☐ ';
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        /* Sample content for modal body */
+        .sample-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .sample-item {
+            padding: 16px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+        
+        .sample-item h4 {
+            margin: 0 0 8px 0;
+            color: var(--brand);
+        }
+        
+        .sample-item p {
+            margin: 0;
+            color: var(--muted);
+            font-size: var(--fs-sm);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <h1>🧪 Mobile Modal System Test</h1>
+        
+        <div class="device-info">
+            <strong>Current Device:</strong> <span id="device-width"></span>px width<br>
+            <strong>Expected Behavior:</strong> <span id="expected-behavior"></span>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test Scenarios</h2>
+            
+            <div class="btn-group">
+                <button class="btn brand" onclick="openSimpleModal()">
+                    Open Simple Modal
+                </button>
+                
+                <button class="btn brand" onclick="openLargeModal()">
+                    Open Large Modal
+                </button>
+                
+                <button class="btn" onclick="openScrollableModal()">
+                    Open Scrollable Modal
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Mobile Testing Checklist (< 768px)</h2>
+            <div class="test-info">
+                <strong>Requirements from Task 8:</strong><br>
+                • Bottom sheet positioning (align-items: flex-end)<br>
+                • Full width with 90vh max-height<br>
+                • 24px border-radius on top corners only<br>
+                • 24px padding plus safe area inset at bottom<br>
+                • Close button 48px × 48px minimum<br>
+                • Close button at top-right with 16px spacing
+            </div>
+            
+            <ul class="checklist">
+                <li>Modal appears from bottom (bottom sheet pattern)</li>
+                <li>Modal is full width on mobile</li>
+                <li>Modal has rounded top corners (24px)</li>
+                <li>Close button is 48px × 48px and easily tappable</li>
+                <li>Close button is positioned at top-right</li>
+                <li>Modal respects safe area at bottom (notched devices)</li>
+                <li>Modal content is scrollable when tall</li>
+                <li>Backdrop is visible and slightly blurred</li>
+                <li>Animation is smooth (slides up from bottom)</li>
+                <li>Can close by clicking backdrop</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2>Tablet/Desktop Testing Checklist (≥ 768px)</h2>
+            <div class="test-info">
+                <strong>Requirements from Task 8:</strong><br>
+                • Centered modal positioning<br>
+                • Max-width constraint (not full width)<br>
+                • Rounded corners on all sides
+            </div>
+            
+            <ul class="checklist">
+                <li>Modal is centered on screen</li>
+                <li>Modal has max-width (not full width)</li>
+                <li>Modal has rounded corners on all sides (24px)</li>
+                <li>Close button is 48px × 48px</li>
+                <li>Animation scales in smoothly</li>
+                <li>Backdrop is visible</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Simple Modal -->
+    <div id="simple-modal" class="modal" onclick="closeModalOnBackdrop(event, 'simple-modal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>📱 Simple Modal</h2>
+                <button class="close-btn" onclick="closeModal('simple-modal')" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: var(--fs-base); line-height: 1.6;">
+                    This is a simple modal to test the mobile-optimized modal system.
+                </p>
+                <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 16px;">
+                    On mobile (< 768px), this should appear as a bottom sheet with rounded top corners.
+                    On tablet/desktop (≥ 768px), this should be centered with rounded corners on all sides.
+                </p>
+                <div style="margin-top: 24px;">
+                    <button class="btn brand" onclick="closeModal('simple-modal')">
+                        Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Large Modal -->
+    <div id="large-modal" class="modal" onclick="closeModalOnBackdrop(event, 'large-modal')">
+        <div class="modal-content large" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>📊 Large Modal</h2>
+                <button class="close-btn" onclick="closeModal('large-modal')" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="sample-content">
+                    <div class="sample-item">
+                        <h4>Feature 1</h4>
+                        <p>This modal has the "large" class for wider content on desktop.</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Feature 2</h4>
+                        <p>On mobile, it still appears as a full-width bottom sheet.</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Feature 3</h4>
+                        <p>The close button should be 48px × 48px for easy tapping.</p>
+                    </div>
+                </div>
+                <div style="margin-top: 24px;">
+                    <button class="btn brand" onclick="closeModal('large-modal')">
+                        Close Modal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scrollable Modal -->
+    <div id="scrollable-modal" class="modal" onclick="closeModalOnBackdrop(event, 'scrollable-modal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>📜 Scrollable Content</h2>
+                <button class="close-btn" onclick="closeModal('scrollable-modal')" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="sample-content">
+                    <div class="sample-item">
+                        <h4>Item 1</h4>
+                        <p>Testing scrollable content in modal body.</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Item 2</h4>
+                        <p>The modal body should scroll smoothly.</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Item 3</h4>
+                        <p>Safe area insets should be respected at the bottom.</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Item 4</h4>
+                        <p>Maximum height is 90vh on mobile.</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Item 5</h4>
+                        <p>Content continues to scroll...</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Item 6</h4>
+                        <p>Testing more content...</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Item 7</h4>
+                        <p>Almost there...</p>
+                    </div>
+                    <div class="sample-item">
+                        <h4>Item 8</h4>
+                        <p>Last item with proper bottom padding.</p>
+                    </div>
+                </div>
+                <div style="margin-top: 24px;">
+                    <button class="btn brand" onclick="closeModal('scrollable-modal')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Update device info
+        function updateDeviceInfo() {
+            const width = window.innerWidth;
+            document.getElementById('device-width').textContent = width;
+            
+            let behavior = '';
+            if (width < 768) {
+                behavior = 'Bottom sheet modal (mobile)';
+            } else {
+                behavior = 'Centered modal (tablet/desktop)';
+            }
+            document.getElementById('expected-behavior').textContent = behavior;
+        }
+        
+        updateDeviceInfo();
+        window.addEventListener('resize', updateDeviceInfo);
+        
+        // Modal functions
+        function openSimpleModal() {
+            const modal = document.getElementById('simple-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+        
+        function openLargeModal() {
+            const modal = document.getElementById('large-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+        
+        function openScrollableModal() {
+            const modal = document.getElementById('scrollable-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+        
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+        
+        function closeModalOnBackdrop(event, modalId) {
+            if (event.target.classList.contains('modal')) {
+                closeModal(modalId);
+            }
+        }
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal.show');
+                modals.forEach(modal => {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.style.display = 'none', 300);
+                });
+            }
+        });
+        
+        // Log modal measurements for verification
+        function logModalMeasurements() {
+            const closeBtn = document.querySelector('.close-btn');
+            if (closeBtn) {
+                const rect = closeBtn.getBoundingClientRect();
+                console.log('Close button size:', rect.width, 'x', rect.height);
+                console.log('Meets 48px minimum?', rect.width >= 48 && rect.height >= 48);
+            }
+            
+            const modalContent = document.querySelector('.modal-content');
+            if (modalContent) {
+                const styles = window.getComputedStyle(modalContent);
+                console.log('Modal border-radius:', styles.borderRadius);
+                console.log('Modal padding-bottom:', styles.paddingBottom);
+            }
+        }
+        
+        // Run measurements when modal opens
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setTimeout(logModalMeasurements, 350);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Integrity Module Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #48bb78;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #38a169;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .results {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-card.passed {
+      background: #c6f6d5;
+      border: 2px solid #48bb78;
+    }
+
+    .summary-card.failed {
+      background: #fed7d7;
+      border: 2px solid #f56565;
+    }
+
+    .summary-card.warning {
+      background: #feebc8;
+      border: 2px solid #ed8936;
+    }
+
+    .summary-card.total {
+      background: #bee3f8;
+      border: 2px solid #4299e1;
+    }
+
+    .summary-card .value {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .summary-card .label {
+      font-size: 14px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .test-section {
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .test-header {
+      background: #f7fafc;
+      padding: 15px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .test-header:hover {
+      background: #edf2f7;
+    }
+
+    .test-header h3 {
+      color: #2d3748;
+      font-size: 16px;
+    }
+
+    .test-status {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .test-status.passed {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .test-status.failed {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .test-status.warning {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+
+    .test-body {
+      padding: 20px;
+      display: none;
+      background: white;
+    }
+
+    .test-body.expanded {
+      display: block;
+    }
+
+    .test-detail {
+      margin-bottom: 15px;
+      padding: 15px;
+      background: #f7fafc;
+      border-radius: 6px;
+      border-left: 4px solid #4299e1;
+    }
+
+    .test-detail.error {
+      border-left-color: #f56565;
+    }
+
+    .test-detail h4 {
+      color: #2d3748;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .test-detail p {
+      color: #4a5568;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .test-detail pre {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .recommendations {
+      margin-top: 20px;
+      padding: 20px;
+      background: #fffaf0;
+      border: 2px solid #ed8936;
+      border-radius: 8px;
+    }
+
+    .recommendations h3 {
+      color: #7c2d12;
+      margin-bottom: 15px;
+    }
+
+    .recommendation-item {
+      padding: 10px;
+      margin-bottom: 10px;
+      background: white;
+      border-radius: 4px;
+      border-left: 4px solid #ed8936;
+    }
+
+    .recommendation-item.high {
+      border-left-color: #f56565;
+    }
+
+    .recommendation-item.medium {
+      border-left-color: #ed8936;
+    }
+
+    .recommendation-item.low {
+      border-left-color: #4299e1;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .badge.high {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .badge.medium {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+
+    .badge.low {
+      background: #bee3f8;
+      color: #2c5282;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 Data Integrity Module Test</h1>
+      <p class="subtitle">Validates data consistency and referential integrity across all sheets</p>
+    </div>
+
+    <div class="controls">
+      <div class="button-group">
+        <button class="btn-primary" onclick="runAllChecks()">Run All Checks</button>
+        <button class="btn-secondary" onclick="runReferentialIntegrity()">Check Referential Integrity</button>
+        <button class="btn-secondary" onclick="runCalculations()">Validate Calculations</button>
+        <button class="btn-secondary" onclick="runRequiredFields()">Check Required Fields</button>
+        <button class="btn-secondary" onclick="runOrphanedRecords()">Find Orphaned Records</button>
+        <button class="btn-secondary" onclick="runDataTypes()">Validate Data Types</button>
+        <button class="btn-danger" onclick="clearResults()">Clear Results</button>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <p style="text-align: center; color: #999;">Click "Run All Checks" to start testing</p>
+    </div>
+  </div>
+
+  <script src="data-integrity-module.js"></script>
+  <script>
+    let integrityModule;
+    let testResults = {};
+
+    // Initialize module with mock data
+    function initializeModule() {
+      const mockData = {
+        'Ingredients': [
+          { id: 'ING001', name: 'กุ้ง', stock_unit: 'กิโลกรัม', unit_buy: 'กิโลกรัม', buy_to_stock_ratio: 1, min_stock: 5 },
+          { id: 'ING002', name: 'ข้าวสวย', stock_unit: 'จาน', unit_buy: 'กิโลกรัม', buy_to_stock_ratio: 20, min_stock: 10 }
+        ],
+        'Menus': [
+          { menu_id: 'MENU001', name: 'ผัดไทยกุ้ง', description: 'Pad Thai with shrimp', category: 'Main', active: true },
+          { menu_id: 'MENU002', name: 'แกงเขียวหวาน', description: 'Green curry', category: 'Main', active: true }
+        ],
+        'Purchases': [
+          { date: '2024-01-01', ingredient_id: 'ING001', qty_buy: 10, total_price: 1000, unit_price: 100, qty_stock: 10, cost_per_stock: 100, lot_id: 'LOT001' },
+          { date: '2024-01-02', ingredient_id: 'ING002', qty_buy: 5, total_price: 250, unit_price: 50, qty_stock: 100, cost_per_stock: 2.5, lot_id: 'LOT002' },
+          { date: '2024-01-03', ingredient_id: 'ING999', qty_buy: 2, total_price: 200, unit_price: 100, qty_stock: 2, cost_per_stock: 100, lot_id: 'LOT003' } // Invalid ingredient_id
+        ],
+        'Sales': [
+          { date: '2024-01-01', platform: 'Grab', menu_id: 'MENU001', qty: 5, price_per_unit: 80, net_per_unit: 72, gross: 400, net: 360, cogs: 200, profit: 160 },
+          { date: '2024-01-02', platform: 'Line Man', menu_id: 'MENU002', qty: 3, price_per_unit: 70, net_per_unit: 63, gross: 210, net: 189, cogs: 120, profit: 69 },
+          { date: '2024-01-03', platform: 'Grab', menu_id: 'MENU999', qty: 2, price_per_unit: 80, net_per_unit: 72, gross: 160, net: 144, cogs: 80, profit: 64 } // Invalid menu_id
+        ],
+        'MenuRecipes': [
+          { menu_id: 'MENU001', ingredient_id: 'ING001', ingredient_name: 'กุ้ง', qty_per_serve: 0.1, user_key: 'user@example.com', created_at: '2024-01-01' },
+          { menu_id: 'MENU002', ingredient_id: 'ING002', ingredient_name: 'ข้าวสวย', qty_per_serve: 1, user_key: 'user@example.com', created_at: '2024-01-01' }
+        ],
+        'Lots': [
+          { lot_id: 'LOT001', ingredient_id: 'ING001', date: '2024-01-01', qty_initial: 10, qty_remaining: 8, cost_per_unit: 100 },
+          { lot_id: 'LOT002', ingredient_id: 'ING002', date: '2024-01-02', qty_initial: 100, qty_remaining: 95, cost_per_unit: 2.5 }
+        ],
+        'Users': [
+          { user_key: 'user@example.com', role: 'OWNER', name: 'Test User', active: true, created_at: '2024-01-01' }
+        ],
+        'Platforms': [
+          { platform: 'Grab', fee_percentage: 10, active: true },
+          { platform: 'Line Man', fee_percentage: 10, active: true }
+        ],
+        'Stocks': [
+          { ingredient_id: 'ING001', current_stock: 8, last_updated: '2024-01-01', min_stock: 5 },
+          { ingredient_id: 'ING002', current_stock: 95, last_updated: '2024-01-02', min_stock: 10 }
+        ],
+        'Batches': [],
+        'LaborLogs': []
+      };
+
+      integrityModule = new DataIntegrityModule({
+        mockData: mockData,
+        timeout: 10000
+      });
+    }
+
+    async function runAllChecks() {
+      showLoading();
+      initializeModule();
+      
+      try {
+        // Run all checks
+        testResults.referentialIntegrity = await integrityModule.checkReferentialIntegrity();
+        testResults.calculations = await integrityModule.validateCalculations();
+        testResults.requiredFields = await integrityModule.validateRequiredFields();
+        testResults.orphanedRecords = await integrityModule.findOrphanedRecords();
+        testResults.dataTypes = await integrityModule.validateDataTypes();
+        
+        // Get comprehensive report
+        testResults.report = integrityModule.getIntegrityReport();
+        
+        displayResults();
+      } catch (error) {
+        displayError(error);
+      }
+    }
+
+    async function runReferentialIntegrity() {
+      showLoading();
+      initializeModule();
+      
+      try {
+        testResults.referentialIntegrity = await integrityModule.checkReferentialIntegrity();
+        displayResults();
+      } catch (error) {
+        displayError(error);
+      }
+    }
+
+    async function runCalculations() {
+      showLoading();
+      initializeModule();
+      
+      try {
+        testResults.calculations = await integrityModule.validateCalculations();
+        displayResults();
+      } catch (error) {
+        displayError(error);
+      }
+    }
+
+    async function runRequiredFields() {
+      showLoading();
+      initializeModule();
+      
+      try {
+        testResults.requiredFields = await integrityModule.validateRequiredFields();
+        displayResults();
+      } catch (error) {
+        displayError(error);
+      }
+    }
+
+    async function runOrphanedRecords() {
+      showLoading();
+      initializeModule();
+      
+      try {
+        testResults.orphanedRecords = await integrityModule.findOrphanedRecords();
+        displayResults();
+      } catch (error) {
+        displayError(error);
+      }
+    }
+
+    async function runDataTypes() {
+      showLoading();
+      initializeModule();
+      
+      try {
+        testResults.dataTypes = await integrityModule.validateDataTypes();
+        displayResults();
+      } catch (error) {
+        displayError(error);
+      }
+    }
+
+    function showLoading() {
+      document.getElementById('results').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Running integrity checks...</p>
+        </div>
+      `;
+    }
+
+    function displayResults() {
+      const resultsDiv = document.getElementById('results');
+      
+      // Calculate summary
+      const summary = calculateSummary();
+      
+      let html = `
+        <div class="summary-cards">
+          <div class="summary-card total">
+            <div class="value">${summary.total}</div>
+            <div class="label">Total Checks</div>
+          </div>
+          <div class="summary-card passed">
+            <div class="value">${summary.passed}</div>
+            <div class="label">Passed</div>
+          </div>
+          <div class="summary-card failed">
+            <div class="value">${summary.failed}</div>
+            <div class="label">Failed</div>
+          </div>
+          <div class="summary-card warning">
+            <div class="value">${summary.warnings}</div>
+            <div class="label">Warnings</div>
+          </div>
+        </div>
+      `;
+      
+      // Display each test section
+      if (testResults.referentialIntegrity) {
+        html += createTestSection('Referential Integrity', testResults.referentialIntegrity);
+      }
+      
+      if (testResults.calculations) {
+        html += createTestSection('Calculation Validation', testResults.calculations);
+      }
+      
+      if (testResults.requiredFields) {
+        html += createTestSection('Required Fields', testResults.requiredFields);
+      }
+      
+      if (testResults.orphanedRecords) {
+        html += createTestSection('Orphaned Records', testResults.orphanedRecords);
+      }
+      
+      if (testResults.dataTypes) {
+        html += createTestSection('Data Types', testResults.dataTypes);
+      }
+      
+      // Display recommendations if available
+      if (testResults.report && testResults.report.recommendations && testResults.report.recommendations.length > 0) {
+        html += createRecommendationsSection(testResults.report.recommendations);
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    function calculateSummary() {
+      let total = 0, passed = 0, failed = 0, warnings = 0;
+      
+      Object.values(testResults).forEach(result => {
+        if (result.summary) {
+          total += result.summary.total || 0;
+          passed += result.summary.passed || 0;
+          failed += result.summary.failed || 0;
+        }
+      });
+      
+      if (testResults.orphanedRecords && testResults.orphanedRecords.summary) {
+        warnings = testResults.orphanedRecords.summary.totalOrphans || 0;
+      }
+      
+      return { total, passed, failed, warnings };
+    }
+
+    function createTestSection(title, result) {
+      const status = result.passed ? 'passed' : 'failed';
+      const sectionId = title.replace(/\s+/g, '-').toLowerCase();
+      
+      let detailsHtml = '';
+      
+      if (result.results && Array.isArray(result.results)) {
+        result.results.forEach((item, index) => {
+          const itemStatus = item.passed ? '' : 'error';
+          detailsHtml += `
+            <div class="test-detail ${itemStatus}">
+              <h4>${item.sheet || item.fromSheet || item.relationship?.fromSheet || `Check ${index + 1}`}</h4>
+              <p>${item.message || item.description || 'No details available'}</p>
+              ${item.invalidReferences && item.invalidReferences.length > 0 ? `
+                <pre>${JSON.stringify(item.invalidReferences.slice(0, 3), null, 2)}${item.invalidReferences.length > 3 ? '\n... and ' + (item.invalidReferences.length - 3) + ' more' : ''}</pre>
+              ` : ''}
+              ${item.errors && item.errors.length > 0 ? `
+                <pre>${JSON.stringify(item.errors.slice(0, 3), null, 2)}${item.errors.length > 3 ? '\n... and ' + (item.errors.length - 3) + ' more' : ''}</pre>
+              ` : ''}
+              ${item.orphanedRecords && item.orphanedRecords.length > 0 ? `
+                <p><strong>Orphaned records found:</strong> ${item.orphanedRecords.length}</p>
+              ` : ''}
+            </div>
+          `;
+        });
+      }
+      
+      return `
+        <div class="test-section">
+          <div class="test-header" onclick="toggleSection('${sectionId}')">
+            <h3>${title}</h3>
+            <span class="test-status ${status}">${status.toUpperCase()}</span>
+          </div>
+          <div class="test-body" id="${sectionId}">
+            ${detailsHtml || '<p>No details available</p>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function createRecommendationsSection(recommendations) {
+      let html = `
+        <div class="recommendations">
+          <h3>📋 Recommendations</h3>
+      `;
+      
+      recommendations.forEach(rec => {
+        html += `
+          <div class="recommendation-item ${rec.priority}">
+            <span class="badge ${rec.priority}">${rec.priority.toUpperCase()}</span>
+            <strong>${rec.category}:</strong> ${rec.recommendation}
+            ${rec.affectedChecks ? `<br><small>Affects ${rec.affectedChecks} check(s)</small>` : ''}
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      return html;
+    }
+
+    function toggleSection(sectionId) {
+      const section = document.getElementById(sectionId);
+      section.classList.toggle('expanded');
+    }
+
+    function displayError(error) {
+      document.getElementById('results').innerHTML = `
+        <div class="test-detail error">
+          <h4>Error</h4>
+          <p>${error.message}</p>
+          <pre>${error.stack}</pre>
+        </div>
+      `;
+    }
+
+    function clearResults() {
+      testResults = {};
+      document.getElementById('results').innerHTML = `
+        <p style="text-align: center; color: #999;">Click "Run All Checks" to start testing</p>
+      `;
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      console.log('Data Integrity Module Test Page Loaded');
+    });
+  </script>
+</body>
+</html>

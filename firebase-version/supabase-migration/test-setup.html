@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Migration Test - POS System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .step-complete {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .step-error {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .step-pending {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-4xl">
+            <!-- Header -->
+            <div class="glass-effect rounded-2xl p-8 mb-8 text-center shadow-2xl">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">
+                    🚀 Supabase POS Migration Test
+                </h1>
+                <p class="text-gray-600 text-lg mb-2">
+                    โครงการตรวจสอบการตั้งค่า Supabase สำหรับระบบ POS
+                </p>
+                <div class="inline-flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-full">
+                    <span class="text-blue-800 font-medium">Project:</span>
+                    <code class="bg-blue-800 text-white px-2 py-1 rounded text-sm">rtfreafhlelpxqwohspq</code>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="glass-effect rounded-2xl p-8 mb-8 shadow-2xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">📋</span>
+                    ขั้นตอนการตรวจสอบ
+                </h2>
+
+                <div class="space-y-4">
+                    <!-- Step 1: Connection -->
+                    <div id="step1" class="flex items-center justify-between p-4 rounded-lg bg-white shadow-md transition-all duration-300">
+                        <div class="flex items-center space-x-4">
+                            <div id="step1-icon" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl font-bold">
+                                1
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">ทดสอบการเชื่อมต่อฐานข้อมูล</h3>
+                                <p class="text-gray-600 text-sm">ตรวจสอบการเชื่อมต่อกับ Supabase</p>
+                            </div>
+                        </div>
+                        <div id="step1-status" class="text-sm font-medium">
+                            <span class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-700">
+                                รอดำเนินการ
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Tables -->
+                    <div id="step2" class="flex items-center justify-between p-4 rounded-lg bg-white shadow-md transition-all duration-300">
+                        <div class="flex items-center space-x-4">
+                            <div id="step2-icon" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl font-bold">
+                                2
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">ตรวจสอบตารางข้อมูล</h3>
+                                <p class="text-gray-600 text-sm">ตรวจสอบว่าตารางที่จำเป็นมีอยู่</p>
+                            </div>
+                        </div>
+                        <div id="step2-status" class="text-sm font-medium">
+                            <span class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-700">
+                                รอดำเนินการ
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Authentication -->
+                    <div id="step3" class="flex items-center justify-between p-4 rounded-lg bg-white shadow-md transition-all duration-300">
+                        <div class="flex items-center space-x-4">
+                            <div id="step3-icon" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl font-bold">
+                                3
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">ทดสอบการยืนยันตัวตน</h3>
+                                <p class="text-gray-600 text-sm">ตรวจสอบระบบยืนยันตัวตน</p>
+                            </div>
+                        </div>
+                        <div id="step3-status" class="text-sm font-medium">
+                            <span class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-700">
+                                รอดำเนินการ
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Sample Data -->
+                    <div id="step4" class="flex items-center justify-between p-4 rounded-lg bg-white shadow-md transition-all duration-300">
+                        <div class="flex items-center space-x-4">
+                            <div id="step4-icon" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl font-bold">
+                                4
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">สร้างข้อมูลตัวอย่าง</h3>
+                                <p class="text-gray-600 text-sm">ทดสอบการสร้างข้อมูลพื้นฐาน</p>
+                            </div>
+                        </div>
+                        <div id="step4-status" class="text-sm font-medium">
+                            <span class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-700">
+                                รอดำเนินการ
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Real-time -->
+                    <div id="step5" class="flex items-center justify-between p-4 rounded-lg bg-white shadow-md transition-all duration-300">
+                        <div class="flex items-center space-x-4">
+                            <div id="step5-icon" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-xl font-bold">
+                                5
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">ทดสอบ Real-time</h3>
+                                <p class="text-gray-600 text-sm">ตรวจสอบการอัปเดตข้อมูลแบบสด</p>
+                            </div>
+                        </div>
+                        <div id="step5-status" class="text-sm font-medium">
+                            <span class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-700">
+                                รอดำเนินการ
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overall Progress Bar -->
+                <div class="mt-8">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-700 font-medium">ความคืบหน้าทั้งหมด</span>
+                        <span id="progress-text" class="text-gray-700 font-medium">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="glass-effect rounded-2xl p-8 mb-8 shadow-2xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">🎮</span>
+                    แผงควบคุม
+                </h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <button onclick="testConnection()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        🔌 ทดสอบการเชื่อมต่อ
+                    </button>
+                    <button onclick="testTables()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        📋 ตรวจสอบตาราง
+                    </button>
+                    <button onclick="testAuth()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        🔐 ทดสอบ Authentication
+                    </button>
+                    <button onclick="testCRUD()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        ⚙️ ทดสอบ CRUD
+                    </button>
+                    <button onclick="runAllTests()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        🚀 รันทดสอบทั้งหมด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="glass-effect rounded-2xl p-8 shadow-2xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">📊</span>
+                    ผลการทดสอบ
+                </h2>
+
+                <div id="test-results" class="space-y-4">
+                    <!-- Results will be populated here -->
+                    <div class="text-center py-8">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <p class="mt-4 text-gray-600">กำลังเตรียมการทดสอบ...</p>
+                    </div>
+                </div>
+
+                <!-- Log Section -->
+                <div id="log-section" class="mt-8 hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                            <span class="mr-2">📝</span>
+                            บันทึกการทำงาน
+                        </h3>
+                        <button onclick="copyLogs()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg flex items-center space-x-2">
+                            <span>📋</span>
+                            <span id="copy-button-text">คัดลอก Log</span>
+                        </button>
+                    </div>
+                    <div id="log-output" class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- Links Section -->
+            <div class="glass-effect rounded-2xl p-6 mt-8 shadow-2xl">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <a href="https://supabase.com/dashboard/project/rtfreafhlelpxqwohspq/sql/new" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors duration-200">
+                        🗃️ Supabase SQL Editor
+                    </a>
+                    <a href="https://supabase.com/dashboard/project/rtfreafhlelpxqwohspq/auth/settings" target="_blank" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-colors duration-200">
+                        🔐 Authentication Settings
+                    </a>
+                    <a href="https://supabase.com/dashboard/project/rtfreafhlelpxqwohspq/settings/api" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors duration-200">
+                        🔑 API Keys
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://rtfreafhlelpxqwohspq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZnJlYWZobGVscHhxd29oc3BxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NzYyNjAsImV4cCI6MjA3NzQ1MjI2MH0.WX_kwjFjv0e0RvpWwi6oSJOze49I_FbpPeWcdQZP79o';
+
+        let supabase;
+        let testResults = {};
+        let currentTest = 0;
+        const totalTests = 5;
+
+        // Logging function
+        // Copy real-time fix SQL to clipboard
+        function copyRealtimeFix() {
+            const sqlFix = `-- ⚡ QUICK FIX: Enable Real-Time for Platforms Table
+ALTER TABLE platforms REPLICA IDENTITY FULL;
+ALTER PUBLICATION supabase_realtime ADD TABLE platforms;`;
+            
+            navigator.clipboard.writeText(sqlFix).then(() => {
+                const btn = document.querySelector('button[onclick="copyRealtimeFix()"]');
+                if (btn) {
+                    const originalText = btn.textContent;
+                    btn.textContent = '✅ คัดลอกแล้ว!';
+                    btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    }, 2000);
+                }
+            }).catch(err => {
+                alert('ไม่สามารถคัดลอกได้ กรุณาคัดลอกด้วยตนเอง');
+                console.error('Copy failed:', err);
+            });
+        }
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString('th-TH');
+            const logOutput = document.getElementById('log-output');
+            const logSection = document.getElementById('log-section');
+
+            if (logOutput) {
+                logOutput.textContent += `[${timestamp}] ${message}\n`;
+                logOutput.scrollTop = logOutput.scrollHeight;
+            }
+
+            // Show log section
+            if (logSection) {
+                logSection.classList.remove('hidden');
+            }
+
+            console.log(message);
+        }
+
+        // Copy logs to clipboard
+        function copyLogs() {
+            const logOutput = document.getElementById('log-output');
+            const copyButtonText = document.getElementById('copy-button-text');
+            
+            if (logOutput) {
+                const logText = logOutput.textContent;
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(logText).then(() => {
+                    // Show success feedback
+                    const originalText = copyButtonText.textContent;
+                    copyButtonText.textContent = 'คัดลอกแล้ว! ✓';
+                    
+                    // Reset button text after 2 seconds
+                    setTimeout(() => {
+                        copyButtonText.textContent = originalText;
+                    }, 2000);
+                    
+                    log('✅ Log copied to clipboard');
+                }).catch(err => {
+                    log('❌ Failed to copy log: ' + err.message);
+                    
+                    // Fallback for older browsers
+                    try {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = logText;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        const originalText = copyButtonText.textContent;
+                        copyButtonText.textContent = 'คัดลอกแล้ว! ✓';
+                        setTimeout(() => {
+                            copyButtonText.textContent = originalText;
+                        }, 2000);
+                    } catch (fallbackErr) {
+                        alert('ไม่สามารถคัดลอก log ได้ กรุณาเลือกและคัดลอกด้วยตนเอง');
+                    }
+                });
+            }
+        }
+
+        // Update step status
+        function updateStep(stepId, status, message = '') {
+            const step = document.getElementById(stepId);
+            const icon = document.getElementById(`${stepId}-icon`);
+            const statusEl = document.getElementById(`${stepId}-status`);
+
+            // Remove existing classes
+            icon.className = 'w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold';
+
+            if (status === 'active') {
+                icon.className += ' bg-yellow-400 text-white pulse';
+                step.classList.add('ring-4', 'ring-yellow-400', 'ring-opacity-50');
+                statusEl.innerHTML = '<span class="inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-700">กำลังทดสอบ...</span>';
+            } else if (status === 'completed') {
+                icon.className += ' bg-green-500 text-white';
+                step.classList.remove('ring-4', 'ring-yellow-400', 'ring-opacity-50');
+                statusEl.innerHTML = '<span class="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700">✅ สำเร็จ</span>';
+            } else if (status === 'error') {
+                icon.className += ' bg-red-500 text-white';
+                step.classList.remove('ring-4', 'ring-yellow-400', 'ring-opacity-50');
+                statusEl.innerHTML = '<span class="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700">❌ ข้อผิดพลาด</span>';
+            }
+
+            if (message) {
+                log(`${stepId}: ${message}`);
+            }
+
+            // Update progress
+            currentTest = parseInt(stepId.replace('step', ''));
+            updateProgress(currentTest, status === 'completed' ? currentTest : currentTest - 1);
+        }
+
+        // Update progress bar
+        function updateProgress(completed, total) {
+            const progress = Math.max(0, Math.min(100, (completed / total) * 100));
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+
+            if (progressText) {
+                progressText.textContent = `${Math.round(progress)}%`;
+            }
+        }
+
+        // Show final results
+        function showResults(results) {
+            const resultsDiv = document.getElementById('test-results');
+            let html = '';
+
+            const tests = [
+                { key: 'connection', name: 'การเชื่อมต่อฐานข้อมูล', icon: '🔌' },
+                { key: 'tables', name: 'ตารางข้อมูล', icon: '📋' },
+                { key: 'auth', name: 'การยืนยันตัวตน', icon: '🔐' },
+                { key: 'crud', name: 'การดำเนินงาน CRUD', icon: '⚙️' },
+                { key: 'realtime', name: 'Real-time Updates', icon: '🔄' }
+            ];
+
+            tests.forEach(test => {
+                const passed = results[test.key];
+                const status = passed ? 'success' : 'error';
+                const bgColor = passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+                const textColor = passed ? 'text-green-800' : 'text-red-800';
+                const statusIcon = passed ? '✅' : '❌';
+                const statusText = passed ? 'ผ่าน' : 'ล้มเหลว';
+
+                html += `
+                    <div class="p-4 rounded-lg border-2 ${bgColor} flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-2xl">${test.icon}</span>
+                            <div>
+                                <h3 class="font-semibold text-lg ${textColor}">${test.name}</h3>
+                                <p class="${textColor} text-sm">สถานะการ: ${statusIcon} ${statusText}</p>
+                            </div>
+                        </div>
+                        <div class="text-2xl ${textColor}">${statusIcon}</div>
+                    </div>
+                `;
+            });
+
+            // Add summary
+            const passedCount = Object.values(results).filter(r => r).length;
+            const allPassed = passedCount === tests.length;
+
+            // Add real-time fix instructions if it failed
+            if (!results.realtime) {
+                html += `
+                    <div class="mt-8 p-6 rounded-xl border-2 bg-blue-50 border-blue-300">
+                        <h3 class="text-xl font-bold mb-3 text-blue-800 flex items-center">
+                            <span class="mr-2">🔧</span> แก้ไขปัญหา Real-Time
+                        </h3>
+                        <p class="text-blue-700 mb-4">
+                            Real-time ไม่ทำงานเพราะ replication ยังไม่ได้เปิดใช้งาน กรุณาทำตามขั้นตอนด้านล่าง:
+                        </p>
+                        <div class="bg-white p-4 rounded-lg mb-4 border border-blue-200">
+                            <h4 class="font-semibold text-gray-800 mb-2">วิธีที่ 1: ใช้ SQL Script (แนะนำ)</h4>
+                            <ol class="list-decimal list-inside space-y-2 text-sm text-gray-700 mb-3">
+                                <li>เปิด Supabase Dashboard → SQL Editor</li>
+                                <li>คลิก "New Query"</li>
+                                <li>คัดลอก SQL ด้านล่างแล้ววาง</li>
+                                <li>คลิก "Run" (หรือกด Ctrl+Enter)</li>
+                                <li>รีเฟรชหน้านี้แล้วทดสอบอีกครั้ง</li>
+                            </ol>
+                            <div class="bg-gray-900 text-green-400 p-3 rounded font-mono text-xs overflow-x-auto mb-3">
+                                <pre id="realtime-sql-fix">-- ⚡ QUICK FIX: Enable Real-Time for Platforms Table
+ALTER TABLE platforms REPLICA IDENTITY FULL;
+ALTER PUBLICATION supabase_realtime ADD TABLE platforms;</pre>
+                            </div>
+                            <button onclick="copyRealtimeFix()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors">
+                                📋 คัดลอก SQL
+                            </button>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-gray-800 mb-2">วิธีที่ 2: ใช้ Dashboard</h4>
+                            <ol class="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                                <li>ไปที่ Supabase Dashboard</li>
+                                <li>Database → Replication</li>
+                                <li>เปิดใช้งาน (Enable) สำหรับตาราง "platforms"</li>
+                                <li>รีเฟรชหน้านี้แล้วทดสอบอีกครั้ง</li>
+                            </ol>
+                            <a href="https://supabase.com/dashboard/project/rtfreafhlelpxqwohspq/database/replication" 
+                               target="_blank" 
+                               class="mt-3 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors">
+                                🔗 เปิด Dashboard
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="mt-8 p-6 rounded-xl border-2 ${allPassed ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} text-center">
+                    <h3 class="text-2xl font-bold mb-4 ${allPassed ? 'text-green-800' : 'text-yellow-800'}">
+                        ${allPassed ? '🎉 ทดสอบทั้งหมดผ่าน!' : '⚠️ มีบางข้อผิดพลาด'}
+                    </h3>
+                    <div class="text-xl ${allPassed ? 'text-green-700' : 'text-yellow-700'} mb-4">
+                        ผลการทดสอบ: ${passedCount}/${tests.length} ข้อผ่าน
+                    </div>
+                    ${allPassed ? `
+                        <div class="space-y-3 text-left">
+                            <p class="text-green-700">✅ Supabase พร้อมใช้งานแล้ว!</p>
+                            <p class="text-green-700">📋 ถัดไป: อัปเดตแอปพลิเคชันเพื่อใช้ Supabase</p>
+                            <p class="text-green-700">🚀 พร้อมย้ายข้อมูลจาก Firebase</p>
+                            <p class="text-green-700">💰 ประหยบัด: $50-100/เดือน (จาก Firebase Blaze ไป Supabase ฟรี)</p>
+                        </div>
+                    ` : `
+                        <div class="space-y-3 text-left">
+                            <p class="text-yellow-700">⚠️ กรุณาแก้ไขปัญหา:</p>
+                            <p class="text-yellow-700">1. ตรวจสอบว่าได้รัน database schema แล้ว</p>
+                            <p class="text-yellow-700">2. ตั้งค่า Authentication ใน Supabase Dashboard</p>
+                            <p class="text-yellow-700">3. ตรวจสอบคีย์ API และ permissions</p>
+                        </div>
+                    `}
+                </div>
+            `;
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // Test 1: Connection
+        async function testConnection() {
+            updateStep('step1', 'active');
+            log('🔌 ทดสอบการเชื่อมต่อกับ Supabase...');
+
+            try {
+                const startTime = performance.now();
+                const { data, error } = await supabase
+                    .from('platforms')
+                    .select('count')
+                    .limit(1);
+
+                const duration = (performance.now() - startTime).toFixed(0);
+
+                if (error) {
+                    log(`❌ Connection failed: ${error.message}`);
+                    updateStep('step1', 'error', `Connection failed in ${duration}ms`);
+                    testResults.connection = false;
+                } else {
+                    log(`✅ Connection successful in ${duration}ms`);
+                    updateStep('step1', 'completed', `Connected in ${duration}ms`);
+                    testResults.connection = true;
+                }
+            } catch (error) {
+                log(`❌ Connection error: ${error.message}`);
+                updateStep('step1', 'error', 'Connection error');
+                testResults.connection = false;
+            }
+        }
+
+        // Test 2: Tables
+        async function testTables() {
+            updateStep('step2', 'active');
+            log('📋 ตรวจสอบตารางข้อมูลที่จำเป็น...');
+
+            const requiredTables = [
+                // Core tables
+                'platforms', 'users', 'ingredients', 'menus', 'sales', 'purchases',
+                'categories', 'menu_recipes', 'stock_transactions', 'stock_adjustments',
+                'expenses', 'labor_logs', 'waste',
+                // Advanced tables
+                'cost_centers', 'packaging', 'lots', 'market_runs', 'market_run_items',
+                'cogs', 'stocks', 'packing', 'packing_purchases', 'overheads',
+                'menu_extras', 'batches', 'batch_cost_lines'
+            ];
+            let existingCount = 0;
+            const tableStatus = {};
+
+            for (const table of requiredTables) {
+                try {
+                    const { data, error } = await supabase
+                        .from(table)
+                        .select('count')
+                        .limit(1);
+
+                    if (!error) {
+                        existingCount++;
+                        tableStatus[table] = true;
+                        log(`✅ Table '${table}' exists`);
+                    } else {
+                        tableStatus[table] = false;
+                        log(`❌ Table '${table}' missing: ${error.message}`);
+                    }
+                } catch (err) {
+                    tableStatus[table] = false;
+                    log(`❌ Table '${table}' error: ${err.message}`);
+                }
+            }
+
+            const allExist = existingCount === requiredTables.length;
+            if (allExist) {
+                log(`✅ All ${requiredTables.length} tables match Google Sheets structure!`);
+                updateStep('step2', 'completed', `All ${existingCount} tables found`);
+                testResults.tables = true;
+            } else {
+                log(`⚠️ Missing ${requiredTables.length - existingCount} tables`);
+                updateStep('step2', 'error', `Only ${existingCount}/${requiredTables.length} tables`);
+                testResults.tables = false;
+            }
+
+            return { allExist, tableStatus, existingCount };
+        }
+
+        // Test 3: Authentication
+        async function testAuth() {
+            updateStep('step3', 'active');
+            log('🔐 ทดสอบระบบ Authentication...');
+
+            try {
+                const { data, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    log(`❌ Auth system error: ${error.message}`);
+                    updateStep('step3', 'error', 'Auth system error');
+                    testResults.auth = false;
+                } else {
+                    log(`✅ Authentication system ready`);
+                    updateStep('step3', 'completed', 'Auth system ready');
+                    testResults.auth = true;
+
+                    // Test getting current user
+                    const { data: user, error: userError } = await supabase.auth.getUser();
+                    if (!userError) {
+                        log(`👤 Current user: ${user ? user.email : 'No active session'}`);
+                    }
+                }
+            } catch (error) {
+                log(`❌ Auth test error: ${error.message}`);
+                updateStep('step3', 'error', 'Auth test error');
+                testResults.auth = false;
+            }
+        }
+
+        // Test 4: CRUD Operations
+        async function testCRUD() {
+            updateStep('step4', 'active');
+            log('⚙️ ทดสอบการดำเนินงาน CRUD...');
+
+            try {
+                // Test Create
+                const { data: insertData, error: insertError } = await supabase
+                    .from('platforms')
+                    .insert([{ name: `test-platform-${Date.now()}`, is_active: true }])
+                    .select();
+
+                if (insertError) {
+                    log(`❌ Create test failed: ${insertError.message}`);
+                    updateStep('step4', 'error', 'Create operation failed');
+                    testResults.crud = false;
+                    return;
+                }
+
+                const insertedId = insertData[0]?.id;
+                log(`✅ Create successful: ID ${insertedId}`);
+
+                // Test Read
+                const { data: readData, error: readError } = await supabase
+                    .from('platforms')
+                    .select('*')
+                    .eq('id', insertedId);
+
+                if (readError || readData.length === 0) {
+                    log(`❌ Read test failed: ${readError?.message}`);
+                    updateStep('step4', 'error', 'Read operation failed');
+                    testResults.crud = false;
+                    return;
+                }
+
+                log(`✅ Read successful: ${readData.length} records`);
+
+                // Test Update
+                const { data: updateData, error: updateError } = await supabase
+                    .from('platforms')
+                    .update({ updated_at: new Date().toISOString() })
+                    .eq('id', insertedId)
+                    .select();
+
+                if (updateError) {
+                    log(`❌ Update test failed: ${updateError.message}`);
+                    updateStep('step4', 'error', 'Update operation failed');
+                    testResults.crud = false;
+                    return;
+                }
+
+                log(`✅ Update successful`);
+
+                // Test Delete
+                const { error: deleteError } = await supabase
+                    .from('platforms')
+                    .delete()
+                    .eq('id', insertedId);
+
+                if (deleteError) {
+                    log(`❌ Delete test failed: ${deleteError.message}`);
+                    updateStep('step4', 'error', 'Delete operation failed');
+                    testResults.crud = false;
+                    return;
+                }
+
+                log(`✅ Delete successful`);
+                updateStep('step4', 'completed', 'All CRUD operations working');
+                testResults.crud = true;
+
+            } catch (error) {
+                log(`❌ CRUD test error: ${error.message}`);
+                updateStep('step4', 'error', 'CRUD test error');
+                testResults.crud = false;
+            }
+        }
+
+        // Test 5: Real-time
+        async function testRealtime() {
+            updateStep('step5', 'active');
+            log('🔄 ทดสอบ Real-time subscriptions...');
+
+            return new Promise((resolve) => {
+                try {
+                    let eventReceived = false;
+                    let subscriptionStatus = 'PENDING';
+                    
+                    const timeout = setTimeout(() => {
+                        if (!eventReceived) {
+                            log('❌ Real-time timeout - no events received after 5 seconds');
+                            log('💡 This usually means replication is not enabled.');
+                            log('💡 Fix: Go to Supabase Dashboard → Database → Replication → Enable for "platforms"');
+                            log('💡 Or run: fix-realtime.sql in SQL Editor');
+                            updateStep('step5', 'error', 'Real-time timeout - Enable replication');
+                            testResults.realtime = false;
+                            resolve(false);
+                        }
+                    }, 5000);
+
+                    // First, check if we can actually update (to ensure RLS isn't blocking)
+                    supabase
+                        .from('platforms')
+                        .select('id, name')
+                        .limit(1)
+                        .then(({ data, error }) => {
+                            if (error) {
+                                log(`⚠️ Cannot read platforms table: ${error.message}`);
+                                log('💡 This might be an RLS issue');
+                            }
+                        });
+
+                    const channel = supabase
+                        .channel('test-realtime-' + Date.now())
+                        .on('postgres_changes',
+                            { event: '*', schema: 'public', table: 'platforms' },
+                            (payload) => {
+                                eventReceived = true;
+                                clearTimeout(timeout);
+                                log(`✅ Real-time event received: ${payload.eventType}`);
+                                log(`   Table: ${payload.table}, Record ID: ${payload.new?.id || payload.old?.id}`);
+                                updateStep('step5', 'completed', 'Real-time working');
+                                testResults.realtime = true;
+                                resolve(true);
+                            }
+                        )
+                        .subscribe((status) => {
+                            subscriptionStatus = status;
+                            if (status === 'SUBSCRIBED') {
+                                log('✅ Real-time subscription created');
+                                log('⏳ Waiting for test event...');
+
+                                // Trigger a test change after subscription
+                                setTimeout(async () => {
+                                    // First try to find an existing record
+                                    const { data: existing } = await supabase
+                                        .from('platforms')
+                                        .select('id, name')
+                                        .limit(1)
+                                        .single();
+
+                                    if (existing) {
+                                        const { error } = await supabase
+                                            .from('platforms')
+                                            .update({ updated_at: new Date().toISOString() })
+                                            .eq('id', existing.id);
+
+                                        if (error) {
+                                            log(`⚠️ Failed to trigger test update: ${error.message}`);
+                                        } else {
+                                            log('🔄 Triggered test change for real-time');
+                                            log('   (Updating record ID: ' + existing.id + ')');
+                                        }
+                                    } else {
+                                        // Create a test record if none exists
+                                        const { data: newRecord, error } = await supabase
+                                            .from('platforms')
+                                            .insert({ name: 'Test Platform ' + Date.now() })
+                                            .select()
+                                            .single();
+                                        
+                                        if (error) {
+                                            log(`⚠️ Failed to create test record: ${error.message}`);
+                                        } else {
+                                            log('🔄 Created test record for real-time');
+                                            log('   (New record ID: ' + newRecord.id + ')');
+                                            
+                                            // Clean up after 2 seconds
+                                            setTimeout(() => {
+                                                supabase.from('platforms').delete().eq('id', newRecord.id);
+                                            }, 2000);
+                                        }
+                                    }
+                                }, 1500);
+                            } else if (status === 'CHANNEL_ERROR') {
+                                clearTimeout(timeout);
+                                log('❌ Real-time subscription failed (CHANNEL_ERROR)');
+                                log('💡 Check: Supabase Dashboard → Database → Replication → Enable for "platforms"');
+                                updateStep('step5', 'error', 'Subscription failed');
+                                testResults.realtime = false;
+                                resolve(false);
+                            } else if (status === 'TIMED_OUT') {
+                                clearTimeout(timeout);
+                                log('❌ Real-time subscription timed out');
+                                log('💡 Check your network connection and Supabase status');
+                                updateStep('step5', 'error', 'Subscription timeout');
+                                testResults.realtime = false;
+                                resolve(false);
+                            } else {
+                                log(`ℹ️ Subscription status: ${status}`);
+                            }
+                        });
+
+                } catch (error) {
+                    clearTimeout(timeout);
+                    log(`❌ Real-time test error: ${error.message}`);
+                    updateStep('step5', 'error', 'Real-time test error');
+                    testResults.realtime = false;
+                    resolve(false);
+                }
+            });
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            log('🚀 เริ่มการทดสอบ Supabase ทั้งหมด...');
+            testResults = {};
+            currentTest = 0;
+
+            const tests = [
+                { name: 'Connection', fn: testConnection, delay: 1000 },
+                { name: 'Tables', fn: testTables, delay: 1500 },
+                { name: 'Authentication', fn: testAuth, delay: 1000 },
+                { name: 'CRUD', fn: testCRUD, delay: 2000 },
+                { name: 'Real-time', fn: testRealtime, delay: 3000 }
+            ];
+
+            for (let i = 0; i < tests.length; i++) {
+                const test = tests[i];
+                await test.fn();
+                await new Promise(resolve => setTimeout(resolve, test.delay));
+            }
+
+            // Show final results
+            showResults(testResults);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🎯 Supabase POS Migration Test Page Loaded');
+            log('📊 Project: rtfreafhlelpxqwohspq');
+            log('🔑 Using publishable API key (safe for browser)');
+
+            // Initialize Supabase after DOM and libraries are loaded
+            try {
+                // Wait a bit for CDN to fully load
+                setTimeout(() => {
+                    if (window.supabase && window.supabase.createClient) {
+                        const { createClient } = window.supabase;
+                        supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        log('✅ สำเร็จ: Supabase client initialized');
+                        log(`🔗 Connected to: ${SUPABASE_URL}`);
+                        
+                        // Auto-run tests after initialization
+                        setTimeout(() => {
+                            runAllTests();
+                        }, 1000);
+                    } else {
+                        log('❌ ข้อผิดพลาด: Supabase library not loaded');
+                        log('กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+                    }
+                }, 500);
+            } catch (error) {
+                log('❌ ข้อผิดพลาด: Failed to initialize Supabase');
+                log(`Error: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>

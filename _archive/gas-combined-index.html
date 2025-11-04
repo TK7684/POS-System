@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <title>POS ร้านกุ้งแซ่บ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e7a5f" />
+
+  <!-- ALL CSS INLINE -->
+  <?!= HtmlService.createHtmlOutputFromFile('Styles').getContent(); ?>
+</head>
+<body>
+  <!-- Your HTML content from Index.html -->
+  
+  <!-- ALL JAVASCRIPT INLINE -->
+  <script>
+    // STEP 1: Paste entire CacheManager.js content here
+    <?!= HtmlService.createHtmlOutputFromFile('CacheManager').getContent(); ?>
+  </script>
+  
+  <script>
+    // STEP 2: Paste entire critical.js content here
+    <?!= HtmlService.createHtmlOutputFromFile('Critical').getContent(); ?>
+  </script>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Functional Testing Module - Test Runner</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    
+    .config-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .config-section label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    
+    .config-section input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    
+    button {
+      padding: 12px 24px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-primary {
+      background-color: #4CAF50;
+      color: white;
+    }
+    
+    .btn-secondary {
+      background-color: #2196F3;
+      color: white;
+    }
+    
+    .btn-warning {
+      background-color: #FF9800;
+      color: white;
+    }
+    
+    .btn-danger {
+      background-color: #f44336;
+      color: white;
+    }
+    
+    #status {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    #status.info {
+      background-color: #E3F2FD;
+      color: #1976D2;
+      border-left: 4px solid #2196F3;
+    }
+    
+    #status.success {
+      background-color: #E8F5E9;
+      color: #388E3C;
+      border-left: 4px solid #4CAF50;
+    }
+    
+    #status.error {
+      background-color: #FFEBEE;
+      color: #C62828;
+      border-left: 4px solid #f44336;
+    }
+    
+    #results {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .test-category {
+      margin-bottom: 30px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .category-header {
+      background-color: #f5f5f5;
+      padding: 15px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .category-header.passed {
+      background-color: #E8F5E9;
+      color: #388E3C;
+    }
+    
+    .category-header.failed {
+      background-color: #FFEBEE;
+      color: #C62828;
+    }
+    
+    .test-result {
+      padding: 12px 15px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .test-result:last-child {
+      border-bottom: none;
+    }
+    
+    .test-result.passed {
+      background-color: #F1F8F4;
+    }
+    
+    .test-result.failed {
+      background-color: #FFF3F3;
+    }
+    
+    .test-name {
+      flex: 1;
+      font-weight: 500;
+    }
+    
+    .test-status {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    
+    .test-status.passed {
+      background-color: #4CAF50;
+      color: white;
+    }
+    
+    .test-status.failed {
+      background-color: #f44336;
+      color: white;
+    }
+    
+    .test-details {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    
+    .summary-item {
+      text-align: center;
+    }
+    
+    .summary-value {
+      font-size: 32px;
+      font-weight: bold;
+      display: block;
+    }
+    
+    .summary-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Functional Testing Module</h1>
+  
+  <div class="config-section">
+    <h3>Configuration</h3>
+    <label for="apiUrl">API URL:</label>
+    <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+    
+    <label for="timeout">Timeout (ms):</label>
+    <input type="number" id="timeout" value="10000">
+  </div>
+  
+  <div class="button-group">
+    <button class="btn-primary" onclick="runAllTests()">Run All Tests</button>
+    <button class="btn-secondary" onclick="runPurchaseTests()">Purchase Flow</button>
+    <button class="btn-secondary" onclick="runSalesTests()">Sales Flow</button>
+    <button class="btn-secondary" onclick="runMenuTests()">Menu Management</button>
+    <button class="btn-secondary" onclick="runStockTests()">Stock Management</button>
+    <button class="btn-secondary" onclick="runPermissionTests()">User Permissions</button>
+    <button class="btn-danger" onclick="clearResults()">Clear Results</button>
+  </div>
+  
+  <div id="status"></div>
+  
+  <div id="results"></div>
+  
+  <script src="functional-testing-module.js"></script>
+  <script>
+    let testModule = null;
+    
+    function initModule() {
+      const apiUrl = document.getElementById('apiUrl').value;
+      const timeout = parseInt(document.getElementById('timeout').value);
+      
+      if (!apiUrl) {
+        showStatus('Please enter API URL', 'error');
+        return null;
+      }
+      
+      testModule = new FunctionalTestingModule({
+        apiUrl: apiUrl,
+        timeout: timeout
+      });
+      
+      return testModule;
+    }
+    
+    function showStatus(message, type = 'info') {
+      const statusDiv = document.getElementById('status');
+      statusDiv.textContent = message;
+      statusDiv.className = type;
+      statusDiv.style.display = 'block';
+    }
+    
+    function hideStatus() {
+      document.getElementById('status').style.display = 'none';
+    }
+    
+    async function runAllTests() {
+      const module = initModule();
+      if (!module) return;
+      
+      showStatus('Running all functional tests...', 'info');
+      disableButtons(true);
+      
+      try {
+        const report = await module.runAllTests();
+        displayResults(report);
+        showStatus('All tests completed!', 'success');
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        disableButtons(false);
+      }
+    }
+    
+    async function runPurchaseTests() {
+      await runCategoryTest('testPurchaseFlow', 'Purchase Flow');
+    }
+    
+    async function runSalesTests() {
+      await runCategoryTest('testSalesFlow', 'Sales Flow');
+    }
+    
+    async function runMenuTests() {
+      await runCategoryTest('testMenuManagement', 'Menu Management');
+    }
+    
+    async function runStockTests() {
+      await runCategoryTest('testStockManagement', 'Stock Management');
+    }
+    
+    async function runPermissionTests() {
+      await runCategoryTest('testUserPermissions', 'User Permissions');
+    }
+    
+    async function runCategoryTest(methodName, categoryName) {
+      const module = initModule();
+      if (!module) return;
+      
+      showStatus(`Running ${categoryName} tests...`, 'info');
+      disableButtons(true);
+      
+      try {
+        const result = await module[methodName]();
+        displayCategoryResults(categoryName, result);
+        showStatus(`${categoryName} tests completed!`, 'success');
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        disableButtons(false);
+      }
+    }
+    
+    function displayResults(report) {
+      const resultsDiv = document.getElementById('results');
+      
+      let html = `
+        <div class="summary">
+          <div class="summary-item">
+            <span class="summary-value">${report.totalTests}</span>
+            <span class="summary-label">Total Tests</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-value">${report.passed}</span>
+            <span class="summary-label">Passed</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-value">${report.failed}</span>
+            <span class="summary-label">Failed</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-value">${report.successRate}%</span>
+            <span class="summary-label">Success Rate</span>
+          </div>
+        </div>
+      `;
+      
+      report.testCategories.forEach(category => {
+        html += renderCategory(category.name, category);
+      });
+      
+      resultsDiv.innerHTML = html;
+    }
+    
+    function displayCategoryResults(categoryName, result) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = renderCategory(categoryName, result);
+    }
+    
+    function renderCategory(name, result) {
+      const statusClass = result.passed ? 'passed' : 'failed';
+      
+      let html = `
+        <div class="test-category">
+          <div class="category-header ${statusClass}">
+            <span>${name}</span>
+            <span>${result.summary.passed}/${result.summary.total} passed</span>
+          </div>
+      `;
+      
+      result.results.forEach(test => {
+        const testStatus = test.passed ? 'passed' : 'failed';
+        html += `
+          <div class="test-result ${testStatus}">
+            <div class="test-name">
+              ${test.testName}
+              ${test.requirement ? `<small style="color: #666;"> (Req: ${test.requirement})</small>` : ''}
+              ${test.message ? `<div style="font-size: 12px; color: #666; margin-top: 5px;">${test.message}</div>` : ''}
+              ${test.error ? `<div class="test-details">Error: ${test.error}</div>` : ''}
+            </div>
+            <span class="test-status ${testStatus}">${test.passed ? 'PASSED' : 'FAILED'}</span>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      return html;
+    }
+    
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+      hideStatus();
+    }
+    
+    function disableButtons(disabled) {
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(btn => btn.disabled = disabled);
+    }
+  </script>
+</body>
+</html>

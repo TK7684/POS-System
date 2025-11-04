@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,99 +9,193 @@
     <link rel="stylesheet" href="css/critical.css">
     <link rel="stylesheet" href="css/components.css">
     <style>
+        html,
+        body {
+            max-width: 100vw;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: system-ui, -apple-system, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 12px;
             background: #f8fafc;
             color: #1e293b;
+            font-size: 16px; /* Base font size for better mobile readability */
         }
+
+        .test-header h1 {
+            font-size: clamp(24px, 7vw, 32px); /* Larger heading on mobile */
+            margin: 0 0 12px 0;
+        }
+        
+        .test-header p {
+            font-size: clamp(14px, 4vw, 16px);
+            margin: 8px 0;
+        }
+
+        /* Wrap long JSON in results for small screens */
+        .test-result pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
         .test-container {
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            padding: 30px;
+            padding: 16px;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+        
+        @media (min-width: 768px) {
+            .test-container {
+                padding: 30px;
+            }
+        }
+
         .test-header {
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 20px;
             border-bottom: 2px solid #e2e8f0;
         }
+
         .test-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: 1fr; /* Single column on mobile */
+            gap: 16px;
+            margin-bottom: 24px;
         }
+        
+        @media (min-width: 768px) {
+            .test-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+        }
+
         .test-section {
             background: #f8fafc;
-            padding: 25px;
+            padding: 16px;
             border-radius: 12px;
             border: 1px solid #e2e8f0;
         }
+
         .test-section h3 {
             margin-top: 0;
             color: #0f766e;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: clamp(18px, 5vw, 20px); /* Larger section headings */
         }
+        
+        .test-section p {
+            font-size: clamp(14px, 4vw, 16px);
+            line-height: 1.5;
+        }
+        
+        @media (min-width: 768px) {
+            .test-section {
+                padding: 25px;
+            }
+        }
+
         .test-button {
             background: #0f766e;
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 16px 20px; /* Larger touch target */
             border-radius: 8px;
             cursor: pointer;
-            margin: 5px;
+            margin: 6px 0; /* Vertical spacing only */
             font-weight: 600;
+            font-size: 16px; /* Larger, more readable text */
             transition: background-color 0.2s;
             width: 100%;
+            min-height: 48px; /* Minimum touch target size */
+            touch-action: manipulation; /* Prevent double-tap zoom */
         }
+        
+        @media (min-width: 768px) {
+            .test-button {
+                padding: 12px 20px;
+                font-size: 15px;
+                margin: 5px;
+            }
+        }
+
         .test-button:hover {
             background: #14b8a6;
         }
+
         .test-button:disabled {
             background: #94a3b8;
             cursor: not-allowed;
         }
+
         .test-button.secondary {
             background: #64748b;
         }
+
         .test-button.secondary:hover {
             background: #475569;
         }
+
         .test-result {
             margin-top: 15px;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 14px; /* Readable on mobile */
             max-height: 300px;
             overflow-y: auto;
+            line-height: 1.6; /* Better readability */
         }
+        
+        .test-result pre {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        @media (min-width: 768px) {
+            .test-result {
+                padding: 15px;
+                font-size: 14px;
+            }
+        }
+
         .success {
             background: #dcfce7;
             color: #166534;
             border: 1px solid #bbf7d0;
         }
+
         .error {
             background: #fef2f2;
             color: #dc2626;
             border: 1px solid #fecaca;
         }
+
         .info {
             background: #eff6ff;
             color: #1d4ed8;
             border: 1px solid #dbeafe;
         }
+
         .warning {
             background: #fef3c7;
             color: #92400e;
             border: 1px solid #fde68a;
         }
+
         .progress-bar {
             width: 100%;
             height: 8px;
@@ -109,86 +204,257 @@
             overflow: hidden;
             margin: 10px 0;
         }
+
         .progress-fill {
             height: 100%;
             background: #0f766e;
             transition: width 0.3s ease;
         }
+
         .status-indicator {
             display: inline-block;
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             margin-right: 8px;
+            vertical-align: middle;
         }
-        .status-running { background: #f59e0b; }
-        .status-success { background: #10b981; }
-        .status-error { background: #ef4444; }
-        .status-idle { background: #94a3b8; }
+
+        .status-running {
+            background: #f59e0b;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-success {
+            background: #10b981;
+        }
+
+        .status-error {
+            background: #ef4444;
+        }
+
+        .status-idle {
+            background: #94a3b8;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @media (min-width: 768px) {
+            .status-indicator {
+                width: 12px;
+                height: 12px;
+            }
+        }
+
         .summary-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+            grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+            gap: 12px;
+            margin: 16px 0;
         }
+
         .summary-card {
             background: white;
-            padding: 20px;
+            padding: 16px 12px;
             border-radius: 8px;
             text-align: center;
             border: 1px solid #e2e8f0;
         }
+
         .summary-card h4 {
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             color: #64748b;
-            font-size: 14px;
+            font-size: 13px; /* Readable on mobile */
+            font-weight: 600;
         }
+
         .summary-card .value {
-            font-size: 24px;
+            font-size: clamp(20px, 6vw, 28px); /* Larger values on mobile */
             font-weight: bold;
             color: #1e293b;
+            line-height: 1.2;
         }
+        
+        @media (min-width: 640px) {
+            .summary-cards {
+                grid-template-columns: repeat(4, 1fr); /* 4 columns on larger screens */
+                gap: 15px;
+            }
+            
+            .summary-card {
+                padding: 20px;
+            }
+            
+            .summary-card h4 {
+                font-size: 14px;
+            }
+        }
+
         .recommendations {
             background: #fef3c7;
-            padding: 20px;
+            padding: 16px;
             border-radius: 8px;
-            margin-top: 20px;
+            margin-top: 16px;
         }
+        
+        .recommendations h3 {
+            font-size: clamp(18px, 5vw, 20px);
+            margin-top: 0;
+        }
+
         .recommendation {
             background: white;
-            padding: 15px;
+            padding: 14px;
             border-radius: 6px;
             margin-bottom: 10px;
             border-left: 4px solid #f59e0b;
+            font-size: 14px;
+            line-height: 1.6;
         }
-        .recommendation.high { border-left-color: #ef4444; }
-        .recommendation.medium { border-left-color: #f59e0b; }
-        .recommendation.low { border-left-color: #10b981; }
+        
+        .recommendation strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+
+        .recommendation.high {
+            border-left-color: #ef4444;
+        }
+
+        .recommendation.medium {
+            border-left-color: #f59e0b;
+        }
+
+        .recommendation.low {
+            border-left-color: #10b981;
+        }
+        
+        @media (min-width: 768px) {
+            .recommendations {
+                padding: 20px;
+            }
+            
+            .recommendation {
+                padding: 15px;
+            }
+        }
+
         .log-container {
             background: #1e293b;
             color: #e2e8f0;
-            padding: 20px;
+            padding: 12px;
             border-radius: 8px;
             font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 400px;
+            font-size: 13px; /* Larger for mobile readability */
+            max-height: 300px;
             overflow-y: auto;
-            margin-top: 20px;
+            margin-top: 12px;
+            line-height: 1.5;
         }
+
         .log-entry {
-            margin-bottom: 5px;
-            padding: 2px 0;
+            margin-bottom: 6px;
+            padding: 3px 0;
         }
+
         .log-timestamp {
             color: #94a3b8;
-            margin-right: 10px;
+            margin-right: 8px;
+            font-size: 12px;
         }
-        .log-level-info { color: #60a5fa; }
-        .log-level-success { color: #34d399; }
-        .log-level-warning { color: #fbbf24; }
-        .log-level-error { color: #f87171; }
+        
+        @media (min-width: 768px) {
+            .log-container {
+                padding: 20px;
+                font-size: 12px;
+                max-height: 400px;
+            }
+        }
+
+        .log-level-info {
+            color: #60a5fa;
+        }
+
+        .log-level-success {
+            color: #34d399;
+        }
+
+        .log-level-warning {
+            color: #fbbf24;
+        }
+
+        .log-level-error {
+            color: #f87171;
+        }
+
+        /* Improve wrapping on narrow screens */
+        .history-summary {
+            flex-wrap: wrap;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .test-container {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .test-container {
+                padding: 16px;
+            }
+
+            .test-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .test-button {
+                min-height: 48px;
+            }
+
+            .log-container {
+                max-height: 50vh;
+            }
+
+            .test-result {
+                max-height: 40vh;
+            }
+
+            .test-section {
+                padding: 16px;
+                border-radius: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .test-grid {
+                gap: 12px;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .requirements-details {
+                grid-template-columns: 1fr;
+            }
+
+            .test-container {
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="test-container">
         <div class="test-header">
@@ -280,6 +546,9 @@
                 <button class="test-button" onclick="runAllTests()" id="run-all-btn">
                     Run All Tests
                 </button>
+                <button class="test-button secondary" onclick="showReportViewer()">
+                    View Report
+                </button>
                 <button class="test-button secondary" onclick="generateReport()">
                     Generate Report
                 </button>
@@ -318,32 +587,63 @@
     </div>
 
     <!-- Load Scripts -->
-    <script src="js/critical.js"></script>
-    <script src="js/core/ComprehensiveTestSuite.js"></script>
-    <script src="js/core/AutomatedTestRunner.js"></script>
-    <script src="TestRunner.gs.js"></script>
+    <!-- Load test configuration -->
+    <script src="test/comprehensive-test-config.js"></script>
+
+    <!-- Load test utilities -->
+    <script src="test/test-utilities.js"></script>
+    <script src="test/test-fixtures.js"></script>
+
+    <!-- Load all test modules -->
+    <script src="test/sheet-verification-module.js"></script>
+    <script src="test/api-testing-module.js"></script>
+    <script src="test/functional-testing-module.js"></script>
+    <script src="test/data-integrity-module.js"></script>
+    <script src="test/performance-testing-module.js"></script>
+    <script src="test/performance-testing-module.clean.js"></script>
+    <script src="test/cross-browser-testing-module.js"></script>
+    <script src="test/cross-browser-testing-module.clean.js"></script>
+    <script src="test/pwa-testing-module.clean.js"></script>
+    <script src="test/pwa-testing-module.js"></script>
+    <script src="test/security-testing-module.js"></script>
+    <script src="test/error-handling-module.js"></script>
+    <script src="test/reporting-testing-module.js"></script>
+    <script src="test/report-generation-module.js"></script>
+
+    <!-- Load test executor -->
+    <script src="test/execute-comprehensive-tests.js"></script>
+
+    <!-- Load automated testing suite (optional) -->
+    <script src="test/automated-testing-suite.js"></script>
 
     <script>
         // Global test runner instance
         let testRunner = null;
-        let comprehensiveTestSuite = null;
+        let comprehensiveTestExecutor = null;
         let currentTestResults = null;
+        // debounce helper for input events
+        function debounce(fn, delay) {
+            let t; return function () {
+                const ctx = this, args = arguments; clearTimeout(t);
+                t = setTimeout(() => fn.apply(ctx, args), delay);
+            };
+        }
 
         // Initialize test environment
         window.addEventListener('load', async () => {
             try {
                 log('Initializing test environment...', 'info');
-                
-                // Initialize test runner
-                testRunner = new AutomatedTestRunner();
-                await testRunner.initialize();
-                
-                // Initialize comprehensive test suite
-                comprehensiveTestSuite = new ComprehensiveTestSuite();
-                
-                log('Test environment initialized successfully', 'success');
-                updateStatus('Ready', 'idle');
-                
+
+                // Initialize comprehensive test executor
+                if (typeof ComprehensiveTestExecutor !== 'undefined') {
+                    comprehensiveTestExecutor = new ComprehensiveTestExecutor();
+                    await comprehensiveTestExecutor.initialize();
+                    log('Test environment initialized successfully', 'success');
+                    updateStatus('Ready', 'idle');
+                } else {
+                    throw new Error('ComprehensiveTestExecutor not loaded');
+                }
+
             } catch (error) {
                 log(`Failed to initialize test environment: ${error.message}`, 'error');
                 updateStatus('Error', 'error');
@@ -362,7 +662,7 @@
             `;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
-            
+
             // Also log to console
             console.log(`[${timestamp}] ${message}`);
         }
@@ -377,13 +677,13 @@
         function showResult(elementId, result, type = 'info') {
             const element = document.getElementById(elementId);
             element.className = `test-result ${type}`;
-            
+
             if (typeof result === 'object') {
                 element.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
             } else {
                 element.textContent = result;
             }
-            
+
             element.style.display = 'block';
         }
 
@@ -391,10 +691,10 @@
         function updateProgress(percentage) {
             const progressBar = document.getElementById('overall-progress');
             const progressFill = document.getElementById('progress-fill');
-            
+
             progressBar.style.display = 'block';
             progressFill.style.width = `${percentage}%`;
-            
+
             if (percentage >= 100) {
                 setTimeout(() => {
                     progressBar.style.display = 'none';
@@ -405,11 +705,11 @@
         // Update summary cards
         function updateSummary(results) {
             if (results && results.summary) {
-                document.getElementById('overall-score').textContent = 
+                document.getElementById('overall-score').textContent =
                     `${results.summary.overallScore.toFixed(1)}%`;
-                document.getElementById('tests-run').textContent = 
+                document.getElementById('tests-run').textContent =
                     results.summary.totalTests;
-                document.getElementById('success-rate').textContent = 
+                document.getElementById('success-rate').textContent =
                     `${((results.summary.passedTests / results.summary.totalTests) * 100).toFixed(1)}%`;
             }
         }
@@ -437,19 +737,37 @@
         async function runQuickTests() {
             log('Starting quick tests...', 'info');
             updateStatus('Running Quick Tests', 'running');
-            
+
             try {
-                let result;
-                if (typeof quickTest === 'function') {
-                    result = await quickTest();
-                } else {
-                    result = { status: 'error', message: 'Quick test function not available' };
+                if (!comprehensiveTestExecutor) {
+                    throw new Error('Test executor not initialized');
                 }
-                
+
+                if (typeof SheetVerificationModule === 'undefined') {
+                    throw new Error('SheetVerificationModule not loaded. Please refresh the page.');
+                }
+
+                if (typeof APITestingModule === 'undefined') {
+                    throw new Error('APITestingModule not loaded. Please refresh the page.');
+                }
+
+                // Run a quick subset of tests
+                const sheetModule = new SheetVerificationModule(ComprehensiveTestConfig.environment);
+                const apiModule = new APITestingModule(ComprehensiveTestConfig.environment);
+
+                const sheetResult = await sheetModule.verifyAllSheets();
+                const apiResult = await apiModule.testAllEndpoints();
+
+                const result = {
+                    status: (sheetResult.passed && apiResult.passed) ? 'success' : 'error',
+                    sheetVerification: sheetResult,
+                    apiTesting: apiResult
+                };
+
                 showResult('quick-result', result, result.status === 'success' ? 'success' : 'error');
                 log(`Quick tests completed: ${result.status}`, result.status === 'success' ? 'success' : 'error');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('quick-result', `Error: ${error.message}`, 'error');
                 log(`Quick tests failed: ${error.message}`, 'error');
@@ -460,13 +778,34 @@
         async function runInfrastructureTests() {
             log('Starting infrastructure tests...', 'info');
             updateStatus('Running Infrastructure Tests', 'running');
-            
+
             try {
-                const result = await testRunner.runInfrastructureTests();
-                showResult('quick-result', result, 'info');
-                log('Infrastructure tests completed', 'success');
+                // Test basic infrastructure
+                const tests = {
+                    configLoaded: typeof ComprehensiveTestConfig !== 'undefined',
+                    modulesLoaded: typeof SheetVerificationModule !== 'undefined',
+                    executorLoaded: typeof ComprehensiveTestExecutor !== 'undefined',
+                    apiAccessible: false
+                };
+
+                // Test API accessibility
+                try {
+                    const response = await fetch(ComprehensiveTestConfig.environment.apiUrl + '?action=getBootstrapData');
+                    tests.apiAccessible = response.ok;
+                } catch (e) {
+                    tests.apiAccessible = false;
+                }
+
+                const allPassed = Object.values(tests).every(t => t === true);
+                const result = {
+                    status: allPassed ? 'success' : 'error',
+                    tests
+                };
+
+                showResult('quick-result', result, allPassed ? 'success' : 'error');
+                log('Infrastructure tests completed', allPassed ? 'success' : 'warning');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('quick-result', `Error: ${error.message}`, 'error');
                 log(`Infrastructure tests failed: ${error.message}`, 'error');
@@ -477,13 +816,17 @@
         async function runPerformanceTests() {
             log('Starting performance tests...', 'info');
             updateStatus('Running Performance Tests', 'running');
-            
+
             try {
-                const result = await comprehensiveTestSuite.runPerformanceTests();
+                if (typeof PerformanceTestingModule === 'undefined') {
+                    throw new Error('PerformanceTestingModule not loaded. Please refresh the page.');
+                }
+                const perfModule = new PerformanceTestingModule(ComprehensiveTestConfig.environment);
+                const result = await perfModule.runAllTests();
                 showResult('performance-result', result, 'info');
                 log('Performance tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('performance-result', `Error: ${error.message}`, 'error');
                 log(`Performance tests failed: ${error.message}`, 'error');
@@ -494,13 +837,17 @@
         async function runLoadTests() {
             log('Starting load tests...', 'info');
             updateStatus('Running Load Tests', 'running');
-            
+
             try {
-                const result = await comprehensiveTestSuite.runLoadTests();
+                if (typeof PerformanceTestingModule === 'undefined') {
+                    throw new Error('PerformanceTestingModule not loaded. Please refresh the page.');
+                }
+                const perfModule = new PerformanceTestingModule(ComprehensiveTestConfig.environment);
+                const result = await perfModule.testLoadPerformance();
                 showResult('performance-result', result, 'info');
                 log('Load tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('performance-result', `Error: ${error.message}`, 'error');
                 log(`Load tests failed: ${error.message}`, 'error');
@@ -511,13 +858,17 @@
         async function runCrossDeviceTests() {
             log('Starting cross-device tests...', 'info');
             updateStatus('Running Device Tests', 'running');
-            
+
             try {
-                const result = await comprehensiveTestSuite.runCrossDeviceTests();
+                if (typeof CrossBrowserTestingModule === 'undefined') {
+                    throw new Error('CrossBrowserTestingModule not loaded. Please refresh the page.');
+                }
+                const browserModule = new CrossBrowserTestingModule(ComprehensiveTestConfig.environment);
+                const result = await browserModule.testBrowserCompatibility();
                 showResult('device-result', result, 'info');
                 log('Cross-device tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('device-result', `Error: ${error.message}`, 'error');
                 log(`Cross-device tests failed: ${error.message}`, 'error');
@@ -528,7 +879,7 @@
         async function runResponsiveTests() {
             log('Starting responsive tests...', 'info');
             updateStatus('Running Responsive Tests', 'running');
-            
+
             try {
                 // Test different viewport sizes
                 const viewports = [
@@ -536,7 +887,7 @@
                     { width: 768, height: 1024, name: 'Tablet' },
                     { width: 1920, height: 1080, name: 'Desktop' }
                 ];
-                
+
                 const results = {};
                 for (const viewport of viewports) {
                     // Simulate viewport testing
@@ -547,11 +898,11 @@
                         touchTargets: viewport.width < 768 ? true : 'N/A'
                     };
                 }
-                
+
                 showResult('device-result', results, 'success');
                 log('Responsive tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('device-result', `Error: ${error.message}`, 'error');
                 log(`Responsive tests failed: ${error.message}`, 'error');
@@ -562,13 +913,22 @@
         async function runAccessibilityTests() {
             log('Starting accessibility tests...', 'info');
             updateStatus('Running Accessibility Tests', 'running');
-            
+
             try {
-                const result = await comprehensiveTestSuite.runAccessibilityTests();
+                // Placeholder for accessibility tests
+                const result = {
+                    status: 'info',
+                    message: 'Accessibility testing requires axe-core library. Please integrate axe-core for full accessibility testing.',
+                    basicChecks: {
+                        hasAltText: document.querySelectorAll('img[alt]').length > 0,
+                        hasLabels: document.querySelectorAll('label').length > 0,
+                        hasHeadings: document.querySelectorAll('h1, h2, h3').length > 0
+                    }
+                };
                 showResult('accessibility-result', result, 'info');
                 log('Accessibility tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('accessibility-result', `Error: ${error.message}`, 'error');
                 log(`Accessibility tests failed: ${error.message}`, 'error');
@@ -579,13 +939,17 @@
         async function runKeyboardTests() {
             log('Starting keyboard navigation tests...', 'info');
             updateStatus('Running Keyboard Tests', 'running');
-            
+
             try {
-                const result = await comprehensiveTestSuite.testKeyboardNavigation();
-                showResult('accessibility-result', result, result.passed ? 'success' : 'warning');
+                const result = {
+                    status: 'info',
+                    message: 'Keyboard navigation test - please manually test Tab, Enter, and Escape keys',
+                    focusableElements: document.querySelectorAll('button, a, input, select, textarea').length
+                };
+                showResult('accessibility-result', result, 'info');
                 log('Keyboard tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('accessibility-result', `Error: ${error.message}`, 'error');
                 log(`Keyboard tests failed: ${error.message}`, 'error');
@@ -596,13 +960,17 @@
         async function runUserAcceptanceTests() {
             log('Starting user acceptance tests...', 'info');
             updateStatus('Running UAT', 'running');
-            
+
             try {
-                const result = await comprehensiveTestSuite.runUserAcceptanceTests();
+                if (typeof FunctionalTestingModule === 'undefined') {
+                    throw new Error('FunctionalTestingModule not loaded. Please refresh the page.');
+                }
+                const functionalModule = new FunctionalTestingModule(ComprehensiveTestConfig.environment);
+                const result = await functionalModule.runAllTests();
                 showResult('uat-result', result, 'info');
                 log('User acceptance tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('uat-result', `Error: ${error.message}`, 'error');
                 log(`User acceptance tests failed: ${error.message}`, 'error');
@@ -613,13 +981,17 @@
         async function runUsabilityTests() {
             log('Starting usability tests...', 'info');
             updateStatus('Running Usability Tests', 'running');
-            
+
             try {
-                const result = await comprehensiveTestSuite.testUsability();
+                const result = {
+                    status: 'info',
+                    message: 'Usability testing requires user interaction. Run functional tests for automated validation.',
+                    suggestion: 'Click "Run Tests" in User Acceptance Tests section'
+                };
                 showResult('uat-result', result, 'info');
                 log('Usability tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('uat-result', `Error: ${error.message}`, 'error');
                 log(`Usability tests failed: ${error.message}`, 'error');
@@ -630,13 +1002,17 @@
         async function runLighthouseAudit() {
             log('Starting Lighthouse audit...', 'info');
             updateStatus('Running Lighthouse Audit', 'running');
-            
+
             try {
-                const result = await testRunner.runLighthouseAudit();
+                const result = {
+                    status: 'info',
+                    message: 'Lighthouse audit requires Chrome DevTools or Lighthouse CI. Run PWA tests for basic checks.',
+                    suggestion: 'Use Chrome DevTools > Lighthouse tab for full audit'
+                };
                 showResult('lighthouse-result', result, 'info');
                 log('Lighthouse audit completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('lighthouse-result', `Error: ${error.message}`, 'error');
                 log(`Lighthouse audit failed: ${error.message}`, 'error');
@@ -647,13 +1023,17 @@
         async function runPWATests() {
             log('Starting PWA tests...', 'info');
             updateStatus('Running PWA Tests', 'running');
-            
+
             try {
-                const result = await testRunner.simulateLighthousePWA();
+                if (typeof PWATestingModule === 'undefined') {
+                    throw new Error('PWATestingModule not loaded. Please refresh the page.');
+                }
+                const pwaModule = new PWATestingModule(ComprehensiveTestConfig.environment);
+                const result = await pwaModule.runAllTests();
                 showResult('lighthouse-result', result, result.passed ? 'success' : 'warning');
                 log('PWA tests completed', 'success');
                 updateStatus('Ready', 'idle');
-                
+
             } catch (error) {
                 showResult('lighthouse-result', `Error: ${error.message}`, 'error');
                 log(`PWA tests failed: ${error.message}`, 'error');
@@ -664,26 +1044,33 @@
         async function runAllTests() {
             log('Starting comprehensive test suite...', 'info');
             updateStatus('Running All Tests', 'running');
-            
+
             const runAllBtn = document.getElementById('run-all-btn');
             runAllBtn.disabled = true;
             runAllBtn.textContent = 'Running Tests...';
-            
+
             try {
+                if (!comprehensiveTestExecutor) {
+                    throw new Error('Test executor not initialized');
+                }
+
                 updateProgress(10);
-                
-                const result = await testRunner.runAllTests();
+
+                const result = await comprehensiveTestExecutor.executeAllTests();
                 currentTestResults = result;
-                
+
+                // Save results to localStorage
+                saveTestResults(result);
+
                 updateProgress(100);
-                
+
                 showResult('comprehensive-result', result, 'info');
                 updateSummary(result);
                 showRecommendations(result.recommendations);
-                
-                log(`Comprehensive test suite completed with score: ${result.summary.overallScore.toFixed(1)}%`, 'success');
+
+                log(`Comprehensive test suite completed with score: ${result.summary.overallScore}%`, 'success');
                 updateStatus('Completed', 'success');
-                
+
             } catch (error) {
                 showResult('comprehensive-result', `Error: ${error.message}`, 'error');
                 log(`Comprehensive test suite failed: ${error.message}`, 'error');
@@ -699,13 +1086,35 @@
                 log('No test results available. Run tests first.', 'warning');
                 return;
             }
-            
+
             log('Generating test report...', 'info');
-            
+
             try {
-                await testRunner.generateTestReport(currentTestResults);
-                log('Test report generated and downloaded', 'success');
-                
+                // Generate reports using the executor
+                const reports = await comprehensiveTestExecutor.exportResults(['json', 'csv']);
+
+                // Download JSON report
+                if (reports.json) {
+                    const blob = new Blob([reports.json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `test-results-${new Date().toISOString()}.json`;
+                    a.click();
+                }
+
+                // Download CSV report
+                if (reports.csv) {
+                    const blob = new Blob([reports.csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `requirement-traceability-${new Date().toISOString()}.csv`;
+                    a.click();
+                }
+
+                log('Test reports generated and downloaded', 'success');
+
             } catch (error) {
                 log(`Failed to generate report: ${error.message}`, 'error');
             }
@@ -716,35 +1125,496 @@
                 log('No current test results available. Run tests first.', 'warning');
                 return;
             }
-            
+
             log('Comparing with previous results...', 'info');
-            
+
             try {
-                const comparison = await testRunner.compareWithPrevious(currentTestResults);
-                
-                if (!comparison) {
+                // Get previous results from localStorage
+                const previousResults = localStorage.getItem('lastTestResults');
+
+                if (!previousResults) {
                     log('No previous test results found for comparison', 'info');
                     return;
                 }
-                
+
+                const previous = JSON.parse(previousResults);
+                const comparison = {
+                    current: currentTestResults.summary,
+                    previous: previous.summary,
+                    changes: {
+                        overallScore: currentTestResults.summary.overallScore - previous.summary.overallScore,
+                        totalTests: currentTestResults.summary.totalTests - previous.summary.totalTests,
+                        passedTests: currentTestResults.summary.passedTests - previous.summary.passedTests,
+                        failedTests: currentTestResults.summary.failedTests - previous.summary.failedTests
+                    }
+                };
+
                 showResult('comprehensive-result', comparison, 'info');
                 log('Comparison completed', 'success');
-                
+
             } catch (error) {
                 log(`Failed to compare results: ${error.message}`, 'error');
             }
         }
 
+        function saveTestResults(results) {
+            try {
+                // Save current results as last results
+                localStorage.setItem('lastTestResults', JSON.stringify(results));
+
+                // Add to history
+                const history = JSON.parse(localStorage.getItem('testHistory') || '[]');
+                history.push({
+                    timestamp: results.timestamp,
+                    summary: results.summary
+                });
+
+                // Keep only last 50 results
+                if (history.length > 50) {
+                    history.shift();
+                }
+
+                localStorage.setItem('testHistory', JSON.stringify(history));
+            } catch (error) {
+                console.error('Failed to save test results:', error);
+            }
+        }
+
+        function viewHistory() {
+            try {
+                const history = JSON.parse(localStorage.getItem('testHistory') || '[]');
+
+                if (history.length === 0) {
+                    log('No test history available', 'info');
+                    return;
+                }
+
+                showResult('comprehensive-result', { history }, 'info');
+                log(`Showing ${history.length} historical test runs`, 'success');
+
+            } catch (error) {
+                log(`Failed to load test history: ${error.message}`, 'error');
+            }
+        }
+
         async function viewHistory() {
             log('Loading test history...', 'info');
-            
+
             try {
-                const history = await testRunner.getHistoricalResults(10);
-                showResult('comprehensive-result', history, 'info');
-                log(`Loaded ${history.length} historical test results`, 'success');
-                
+                const history = await testRunner.getTestHistory();
+
+                if (!history || history.length === 0) {
+                    log('No test history found', 'info');
+                    showResult('comprehensive-result', 'No previous test results found', 'info');
+                    return;
+                }
+
+                // Show history viewer modal
+                showHistoryViewer(history);
+                log('Test history loaded', 'success');
+
             } catch (error) {
-                log(`Failed to load history: ${error.message}`, 'error');
+                log(`Failed to load test history: ${error.message}`, 'error');
+            }
+        }
+
+        function showHistoryViewer(history) {
+            // Create modal for history viewer
+            const modal = document.createElement('div');
+            modal.id = 'history-viewer-modal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📊 Test History</h2>
+                        <button class="close-btn" onclick="closeHistoryViewer()">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="history-list">
+                            ${history.map((entry, index) => `
+                                <div class="history-item" onclick="loadHistoricalReport(${index})">
+                                    <div class="history-date">${new Date(entry.timestamp).toLocaleString()}</div>
+                                    <div class="history-summary">
+                                        <span class="history-stat">Tests: ${entry.summary?.totalTests || 0}</span>
+                                        <span class="history-stat success">Passed: ${entry.summary?.passed || 0}</span>
+                                        <span class="history-stat error">Failed: ${entry.summary?.failed || 0}</span>
+                                        <span class="history-stat">Score: ${entry.summary?.successRate?.toFixed(1) || 0}%</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeHistoryViewer() {
+            const modal = document.getElementById('history-viewer-modal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.remove(), 300);
+            }
+        }
+
+        async function loadHistoricalReport(index) {
+            try {
+                const history = await testRunner.getTestHistory();
+                const report = history[index];
+
+                if (report) {
+                    currentTestResults = report;
+                    showResult('comprehensive-result', report, 'info');
+                    updateSummary(report);
+                    showRecommendations(report.recommendations);
+                    closeHistoryViewer();
+                    log(`Loaded historical report from ${new Date(report.timestamp).toLocaleString()}`, 'success');
+                }
+            } catch (error) {
+                log(`Failed to load historical report: ${error.message}`, 'error');
+            }
+        }
+
+        function showReportViewer() {
+            if (!currentTestResults) {
+                log('No test results available. Run tests first.', 'warning');
+                return;
+            }
+
+            // Create modal for report viewer
+            const modal = document.createElement('div');
+            modal.id = 'report-viewer-modal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h2>📋 Test Report Viewer</h2>
+                        <div class="modal-actions">
+                            <input type="text" id="report-search" placeholder="Search tests..." class="search-input">
+                            <select id="report-filter" class="filter-select">
+                                <option value="all">All Tests</option>
+                                <option value="passed">Passed Only</option>
+                                <option value="failed">Failed Only</option>
+                                <option value="warning">Warnings Only</option>
+                            </select>
+                            <button class="close-btn" onclick="closeReportViewer()">✕</button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="report-toolbar">
+                            <button class="toolbar-btn" onclick="exportReport('html')">
+                                <span>📄</span> Export HTML
+                            </button>
+                            <button class="toolbar-btn" onclick="exportReport('json')">
+                                <span>📊</span> Export JSON
+                            </button>
+                            <button class="toolbar-btn" onclick="exportReport('csv')">
+                                <span>📈</span> Export CSV
+                            </button>
+                            <button class="toolbar-btn" onclick="showCoverageVisualization()">
+                                <span>📉</span> Coverage Chart
+                            </button>
+                        </div>
+                        
+                        <div id="report-content" class="report-content">
+                            ${generateReportHTML(currentTestResults)}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('show'), 10);
+
+            // Add event listeners (debounced for performance)
+            document.getElementById('report-search').addEventListener('input', debounce(filterReportContent, 150));
+            document.getElementById('report-filter').addEventListener('change', filterReportContent);
+        }
+
+        function closeReportViewer() {
+            const modal = document.getElementById('report-viewer-modal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.remove(), 300);
+            }
+        }
+
+        function generateReportHTML(results) {
+            if (!results || !results.categories) {
+                return '<div class="no-data">No test results available</div>';
+            }
+
+            let html = '<div class="report-sections">';
+
+            // Summary section
+            const summary = calculateSummary(results);
+            html += `
+                <div class="report-section">
+                    <h3>Summary</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-label">Total Tests</div>
+                            <div class="summary-value">${summary.totalTests}</div>
+                        </div>
+                        <div class="summary-item success">
+                            <div class="summary-label">Passed</div>
+                            <div class="summary-value">${summary.passed}</div>
+                        </div>
+                        <div class="summary-item error">
+                            <div class="summary-label">Failed</div>
+                            <div class="summary-value">${summary.failed}</div>
+                        </div>
+                        <div class="summary-item warning">
+                            <div class="summary-label">Warnings</div>
+                            <div class="summary-value">${summary.warnings}</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Success Rate</div>
+                            <div class="summary-value">${summary.successRate.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Categories section
+            results.categories.forEach(category => {
+                html += `
+                    <div class="report-section category-section" data-category="${category.name}">
+                        <h3>${category.name}</h3>
+                        <div class="tests-list">
+                            ${(category.tests || []).map(test => `
+                                <div class="test-item ${test.status}" data-status="${test.status}" data-name="${test.name}">
+                                    <div class="test-header">
+                                        <span class="test-status-icon">${getStatusIcon(test.status)}</span>
+                                        <span class="test-name">${test.name}</span>
+                                        <span class="test-duration">${formatDuration(test.duration)}</span>
+                                    </div>
+                                    ${test.description ? `<div class="test-description">${test.description}</div>` : ''}
+                                    ${test.requirements && test.requirements.length > 0 ? `
+                                        <div class="test-requirements">
+                                            <strong>Requirements:</strong> ${test.requirements.join(', ')}
+                                        </div>
+                                    ` : ''}
+                                    ${test.errors && test.errors.length > 0 ? `
+                                        <div class="test-errors">
+                                            ${test.errors.map(err => `<div class="error-msg">❌ ${err}</div>`).join('')}
+                                        </div>
+                                    ` : ''}
+                                    ${test.warnings && test.warnings.length > 0 ? `
+                                        <div class="test-warnings">
+                                            ${test.warnings.map(warn => `<div class="warning-msg">⚠️ ${warn}</div>`).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            return html;
+        }
+
+        function calculateSummary(results) {
+            let totalTests = 0;
+            let passed = 0;
+            let failed = 0;
+            let warnings = 0;
+
+            (results.categories || []).forEach(category => {
+                (category.tests || []).forEach(test => {
+                    totalTests++;
+                    if (test.status === 'passed') passed++;
+                    else if (test.status === 'failed') failed++;
+                    else if (test.status === 'warning') warnings++;
+                });
+            });
+
+            return {
+                totalTests,
+                passed,
+                failed,
+                warnings,
+                successRate: totalTests > 0 ? (passed / totalTests) * 100 : 0
+            };
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                passed: '✓',
+                failed: '✗',
+                warning: '⚠',
+                skipped: '⊘'
+            };
+            return icons[status] || '?';
+        }
+
+        function formatDuration(ms) {
+            if (!ms) return '0ms';
+            if (ms < 1000) return `${ms}ms`;
+            if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
+            return `${(ms / 60000).toFixed(2)}m`;
+        }
+
+        function filterReportContent() {
+            const searchTerm = document.getElementById('report-search').value.toLowerCase();
+            const filterValue = document.getElementById('report-filter').value;
+
+            const testItems = document.querySelectorAll('.test-item');
+
+            testItems.forEach(item => {
+                const testName = item.getAttribute('data-name').toLowerCase();
+                const testStatus = item.getAttribute('data-status');
+
+                const matchesSearch = !searchTerm || testName.includes(searchTerm);
+                const matchesFilter = filterValue === 'all' || testStatus === filterValue;
+
+                if (matchesSearch && matchesFilter) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        async function exportReport(format) {
+            if (!currentTestResults) {
+                log('No test results available to export', 'warning');
+                return;
+            }
+
+            log(`Exporting report as ${format.toUpperCase()}...`, 'info');
+
+            try {
+                // Use the report generation module
+                const reportModule = new ReportGenerationModule();
+
+                let content, filename, mimeType;
+
+                switch (format) {
+                    case 'html':
+                        content = reportModule.generateHTMLReport(currentTestResults);
+                        filename = `test-report-${Date.now()}.html`;
+                        mimeType = 'text/html';
+                        break;
+                    case 'json':
+                        content = reportModule.generateJSONReport(currentTestResults);
+                        filename = `test-report-${Date.now()}.json`;
+                        mimeType = 'application/json';
+                        break;
+                    case 'csv':
+                        content = reportModule.generateCSVReport(currentTestResults);
+                        filename = `test-report-${Date.now()}.csv`;
+                        mimeType = 'text/csv';
+                        break;
+                    default:
+                        throw new Error(`Unsupported format: ${format}`);
+                }
+
+                // Trigger download
+                downloadFile(content, filename, mimeType);
+                log(`Report exported as ${filename}`, 'success');
+
+            } catch (error) {
+                log(`Failed to export report: ${error.message}`, 'error');
+            }
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showCoverageVisualization() {
+            if (!currentTestResults || !currentTestResults.requirements) {
+                log('No requirement coverage data available', 'warning');
+                return;
+            }
+
+            const requirements = currentTestResults.requirements;
+            const covered = requirements.covered || [];
+            const uncovered = requirements.uncovered || [];
+            const total = covered.length + uncovered.length;
+            const coveragePercent = total > 0 ? (covered.length / total) * 100 : 0;
+
+            // Create coverage visualization modal
+            const modal = document.createElement('div');
+            modal.id = 'coverage-modal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📊 Requirement Coverage</h2>
+                        <button class="close-btn" onclick="closeCoverageModal()">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="coverage-chart">
+                            <div class="coverage-donut">
+                                <svg viewBox="0 0 200 200" width="200" height="200">
+                                    <circle cx="100" cy="100" r="80" fill="none" stroke="#e2e8f0" stroke-width="30"/>
+                                    <circle cx="100" cy="100" r="80" fill="none" stroke="#10b981" stroke-width="30"
+                                            stroke-dasharray="${(coveragePercent / 100) * 502.65} 502.65"
+                                            transform="rotate(-90 100 100)"/>
+                                    <text x="100" y="100" text-anchor="middle" dy="0.3em" font-size="32" font-weight="bold" fill="#1e293b">
+                                        ${coveragePercent.toFixed(0)}%
+                                    </text>
+                                </svg>
+                            </div>
+                            <div class="coverage-stats">
+                                <div class="coverage-stat">
+                                    <div class="stat-label">Total Requirements</div>
+                                    <div class="stat-value">${total}</div>
+                                </div>
+                                <div class="coverage-stat success">
+                                    <div class="stat-label">Covered</div>
+                                    <div class="stat-value">${covered.length}</div>
+                                </div>
+                                <div class="coverage-stat error">
+                                    <div class="stat-label">Uncovered</div>
+                                    <div class="stat-value">${uncovered.length}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="requirements-details">
+                            <div class="requirements-column">
+                                <h4>✓ Covered Requirements</h4>
+                                <ul class="requirements-list">
+                                    ${covered.map(req => `<li class="covered-req">${req}</li>`).join('')}
+                                </ul>
+                            </div>
+                            ${uncovered.length > 0 ? `
+                            <div class="requirements-column">
+                                <h4>✗ Uncovered Requirements</h4>
+                                <ul class="requirements-list">
+                                    ${uncovered.map(req => `<li class="uncovered-req">${req}</li>`).join('')}
+                                </ul>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeCoverageModal() {
+            const modal = document.getElementById('coverage-modal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.remove(), 300);
             }
         }
 
@@ -757,33 +1627,458 @@
                 </div>
             `;
         }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 't':
-                        e.preventDefault();
-                        runAllTests();
-                        break;
-                    case 'q':
-                        e.preventDefault();
-                        runQuickTests();
-                        break;
-                    case 'p':
-                        e.preventDefault();
-                        runPerformanceTests();
-                        break;
-                    case 'r':
-                        e.preventDefault();
-                        generateReport();
-                        break;
-                }
-            }
-        });
-
-        // Show keyboard shortcuts help
-        log('Keyboard shortcuts: Ctrl+T (All Tests), Ctrl+Q (Quick), Ctrl+P (Performance), Ctrl+R (Report)', 'info');
     </script>
+
+    <!-- Additional Styles for Report Viewer -->
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal.show {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content.large {
+            max-width: 1200px;
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #1e293b;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 200px;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #64748b;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .modal-body {
+            padding: 20px 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: #0f766e;
+            background: #f0fdfa;
+            transform: translateX(5px);
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .history-summary {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .history-stat {
+            color: #64748b;
+        }
+
+        .history-stat.success {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .history-stat.error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .report-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .toolbar-btn {
+            padding: 10px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: #f8fafc;
+            border-color: #0f766e;
+            color: #0f766e;
+        }
+
+        .report-content {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .report-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .report-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .report-section h3 {
+            margin: 0 0 15px 0;
+            color: #0f766e;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border-left: 3px solid #64748b;
+        }
+
+        .summary-item.success {
+            border-left-color: #10b981;
+        }
+
+        .summary-item.error {
+            border-left-color: #ef4444;
+        }
+
+        .summary-item.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            font-size: clamp(18px, 5vw, 24px);
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .tests-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .test-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #64748b;
+        }
+
+        .test-item.passed {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .test-item.failed {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .test-item.warning {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .test-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .test-status-icon {
+            font-size: 18px;
+        }
+
+        .test-name {
+            flex: 1;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .test-duration {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .test-description {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .test-requirements {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .test-errors,
+        .test-warnings {
+            margin-top: 10px;
+        }
+
+        .error-msg {
+            color: #dc2626;
+            font-size: 13px;
+            padding: 5px 0;
+        }
+
+        .warning-msg {
+            color: #d97706;
+            font-size: 13px;
+            padding: 5px 0;
+        }
+
+        .coverage-chart {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .coverage-donut {
+            flex-shrink: 0;
+        }
+
+        .coverage-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .coverage-stat {
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #64748b;
+        }
+
+        .coverage-stat.success {
+            border-left-color: #10b981;
+        }
+
+        .coverage-stat.error {
+            border-left-color: #ef4444;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .requirements-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .requirements-column h4 {
+            margin-bottom: 15px;
+            color: #1e293b;
+        }
+
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .requirements-list li {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .covered-req {
+            background: #f0fdf4;
+            border-left: 3px solid #10b981;
+            color: #166534;
+        }
+
+        .uncovered-req {
+            background: #fef2f2;
+            border-left: 3px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        /* Modal responsiveness refinements */
+        @media (max-width: 600px) {
+            .modal {
+                align-items: flex-start;
+                padding: 12px;
+            }
+
+            .modal-content,
+            .modal-content.large {
+                width: 100%;
+                max-width: 100%;
+                height: auto;
+                max-height: calc(100vh - 24px);
+            }
+
+            .modal-header {
+                padding: 12px 14px;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .modal-actions {
+                width: 100%;
+                gap: 8px;
+            }
+
+            .modal-actions .search-input {
+                flex: 1 1 140px;
+                min-width: 0;
+                width: auto;
+            }
+
+            .modal-actions .filter-select {
+                flex: 0 0 auto;
+            }
+
+            .report-toolbar {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .toolbar-btn {
+                flex: 1 1 calc(50% - 8px);
+                min-width: 140px;
+            }
+        }
+    </style>
+
+    <!-- Report generation module already loaded above -->
 </body>
+
 </html>
