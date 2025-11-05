@@ -1,8 +1,8 @@
-// Cloudflare Worker for LINE Bot Webhook
+// Cloudflare Pages Function for LINE Bot Webhook
 // This replaces the Netlify Function
 
-export default {
-  async fetch(request, env) {
+export async function onRequest(context) {
+  const { request, env } = context;
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, {
@@ -224,8 +224,7 @@ export default {
         },
       });
     }
-  },
-};
+}
 
 // Copy all helper functions from netlify/functions/line-webhook.js
 // (processAndRecordExpense, parseExpenseFromMessage, findDuplicateExpense, etc.)

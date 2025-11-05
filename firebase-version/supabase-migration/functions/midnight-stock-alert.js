@@ -1,13 +1,8 @@
-// Cloudflare Worker for Midnight Stock Alert
+// Cloudflare Pages Function for Midnight Stock Alert
 // Runs daily at midnight to check low stock
 
-export default {
-  async scheduled(event, env, ctx) {
-    // This runs on a schedule
-    ctx.waitUntil(processStockAlert(env));
-  },
-  
-  async fetch(request, env) {
+export async function onRequest(context) {
+  const { request, env } = context;
     // Also allow manual trigger via HTTP request
     if (request.method === 'POST' || request.method === 'GET') {
       const result = await processStockAlert(env);
@@ -16,8 +11,7 @@ export default {
       });
     }
     return new Response('Method not allowed', { status: 405 });
-  },
-};
+}
 
 async function processStockAlert(env) {
   try {
