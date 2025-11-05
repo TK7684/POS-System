@@ -5180,4 +5180,137 @@ function closeLaborModal() {
   document.getElementById("labor-modal")?.classList.add("hidden");
 }
 
+// ---------- Backfill Expenses Panel ----------
+async function showBackfillPanel() {
+  logger.info("UI", "Opening backfill panel");
+
+  const backfillModal = document.createElement("div");
+  backfillModal.className =
+    "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+  backfillModal.innerHTML = `
+    <div class="card max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">📥 Backfill Expenses</h3>
+        <button onclick="this.closest('.fixed').remove()" class="btn ghost">✕</button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="card bg-blue-50">
+          <h4 class="font-semibold mb-2">📊 Import from Google Sheets</h4>
+          <p class="text-sm text-gray-600 mb-4">
+            Import expenses from your Google Sheet. Make sure to copy the data in the correct format:
+          </p>
+          <textarea
+            id="sheets-data"
+            class="w-full p-2 border rounded"
+            rows="10"
+            placeholder='Paste Google Sheets data here (CSV format):\nวันที่,ชื่อค่าใช้จ่าย,จำนวนค่าใช้จ่าย,กลุ่มค่าใช้จ่าย\n27-Aug-2025,สูตรน้ำจิ้ม 1,349,อื่นๆ\n27-Aug-2025,เครื่องปั่น,2241,ค่าพนักงาน'
+          ></textarea>
+          <button
+            onclick="importFromSheets()"
+            class="btn brand mt-2 w-full"
+          >
+            📥 Import from Sheets Data
+          </button>
+        </div>
+
+        <div class="card bg-green-50">
+          <h4 class="font-semibold mb-2">📱 Process Old LINE Messages</h4>
+          <p class="text-sm text-gray-600 mb-4">
+            Process all unprocessed LINE messages and extract expenses automatically.
+          </p>
+          <button
+            onclick="processOldMessages()"
+            class="btn brand w-full"
+          >
+            🔄 Process Old Messages
+          </button>
+        </div>
+
+        <div id="backfill-results" class="hidden">
+          <div class="card bg-gray-50">
+            <h4 class="font-semibold mb-2">📊 Results</h4>
+            <pre id="backfill-output" class="text-xs bg-white p-2 rounded overflow-auto"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-4">
+        <button onclick="this.closest('.fixed').remove()" class="btn ghost">✕ Close</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backfillModal);
+}
+
+async function importFromSheets() {
+  const textarea = document.getElementById("sheets-data");
+  const data = textarea.value.trim();
+  
+  if (!data) {
+    alert("Please paste the Google Sheets data first");
+    return;
+  }
+
+  try {
+    // Parse CSV data
+    const lines = data.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    
+    const expenses = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      if (values.length >= 3) {
+        const expense = {};
+        headers.forEach((header, idx) => {
+          expense[header] = values[idx] || '';
+        });
+        expenses.push(expense);
+      }
+    }
+
+    if (expenses.length === 0) {
+      alert("No valid expenses found in the data");
+      return;
+    }
+
+    const resultsDiv = document.getElementById("backfill-results");
+    const outputDiv = document.getElementById("backfill-output");
+    resultsDiv.classList.remove("hidden");
+    outputDiv.textContent = `Processing ${expenses.length} expenses...`;
+
+    if (window.backfillExpenses && window.backfillExpenses.fromGoogleSheets) {
+      const results = await window.backfillExpenses.fromGoogleSheets(expenses);
+      outputDiv.textContent = JSON.stringify(results, null, 2);
+      alert(`Import complete!\n✅ Imported: ${results.imported}\n↩️ Skipped (duplicates): ${results.skipped}\n❌ Errors: ${results.errors}`);
+    } else {
+      throw new Error("Backfill functions not loaded. Please refresh the page.");
+    }
+  } catch (error) {
+    console.error("Import error:", error);
+    alert("Error importing expenses: " + error.message);
+  }
+}
+
+async function processOldMessages() {
+  const resultsDiv = document.getElementById("backfill-results");
+  const outputDiv = document.getElementById("backfill-output");
+  resultsDiv.classList.remove("hidden");
+  outputDiv.textContent = "Processing old LINE messages...";
+
+  try {
+    if (window.backfillExpenses && window.backfillExpenses.processOldLineMessages) {
+      const results = await window.backfillExpenses.processOldLineMessages();
+      outputDiv.textContent = JSON.stringify(results, null, 2);
+      alert(`Processing complete!\n✅ Processed: ${results.processed}\n💰 Expenses found: ${results.expensesFound}\n❌ Errors: ${results.errors}`);
+    } else {
+      throw new Error("Backfill functions not loaded. Please refresh the page.");
+    }
+  } catch (error) {
+    console.error("Processing error:", error);
+    alert("Error processing messages: " + error.message);
+  }
+}
+
 

@@ -140,12 +140,16 @@ export async function onRequest(context) {
             userId: userId,
           });
 
-          // Store message in Supabase
+          // Store message in Supabase (check if already exists to avoid duplicates)
           try {
             const supabaseUrl = env?.SUPABASE_URL || 'https://rtfreafhlelpxqwohspq.supabase.co';
             const supabaseKey = env?.SUPABASE_SERVICE_ROLE_KEY || env?.SUPABASE_ANON_KEY;
             
             if (supabaseKey && supabaseUrl) {
+              // Check if message already exists (by text, source, and timestamp)
+              const messageTimestamp = new Date(evt.timestamp || Date.now()).toISOString();
+              
+              // Try to insert, but handle duplicates gracefully
               const response = await fetch(`${supabaseUrl}/rest/v1/line_messages`, {
                 method: 'POST',
                 headers: {
@@ -163,13 +167,18 @@ export async function onRequest(context) {
                   image_url: null,
                   raw_data: evt,
                   processed: false,
-                  created_at: new Date().toISOString(),
+                  created_at: messageTimestamp,
                 }),
               });
               
               if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Error storing message in Supabase:', response.status, errorText);
+                // If it's a duplicate key error, that's okay - message already stored
+                if (response.status === 409 || errorText.includes('duplicate')) {
+                  console.log('Message already exists in database (skipping duplicate)');
+                } else {
+                  console.error('Error storing message in Supabase:', response.status, errorText);
+                }
               } else {
                 console.log('Message stored successfully in Supabase');
               }

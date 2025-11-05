@@ -385,7 +385,7 @@ const POS_AUTH = {
   },
 
   signInWithGoogle: async () => {
-    // Handle OAuth redirect URL for file:// protocol
+    // Handle OAuth redirect URL for Cloudflare Pages
     let redirectUrl;
     if (window.location.protocol === "file:") {
       // For file:// protocol, we need to use a URL that can handle the callback
@@ -394,13 +394,21 @@ const POS_AUTH = {
       redirectUrl = window.location.href.split("?")[0]; // Remove query params if any
       console.warn("⚠️ Using file:// protocol. OAuth may not work. Please use HTTP server (localhost:8000)");
     } else {
-      // Use current origin + pathname for redirect
+      // Use current origin + pathname for redirect (works for Cloudflare Pages)
       redirectUrl = window.location.origin + window.location.pathname;
+      
+      // For Cloudflare Pages, ensure we're using the correct URL
+      if (window.location.hostname.includes('pages.dev')) {
+        console.log("🌐 Cloudflare Pages detected, using:", redirectUrl);
+      }
     }
 
     // Log the redirect URL for debugging
     console.log("🔐 OAuth redirect URL:", redirectUrl);
     console.log("💡 Make sure this URL is added to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs");
+    console.log("💡 For Cloudflare Pages, add both:");
+    console.log("   -", redirectUrl);
+    console.log("   -", redirectUrl + "/*");
 
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
