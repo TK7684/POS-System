@@ -102,6 +102,12 @@ export async function onRequest(context) {
       const events = data.events || [];
 
       console.log(`Received ${events.length} events from LINE`);
+      console.log('Environment variables check:', {
+        hasChannelSecret: !!env.LINE_CHANNEL_SECRET,
+        hasAccessToken: !!env.LINE_CHANNEL_ACCESS_TOKEN,
+        hasSupabaseUrl: !!env.SUPABASE_URL,
+        hasSupabaseKey: !!env.SUPABASE_SERVICE_ROLE_KEY,
+      });
 
       // Handle LINE verification request (empty events array)
       // Always return 200 OK for verification, even if env vars aren't fully configured
@@ -117,6 +123,7 @@ export async function onRequest(context) {
       }
 
       // Process each event
+      let processedCount = 0;
       for (const evt of events) {
         if (evt.type === 'message') {
           const messageText = evt.message?.text || '';
@@ -199,15 +206,44 @@ export async function onRequest(context) {
               const replyText = await processCommand(command, messageType, env);
               if (replyText) {
                 await replyToLine(evt.replyToken, replyText, env.LINE_CHANNEL_ACCESS_TOKEN);
+                processedCount++;
+              } else {
+                console.log('No reply text generated for command:', command);
               }
             } catch (replyError) {
               console.error('Error processing command:', replyError);
+              // Send error message to user
+              if (evt.replyToken && env?.LINE_CHANNEL_ACCESS_TOKEN) {
+                await replyToLine(evt.replyToken, 'เกิดข้อผิดพลาดในการประมวลผลคำสั่ง', env.LINE_CHANNEL_ACCESS_TOKEN);
+              }
+            }
+          } else {
+            // Log why message wasn't processed
+            if (!hasWakeWord) {
+              console.log('Message does not contain wake word "พอส"');
+            }
+            if (!env?.LINE_CHANNEL_ACCESS_TOKEN) {
+              console.error('LINE_CHANNEL_ACCESS_TOKEN not configured');
+            }
+            if (!evt.replyToken) {
+              console.log('No reply token available');
             }
           }
+          
+          processedCount++;
+        } else {
+          console.log('Event is not a message type:', evt.type);
         }
       }
+      
+      console.log(`Processed ${processedCount} out of ${events.length} events`);
 
-      return new Response(JSON.stringify({ success: true, eventsProcessed: events.length }), {
+      return new Response(JSON.stringify({ 
+        success: true, 
+        eventsProcessed: events.length,
+        processedCount: processedCount,
+        message: 'Webhook processed successfully'
+      }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
