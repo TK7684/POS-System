@@ -53,3 +53,8 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Note: Scheduled functions require Netlify Pro plan
+# For free tier, use external cron service (e.g., cron-job.org) to call:
+# https://jade-cannoli-b0d851.netlify.app/.netlify/functions/midnight-stock-alert
+# Schedule: Daily at 00:00 UTC (7 AM Thailand time)
+

@@ -168,11 +168,37 @@ logger.info("APP", "POS Application starting...", {
 });
 
 // ---------- Initialize Application ----------
-document.addEventListener("DOMContentLoaded", function () {
-  logger.info("APP", "DOM Content Loaded, starting initialization...");
+async function initializeApp() {
+  logger.info("APP", "Starting application initialization...");
   const initTimer = perf.start("app_initialization");
 
   try {
+    // Wait for Supabase to be ready
+    if (!window.supabaseLoaded) {
+      await new Promise((resolve) => {
+        if (window.supabaseLoaded) {
+          resolve();
+        } else {
+          window.addEventListener('supabase-loaded', resolve, { once: true });
+          // Timeout after 5 seconds
+          setTimeout(resolve, 5000);
+        }
+      });
+    }
+
+    // Wait for POS to be ready
+    if (!window.POS || !window.POS.auth) {
+      await new Promise((resolve) => {
+        if (window.POS && window.POS.auth) {
+          resolve();
+        } else {
+          window.addEventListener('pos-ready', resolve, { once: true });
+          // Timeout after 5 seconds
+          setTimeout(resolve, 5000);
+        }
+      });
+    }
+
     // Initialize UI elements
     logger.ui("Initializing event listeners...");
     initializeEventListeners();
@@ -185,6 +211,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (window.POS && window.POS.auth) {
       logger.auth("Setting up auth state listener...");
       window.POS.auth.onAuthStateChanged(handleAuthStateChange);
+      
+      // Check current auth state immediately
+      const currentUser = await window.POS.auth.getCurrentUser();
+      handleAuthStateChange(currentUser);
     } else {
       logger.error(
         "APP",
@@ -192,6 +222,8 @@ document.addEventListener("DOMContentLoaded", function () {
         new Error("Authentication system not loaded"),
       );
       showError("Authentication system not loaded");
+      // Still show auth screen
+      showAuthScreen();
     }
 
     appState.initialized = true;
@@ -200,8 +232,13 @@ document.addEventListener("DOMContentLoaded", function () {
   } catch (error) {
     logger.error("APP", "Application initialization failed", error);
     initTimer();
+    // Show auth screen on error
+    showAuthScreen();
   }
-});
+}
+
+// Start initialization when DOM is ready
+document.addEventListener("DOMContentLoaded", initializeApp);
 
 // ---------- Supabase Connection Status ----------
 function checkSupabaseConnection() {
@@ -352,6 +389,13 @@ function handleAuthStateChange(user) {
 async function signInWithGoogle() {
   const googleTimer = perf.start("google_signin");
   const btn = document.getElementById("google-signin-btn");
+  
+  if (!btn) {
+    logger.error("AUTH", "Google sign-in button not found");
+    showError("Google sign-in button not found. Please refresh the page.");
+    return;
+  }
+
   const originalText = btn.innerHTML;
 
   try {
@@ -359,31 +403,58 @@ async function signInWithGoogle() {
 
     // Show loading state
     btn.innerHTML =
-      '<div class="spinner" style="width:20px;height:20px;"></div> Signing in...';
+      '<div class="spinner" style="width:20px;height:20px;border:2px solid #ccc;border-top-color:#0891b2;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;margin-right:8px;"></div> Signing in...';
     btn.disabled = true;
 
+    // Wait for Supabase to be ready
+    if (!window.supabase) {
+      // Wait a bit for Supabase to initialize
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (!window.supabase) {
+        throw new Error("Supabase not initialized. Please refresh the page.");
+      }
+    }
+
+    // Check if POS auth is available
     if (!window.POS || !window.POS.auth) {
-      throw new Error("Authentication not available");
+      // Try to initialize if not available
+      if (window.supabase && !window.POS) {
+        // POS should be initialized in supabase-config.js
+        logger.warn("AUTH", "POS not initialized, waiting...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      if (!window.POS || !window.POS.auth) {
+        throw new Error("Authentication system not ready. Please refresh the page.");
+      }
     }
 
     logger.auth("Calling Supabase Google sign-in...");
     const result = await window.POS.auth.signInWithGoogle();
 
     googleTimer();
-    logger.auth("Google sign-in successful", {
-      user: result.user
-        ? {
-            uid: result.user.id,
-            email: result.user.email,
-            displayName: result.user.user_metadata?.display_name || result.user.user_metadata?.full_name || result.user.email?.split("@")[0],
-          }
-        : null,
-      note: "OAuth redirect may be in progress",
+    logger.auth("Google sign-in initiated", {
+      redirecting: result.redirecting,
+      note: "OAuth redirect in progress - user will be redirected and returned automatically",
     });
+
+    // OAuth redirects immediately, so show a message
+    btn.innerHTML = '🔄 Redirecting to Google...';
+    
+    // The auth state change listener will handle the actual sign-in when user returns
   } catch (error) {
     googleTimer();
     logger.error("AUTH", "Google sign-in failed", error);
-    showError("Google sign-in failed: " + error.message);
+    
+    // Show error message
+    const errorDiv = document.getElementById("login-error");
+    if (errorDiv) {
+      errorDiv.textContent = "Google sign-in failed: " + error.message;
+      errorDiv.classList.remove("hidden");
+    } else {
+      alert("Google sign-in failed: " + error.message);
+    }
 
     // Restore button
     btn.innerHTML = originalText;
@@ -457,15 +528,73 @@ async function logout() {
 function showAuthScreen() {
   logger.ui("Showing authentication screen");
   appState.currentView = "auth";
-  document.getElementById("auth-screen").classList.remove("hidden");
-  document.getElementById("pos-app").classList.add("hidden");
+  
+  const authScreen = document.getElementById("auth-screen");
+  const posApp = document.getElementById("pos-app");
+  
+  if (authScreen) {
+    authScreen.classList.remove("hidden");
+    authScreen.style.display = "block";
+  }
+  
+  if (posApp) {
+    posApp.classList.add("hidden");
+    posApp.style.display = "none";
+  }
+  
+  // Ensure all menu sections are also hidden
+  const menusPage = document.getElementById("menus-page");
+  const expensesHistoryPage = document.getElementById("expenses-history-page");
+  if (menusPage) {
+    menusPage.classList.add("hidden");
+    menusPage.style.display = "none";
+  }
+  if (expensesHistoryPage) {
+    expensesHistoryPage.classList.add("hidden");
+    expensesHistoryPage.style.display = "none";
+  }
+  
+  logger.ui("Auth screen displayed", { 
+    authVisible: !authScreen?.classList.contains("hidden"),
+    posHidden: posApp?.classList.contains("hidden")
+  });
 }
 
 function showMainApp() {
   logger.ui("Showing main POS application");
   appState.currentView = "main";
-  document.getElementById("auth-screen").classList.add("hidden");
-  document.getElementById("pos-app").classList.remove("hidden");
+  
+  const authScreen = document.getElementById("auth-screen");
+  const posApp = document.getElementById("pos-app");
+  
+  if (authScreen) {
+    authScreen.classList.add("hidden");
+    authScreen.style.display = "none";
+  }
+  
+  if (posApp) {
+    posApp.classList.remove("hidden");
+    posApp.style.display = "block";
+    // Ensure menu buttons are visible
+    loadInitialData();
+  }
+  
+  // Hide any other pages
+  const menusPage = document.getElementById("menus-page");
+  const expensesHistoryPage = document.getElementById("expenses-history-page");
+  if (menusPage) {
+    menusPage.classList.add("hidden");
+    menusPage.style.display = "none";
+  }
+  if (expensesHistoryPage) {
+    expensesHistoryPage.classList.add("hidden");
+    expensesHistoryPage.style.display = "none";
+  }
+  
+  logger.ui("Main app displayed", { 
+    authHidden: authScreen?.classList.contains("hidden"),
+    posVisible: !posApp?.classList.contains("hidden")
+  });
 }
 
 function updateUserInfo(user) {
@@ -1015,6 +1144,11 @@ class LineBotIntegration {
     // Set up webhook listener
     this.setupWebhook();
 
+    // Start polling for messages from Supabase
+    if (window.supabase) {
+      this.startPolling();
+    }
+
     logger.info("LINE", "Line Bot integration initialized");
   }
 
@@ -1024,16 +1158,28 @@ class LineBotIntegration {
     logger.info("LINE", "Webhook listener setup completed");
   }
 
-  async processMessage(message, source) {
+  async processMessage(message, source, imageUrl = null) {
     const processTimer = perf.start("process_line_message");
-    logger.info("LINE", "Processing Line message", { message, source });
+    logger.info("LINE", "Processing Line message", { message, source, imageUrl });
 
     try {
-      // Check if message contains slip or purchase information
-      if (this.isPurchaseSlip(message)) {
-        await this.processSlipPurchase(message);
+      // Check for confirmation responses first
+      if (this.isConfirmationResponse(message)) {
+        await this.handleConfirmationResponse(message);
+        return;
+      }
+
+      // Check message type and process accordingly
+      if (this.isPurchaseSlip(message) || imageUrl) {
+        await this.processSlipPurchase(message, imageUrl);
+      } else if (this.isSaleMessage(message)) {
+        await this.processSaleMessage(message);
+      } else if (this.isIngredientPurchase(message)) {
+        await this.processIngredientPurchase(message, imageUrl);
       } else if (this.isPurchaseText(message)) {
         await this.processTextPurchase(message);
+      } else if (this.isExpenseMessage(message)) {
+        await this.processExpenseMessage(message);
       }
 
       processTimer();
@@ -1044,6 +1190,61 @@ class LineBotIntegration {
 
       // Send error message back
       await this.replyMessage("เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่");
+    }
+  }
+
+  isConfirmationResponse(message) {
+    const text = message.toLowerCase().trim();
+    return text === "ยืนยัน" || 
+           text === "confirm" || 
+           text === "ใช่" ||
+           text === "แก้ไข" ||
+           text === "edit" ||
+           text === "ไม่ใช่" ||
+           text === "no";
+  }
+
+  async handleConfirmationResponse(message) {
+    const text = message.toLowerCase().trim();
+    const isConfirm = text === "ยืนยัน" || text === "confirm" || text === "ใช่";
+
+    // Find the most recent pending confirmation
+    if (!this.pendingConfirmations || Object.keys(this.pendingConfirmations).length === 0) {
+      await this.replyMessage("ไม่พบข้อมูลที่ต้องการยืนยัน");
+      return;
+    }
+
+    const confirmationIds = Object.keys(this.pendingConfirmations);
+    const latestId = confirmationIds.sort().reverse()[0]; // Most recent
+    const pending = this.pendingConfirmations[latestId];
+
+    if (isConfirm) {
+      // Confirm and save
+      try {
+        if (pending.type === "purchase") {
+          await this.saveIngredientPurchases(pending.data);
+          await this.learnFromTransaction(pending.data);
+          await this.replyMessage(
+            `✅ ยืนยันและบันทึกเรียบร้อย\n` +
+            `${this.formatPurchaseSummary(pending.data)}`
+          );
+        } else if (pending.type === "sale") {
+          await this.saveSale(pending.data);
+          await this.replyMessage(
+            `✅ ยืนยันและบันทึกการขายเรียบร้อย\n` +
+            `💰 ฿${pending.data.totalAmount}`
+          );
+        }
+        
+        delete this.pendingConfirmations[latestId];
+      } catch (error) {
+        logger.error("LINE", "Error confirming transaction", error);
+        await this.replyMessage("เกิดข้อผิดพลาดในการบันทึก");
+      }
+    } else {
+      // Cancel or edit
+      delete this.pendingConfirmations[latestId];
+      await this.replyMessage("❌ ยกเลิกการบันทึก กรุณาระบุข้อมูลใหม่");
     }
   }
 
@@ -1065,6 +1266,58 @@ class LineBotIntegration {
     return purchaseKeywords.some((keyword) =>
       message.toLowerCase().includes(keyword.toLowerCase()),
     );
+  }
+
+  isExpenseMessage(message) {
+    const expenseKeywords = [
+      "ค่าใช้จ่าย",
+      "ค่า",
+      "จ่าย",
+      "ค่าไฟ",
+      "ค่าน้ำ",
+      "ค่าเช่า",
+      "ค่าแรง",
+      "ค่าโทร",
+      "ค่าเน็ต",
+      "expense",
+      "paid",
+      "จ่ายเงิน",
+    ];
+    const text = message.toLowerCase();
+    return expenseKeywords.some((keyword) => text.includes(keyword.toLowerCase())) ||
+           /ค่า[\s]*[ก-ฮ]+\s+\d+/.test(text) || // ค่าXXX จำนวน
+           /\d+[\s]*บาท[\s]*(ค่า|จ่าย)/.test(text); // จำนวนบาท ค่า/จ่าย
+  }
+
+  isIngredientPurchase(message) {
+    // Patterns like: "น้ำแข็ง 2 กระสอบ 110 บาท"
+    const patterns = [
+      /[ก-ฮ]+\s+\d+\s+[ก-ฮ]+/i, // Thai word + number + Thai word (unit)
+      /\d+\s*[ก-ฮ]+\s+[ก-ฮ]+/i, // number + unit + ingredient
+    ];
+    const text = message.toLowerCase();
+    // Check if it contains ingredient-like patterns and price
+    return (patterns.some(p => p.test(text)) && 
+            (/\d+[\s]*บาท/.test(text) || /\d+[\s]*฿/.test(text))) ||
+           /[ก-ฮ]+\s*\d+[\s]*[ก-ฮ]*\s*\d+[\s]*(บาท|฿)/i.test(text);
+  }
+
+  isSaleMessage(message) {
+    // Patterns indicating sales like "จ่ายสด", "ขาย", menu items
+    const saleIndicators = [
+      "จ่ายสด",
+      "ขาย",
+      "ข้าว",
+      "สาหร่าย",
+      "กุ้งแช่",
+      "แซลมอน",
+      "ชุด",
+      "xL",
+      "XL",
+    ];
+    const text = message.toLowerCase();
+    return saleIndicators.some(indicator => text.includes(indicator)) ||
+           /จ่าย[\s]*\d+[\s]*[+=\d\s]*\d+[\s]*บาท/.test(text); // "จ่ายสด 478+80 =558 บาท"
   }
 
   async processSlipPurchase(message) {
@@ -1220,10 +1473,1046 @@ class LineBotIntegration {
     }
   }
 
-  async replyMessage(message) {
-    // Simulate Line reply - in production this would call Line API
-    logger.info("LINE", "Reply message prepared", { message });
-    showToast(`Line Bot: ${message}`);
+  async replyMessage(message, replyToken = null) {
+    logger.info("LINE", "Reply message prepared", { message, replyToken });
+    
+    // If we have a reply token, send via LINE API
+    if (replyToken && this.channelAccessToken) {
+      try {
+        const response = await fetch('https://api.line.me/v2/bot/message/reply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.channelAccessToken}`,
+          },
+          body: JSON.stringify({
+            replyToken: replyToken,
+            messages: [{
+              type: 'text',
+              text: message,
+            }],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error("LINE", "Failed to send LINE reply", { status: response.status, error: errorText });
+          showToast(`Line Bot: ${message}`);
+        } else {
+          logger.info("LINE", "Reply sent successfully");
+        }
+      } catch (error) {
+        logger.error("LINE", "Error sending LINE reply", error);
+        showToast(`Line Bot: ${message}`);
+      }
+    } else {
+      // Fallback: show toast
+      showToast(`Line Bot: ${message}`);
+    }
+  }
+
+  // Send push message to LINE group
+  async sendPushMessage(groupId, message) {
+    if (!this.channelAccessToken || !groupId) {
+      logger.warn("LINE", "Cannot send push message - missing token or group ID");
+      return;
+    }
+
+    try {
+      const response = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.channelAccessToken}`,
+        },
+        body: JSON.stringify({
+          to: groupId,
+          messages: [{
+            type: 'text',
+            text: message,
+          }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error("LINE", "Failed to send push message", { status: response.status, error: errorText });
+      } else {
+        logger.info("LINE", "Push message sent successfully");
+      }
+    } catch (error) {
+      logger.error("LINE", "Error sending push message", error);
+    }
+  }
+
+  // Expense processing methods
+  async processExpenseMessage(message) {
+    logger.info("LINE", "Processing expense message", { message });
+
+    try {
+      // Parse expense data from message
+      const expenseData = this.parseExpenseText(message);
+
+      if (!expenseData) {
+        await this.replyMessage("ไม่สามารถอ่านข้อมูลค่าใช้จ่ายได้ กรุณาระบุข้อมูลให้ชัดเจน เช่น: ค่าไฟ 500 บาท");
+        return;
+      }
+
+      // Compare with database and update if needed
+      const result = await this.compareAndUpdateExpense(expenseData);
+
+      if (result.action === "created") {
+        await this.replyMessage(
+          `✅ บันทึกค่าใช้จ่ายใหม่\n` +
+          `📋 ${expenseData.description}\n` +
+          `💰 ฿${expenseData.amount}\n` +
+          `📅 ${expenseData.date || "วันนี้"}`
+        );
+      } else if (result.action === "updated") {
+        await this.replyMessage(
+          `🔄 อัปเดตค่าใช้จ่าย\n` +
+          `📋 ${expenseData.description}\n` +
+          `💰 ฿${expenseData.amount} (เดิม: ฿${result.oldAmount})\n` +
+          `📅 ${expenseData.date || "วันนี้"}`
+        );
+      } else if (result.action === "duplicate") {
+        await this.replyMessage(
+          `ℹ️ พบค่าใช้จ่ายที่คล้ายกันอยู่แล้ว\n` +
+          `📋 ${result.existing.description}\n` +
+          `💰 ฿${result.existing.amount}\n` +
+          `📅 ${result.existing.expense_date}`
+        );
+      }
+    } catch (error) {
+      logger.error("LINE", "Error processing expense", error);
+      await this.replyMessage("เกิดข้อผิดพลาดในการบันทึกค่าใช้จ่าย");
+    }
+  }
+
+  parseExpenseText(message) {
+    logger.debug("LINE", "Parsing expense text", { message });
+
+    const text = message.trim();
+    
+    // Extract amount (various patterns)
+    const amountPatterns = [
+      /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/,
+      /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*฿/,
+      /฿\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/,
+      /ราคา[\s:]*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+      /(\d+(?:,\d{3})*(?:\.\d{2})?)/,
+    ];
+
+    let amount = null;
+    for (const pattern of amountPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        amount = parseFloat(match[1].replace(/,/g, ""));
+        if (amount > 0) break;
+      }
+    }
+
+    if (!amount || amount <= 0) {
+      return null;
+    }
+
+    // Extract category
+    let category = "other";
+    let subcategory = null;
+    const categoryMap = {
+      "ค่าไฟ": { category: "utility", subcategory: "electric" },
+      "ค่าไฟฟ้า": { category: "utility", subcategory: "electric" },
+      "ค่าน้ำ": { category: "utility", subcategory: "water" },
+      "ค่าเช่า": { category: "rental", subcategory: null },
+      "ค่าแรง": { category: "labor", subcategory: null },
+      "ค่าโทร": { category: "utility", subcategory: null },
+      "ค่าเน็ต": { category: "utility", subcategory: null },
+      "ค่าสาธารณูปโภค": { category: "utility", subcategory: null },
+    };
+
+    for (const [keyword, cat] of Object.entries(categoryMap)) {
+      if (text.includes(keyword)) {
+        category = cat.category;
+        subcategory = cat.subcategory;
+        break;
+      }
+    }
+
+    // Extract description
+    let description = text;
+    // Remove amount from description
+    description = description.replace(/\d+(?:,\d{3})*(?:\.\d{2})?\s*(บาท|฿)/g, "").trim();
+    // Use first 100 characters
+    description = description.substring(0, 100) || category;
+
+    // Extract date (default to today)
+    const today = new Date().toISOString().split("T")[0];
+    let expenseDate = today;
+    const datePatterns = [
+      /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
+      /(\d{4})-(\d{1,2})-(\d{1,2})/,
+      /วันนี้|today/i,
+      /เมื่อวาน|yesterday/i,
+    ];
+
+    for (const pattern of datePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        if (match[0].toLowerCase().includes("วันนี้") || match[0].toLowerCase().includes("today")) {
+          expenseDate = today;
+        } else if (match[0].toLowerCase().includes("เมื่อวาน") || match[0].toLowerCase().includes("yesterday")) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          expenseDate = yesterday.toISOString().split("T")[0];
+        } else if (match[1] && match[2] && match[3]) {
+          // Format: DD/MM/YYYY or YYYY-MM-DD
+          if (pattern.source.includes("\\d{4}")) {
+            expenseDate = `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+          } else {
+            expenseDate = `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+          }
+        }
+        break;
+      }
+    }
+
+    // Extract payment method
+    let paymentMethod = "cash";
+    if (text.includes("โอน") || text.includes("transfer")) {
+      paymentMethod = "transfer";
+    } else if (text.includes("บัตร") || text.includes("card")) {
+      paymentMethod = "credit_card";
+    }
+
+    // Extract vendor
+    let vendor = null;
+    const vendorPatterns = [
+      /ร้าน[\s]*([^\n]+)/i,
+      /จาก[\s]*([^\n]+)/i,
+      /ที่[\s]*([^\n]+)/i,
+    ];
+
+    for (const pattern of vendorPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        vendor = match[1].trim().substring(0, 100);
+        break;
+      }
+    }
+
+    return {
+      category,
+      subcategory,
+      description,
+      amount,
+      expense_date: expenseDate,
+      payment_method: paymentMethod,
+      vendor,
+      source: "line_bot",
+      original_message: message,
+    };
+  }
+
+  async compareAndUpdateExpense(expenseData) {
+    logger.info("LINE", "Comparing expense with database", expenseData);
+
+    try {
+      if (!window.supabase || !window.POS) {
+        throw new Error("Supabase not available");
+      }
+
+      // Look for similar expenses in the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const startDate = sevenDaysAgo.toISOString().split("T")[0];
+
+      const { data: recentExpenses, error } = await window.supabase
+        .from("expenses")
+        .select("*")
+        .eq("category", expenseData.category)
+        .gte("expense_date", startDate)
+        .lte("expense_date", expenseData.expense_date)
+        .order("expense_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) {
+        logger.error("LINE", "Error querying expenses", error);
+        throw error;
+      }
+
+      // Check for similar expenses (same category, same date, similar amount)
+      const similarExpenses = (recentExpenses || []).filter((exp) => {
+        const sameDate = exp.expense_date === expenseData.expense_date;
+        const sameCategory = exp.category === expenseData.category;
+        const sameSubcategory = (exp.subcategory || null) === (expenseData.subcategory || null);
+        const similarAmount = Math.abs(exp.amount - expenseData.amount) <= 10; // Within 10 baht
+        
+        // Check description similarity
+        const descSimilarity = this.calculateSimilarity(
+          (exp.description || "").toLowerCase(),
+          (expenseData.description || "").toLowerCase()
+        );
+
+        return sameDate && sameCategory && sameSubcategory && similarAmount && descSimilarity > 0.5;
+      });
+
+      if (similarExpenses.length > 0) {
+        // Found similar expense - check if should update
+        const mostSimilar = similarExpenses[0];
+        const amountDiff = Math.abs(mostSimilar.amount - expenseData.amount);
+        
+        // If amount is different by more than 1%, update it
+        if (amountDiff > mostSimilar.amount * 0.01) {
+          const { data: updated, error: updateError } = await window.supabase
+            .from("expenses")
+            .update({
+              amount: expenseData.amount,
+              description: expenseData.description,
+              vendor: expenseData.vendor || mostSimilar.vendor,
+              payment_method: expenseData.payment_method,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", mostSimilar.id)
+            .select()
+            .single();
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          logger.info("LINE", "Expense updated", { old: mostSimilar, new: updated });
+          return {
+            action: "updated",
+            expense: updated,
+            oldAmount: mostSimilar.amount,
+          };
+        } else {
+          // Very similar, treat as duplicate
+          return {
+            action: "duplicate",
+            existing: mostSimilar,
+          };
+        }
+      } else {
+        // No similar expense found - create new
+        const { data: { user } } = await window.supabase.auth.getUser();
+        
+        const newExpense = {
+          user_id: user?.id,
+          category: expenseData.category,
+          subcategory: expenseData.subcategory,
+          description: expenseData.description,
+          amount: expenseData.amount,
+          expense_date: expenseData.expense_date,
+          payment_method: expenseData.payment_method,
+          vendor: expenseData.vendor,
+          notes: `บันทึกจาก Line Bot: ${expenseData.original_message}`,
+          status: "approved",
+        };
+
+        const { data: created, error: createError } = await window.supabase
+          .from("expenses")
+          .insert([newExpense])
+          .select()
+          .single();
+
+        if (createError) {
+          throw createError;
+        }
+
+        logger.info("LINE", "Expense created", created);
+        return {
+          action: "created",
+          expense: created,
+        };
+      }
+    } catch (error) {
+      logger.error("LINE", "Error comparing/updating expense", error);
+      throw error;
+    }
+  }
+
+  calculateSimilarity(str1, str2) {
+    // Simple similarity calculation using common words
+    const words1 = str1.split(/\s+/).filter(w => w.length > 2);
+    const words2 = str2.split(/\s+/).filter(w => w.length > 2);
+    
+    if (words1.length === 0 || words2.length === 0) return 0;
+    
+    const commonWords = words1.filter(w => words2.includes(w));
+    return commonWords.length / Math.max(words1.length, words2.length);
+  }
+
+  // Levenshtein distance for fuzzy matching
+  levenshteinDistance(str1, str2) {
+    const matrix = [];
+    const len1 = str1.length;
+    const len2 = str2.length;
+
+    for (let i = 0; i <= len1; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= len2; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        if (str1[i - 1] === str2[j - 1]) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1 // deletion
+          );
+        }
+      }
+    }
+
+    return matrix[len1][len2];
+  }
+
+  // Find closest ingredient match using fuzzy matching and learning data
+  async findClosestIngredient(searchName) {
+    try {
+      if (!window.POS || !window.POS.database) {
+        return null;
+      }
+
+      // Check learning data for known mappings first
+      const learningKey = "line_bot_learning";
+      const learning = JSON.parse(localStorage.getItem(learningKey) || "{}");
+      
+      if (learning.ingredientMappings && learning.ingredientMappings[searchName]) {
+        const mappedName = learning.ingredientMappings[searchName];
+        logger.info("LINE", "Using learned mapping", { search: searchName, mapped: mappedName });
+        searchName = mappedName; // Use the mapped name
+      }
+
+      // Get all ingredients
+      const snapshot = await window.POS.database.ingredients.get();
+      const ingredients = [];
+      snapshot.forEach((doc) => {
+        ingredients.push({ id: doc.id, name: doc.data().name });
+      });
+
+      if (ingredients.length === 0) return null;
+
+      // Calculate similarity scores
+      const scores = ingredients.map(ing => {
+        const distance = this.levenshteinDistance(
+          searchName.toLowerCase(),
+          ing.name.toLowerCase()
+        );
+        const maxLen = Math.max(searchName.length, ing.name.length);
+        const similarity = 1 - (distance / maxLen);
+        return { ingredient: ing, similarity, distance };
+      });
+
+      // Sort by similarity (highest first)
+      scores.sort((a, b) => b.similarity - a.similarity);
+
+      // Return best match if similarity > 0.6 (60%)
+      const bestMatch = scores[0];
+      if (bestMatch && bestMatch.similarity > 0.6) {
+        logger.info("LINE", "Fuzzy matched ingredient", {
+          search: searchName,
+          found: bestMatch.ingredient.name,
+          similarity: bestMatch.similarity,
+        });
+        return bestMatch.ingredient;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error("LINE", "Error finding ingredient", error);
+      return null;
+    }
+  }
+
+  // Parse ingredient purchase message
+  async parseIngredientPurchase(message, imageUrl = null) {
+    logger.debug("LINE", "Parsing ingredient purchase", { message, imageUrl });
+
+    const text = message.trim();
+    const items = [];
+    const lines = text.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+    // Pattern 1: "น้ำแข็ง 2 กระสอบ 110 บาท" (single line)
+    const pattern1 = /([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s+([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s*บาท/i;
+    
+    // Pattern 2: Multi-line format
+    // "น้ำแข็ง 2 กระสอบ\n110 บาท"
+    if (lines.length >= 2) {
+      // Check if first line is ingredient and second is price
+      const line1 = lines[0];
+      const line2 = lines[1];
+      
+      const ingredientPattern = /([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s+([ก-ฮ]+)/i;
+      const pricePattern = /(\d+(?:\.\d+)?)\s*บาท/i;
+      
+      const ingMatch = line1.match(ingredientPattern);
+      const priceMatch = line2.match(pricePattern);
+      
+      if (ingMatch && priceMatch) {
+        const ingredientName = ingMatch[1].trim();
+        const quantity = parseFloat(ingMatch[2]);
+        const unit = ingMatch[3].trim();
+        const price = parseFloat(priceMatch[1]);
+        
+        const matchedIngredient = await this.findClosestIngredient(ingredientName);
+        
+        items.push({
+          ingredientName: matchedIngredient?.name || ingredientName,
+          ingredientId: matchedIngredient?.id || null,
+          quantity,
+          unit,
+          price,
+          confidence: matchedIngredient ? 0.9 : 0.7,
+          originalText: `${line1} ${line2}`,
+        });
+      }
+    }
+
+    // Pattern 3: Single line "น้ำแข็ง 2 กระสอบ 110 บาท"
+    let match1 = text.match(pattern1);
+    if (match1 && items.length === 0) {
+      const ingredientName = match1[1].trim();
+      const quantity = parseFloat(match1[2]);
+      const unit = match1[3].trim();
+      const price = parseFloat(match1[4]);
+      
+      const matchedIngredient = await this.findClosestIngredient(ingredientName);
+      
+      items.push({
+        ingredientName: matchedIngredient?.name || ingredientName,
+        ingredientId: matchedIngredient?.id || null,
+        quantity,
+        unit,
+        price,
+        confidence: matchedIngredient ? 0.9 : 0.7,
+        originalText: match1[0],
+      });
+    }
+
+    // Pattern 4: Multiple items with total price or missing prices
+    // "หอมเจีย 1 โล + ค่าส่ง" (missing price, need to extract from image)
+    if (items.length === 0) {
+      const pattern2 = /([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s+([ก-ฮ]+)/gi;
+      const matches2 = [...text.matchAll(pattern2)];
+      
+      if (matches2.length > 0) {
+        // Try to extract prices from image if available
+        let prices = [];
+        if (imageUrl) {
+          prices = await this.extractPricesFromImage(imageUrl);
+        }
+        
+        // Also try to find prices in the message text
+        const pricePattern = /(\d+(?:\.\d+)?)\s*บาท/g;
+        const priceMatches = [...text.matchAll(pricePattern)];
+        const textPrices = priceMatches.map(m => parseFloat(m[1]));
+        
+        // Combine prices from image and text
+        prices = prices.length > 0 ? prices : textPrices;
+        
+        matches2.forEach((match, index) => {
+          const ingredientName = match[1].trim();
+          const quantity = parseFloat(match[2]);
+          const unit = match[3].trim();
+          const price = prices[index] || null;
+          
+          const matchedIngredient = await this.findClosestIngredient(ingredientName);
+          
+          items.push({
+            ingredientName: matchedIngredient?.name || ingredientName,
+            ingredientId: matchedIngredient?.id || null,
+            quantity,
+            unit,
+            price,
+            confidence: price ? (matchedIngredient ? 0.8 : 0.6) : 0.5,
+            originalText: match[0],
+            needsConfirmation: !price || !matchedIngredient,
+          });
+        });
+      }
+    }
+
+    // Extract total price if available
+    const totalPattern = /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/i;
+    const totalMatch = text.match(totalPattern);
+    const totalPrice = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, "")) : null;
+
+    return {
+      items,
+      totalPrice,
+      vendor: this.extractVendor(text),
+      date: this.extractDate(text),
+      originalMessage: message,
+      imageUrl,
+      confidence: items.length > 0 ? Math.min(...items.map(i => i.confidence)) : 0,
+    };
+  }
+
+  // Extract prices from image/slip (simplified - would need OCR in production)
+  async extractPricesFromImage(imageUrl) {
+    // Placeholder for OCR integration
+    // In production, this would call an OCR service
+    logger.info("LINE", "Extracting prices from image", { imageUrl });
+    
+    // For now, return empty array - would need actual OCR service
+    // This could integrate with Google Cloud Vision API, Tesseract, etc.
+    return [];
+  }
+
+  // Process ingredient purchase
+  async processIngredientPurchase(message, imageUrl = null) {
+    logger.info("LINE", "Processing ingredient purchase", { message, imageUrl });
+
+    try {
+      const purchaseData = await this.parseIngredientPurchase(message, imageUrl);
+
+      if (!purchaseData || purchaseData.items.length === 0) {
+        await this.replyMessage("ไม่สามารถอ่านข้อมูลการซื้อได้ กรุณาระบุข้อมูลให้ชัดเจน");
+        return;
+      }
+
+      // Check if needs confirmation
+      if (purchaseData.confidence < 0.7 || purchaseData.items.some(i => i.needsConfirmation)) {
+        const confirmationId = this.requestConfirmation(purchaseData);
+        await this.replyMessage(
+          `❓ ต้องการยืนยันข้อมูล:\n` +
+          `${this.formatPurchaseForConfirmation(purchaseData)}\n` +
+          `พิมพ์ "ยืนยัน" หรือ "แก้ไข" เพื่อดำเนินการ`
+        );
+        return;
+      }
+
+      // Save purchase
+      await this.saveIngredientPurchases(purchaseData);
+      
+      // Learn from this transaction
+      await this.learnFromTransaction(purchaseData);
+
+      await this.replyMessage(
+        `✅ บันทึกการซื้อวัตถุดิบเรียบร้อย\n` +
+        `${this.formatPurchaseSummary(purchaseData)}`
+      );
+    } catch (error) {
+      logger.error("LINE", "Error processing ingredient purchase", error);
+      await this.replyMessage("เกิดข้อผิดพลาดในการบันทึกการซื้อ");
+    }
+  }
+
+  // Process sale message
+  async processSaleMessage(message) {
+    logger.info("LINE", "Processing sale message", { message });
+
+    try {
+      const saleData = this.parseSaleMessage(message);
+
+      if (!saleData) {
+        await this.replyMessage("ไม่สามารถอ่านข้อมูลการขายได้");
+        return;
+      }
+
+      // Check if needs confirmation
+      if (saleData.confidence < 0.7) {
+        const confirmationId = this.requestConfirmation(saleData, "sale");
+        await this.replyMessage(
+          `❓ ต้องการยืนยันข้อมูลการขาย:\n` +
+          `${this.formatSaleForConfirmation(saleData)}\n` +
+          `พิมพ์ "ยืนยัน" หรือ "แก้ไข" เพื่อดำเนินการ`
+        );
+        return;
+      }
+
+      // Save sale
+      await this.saveSale(saleData);
+
+      await this.replyMessage(
+        `✅ บันทึกการขายเรียบร้อย\n` +
+        `💰 ฿${saleData.totalAmount}\n` +
+        `📋 ${saleData.items.length} รายการ`
+      );
+    } catch (error) {
+      logger.error("LINE", "Error processing sale", error);
+      await this.replyMessage("เกิดข้อผิดพลาดในการบันทึกการขาย");
+    }
+  }
+
+  // Parse sale message
+  parseSaleMessage(message) {
+    const text = message.trim();
+    
+    // Pattern: "จ่ายสด 478+80 =558 บาท ข้าว2 สาหร่าย1 กุ้งแช่ 12-13 ตัว 1 ชุด แซลมอนดอง xL 150 กรัม"
+    const totalMatch = text.match(/(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/i);
+    const totalAmount = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, "")) : null;
+
+    // Extract menu items
+    const items = [];
+    
+    // Match menu patterns
+    const menuPatterns = [
+      /(ข้าว)\s*(\d+)/i,
+      /(สาหร่าย)\s*(\d+)/i,
+      /(กุ้งแช่)\s*(\d+)[-]?(\d+)?\s*(ตัว|ชุด)/i,
+      /(แซลมอนดอง)\s*(xL|XL)\s*(\d+)\s*(กรัม)/i,
+    ];
+
+    menuPatterns.forEach(pattern => {
+      const match = text.match(pattern);
+      if (match) {
+        const menuName = match[1];
+        const quantity = parseFloat(match[2] || match[3] || 1);
+        items.push({ menuName, quantity });
+      }
+    });
+
+    return {
+      items,
+      totalAmount,
+      paymentMethod: "cash",
+      date: new Date().toISOString().split("T")[0],
+      confidence: totalAmount && items.length > 0 ? 0.8 : 0.5,
+      originalMessage: message,
+    };
+  }
+
+  // Request confirmation for uncertain data
+  requestConfirmation(data, type = "purchase") {
+    const confirmationId = `confirm_${Date.now()}`;
+    
+    // Store pending confirmation
+    if (!this.pendingConfirmations) {
+      this.pendingConfirmations = {};
+    }
+    
+    this.pendingConfirmations[confirmationId] = {
+      data,
+      type,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Auto-expire after 5 minutes
+    setTimeout(() => {
+      delete this.pendingConfirmations[confirmationId];
+    }, 5 * 60 * 1000);
+
+    return confirmationId;
+  }
+
+  // Format purchase for confirmation
+  formatPurchaseForConfirmation(purchaseData) {
+    return purchaseData.items.map(item => 
+      `- ${item.ingredientName} ${item.quantity} ${item.unit} ${item.price ? `฿${item.price}` : '(ราคาไม่ระบุ)'}`
+    ).join("\n") + 
+    (purchaseData.totalPrice ? `\n💰 รวม: ฿${purchaseData.totalPrice}` : "");
+  }
+
+  // Format sale for confirmation
+  formatSaleForConfirmation(saleData) {
+    return saleData.items.map(item => 
+      `- ${item.menuName} x${item.quantity}`
+    ).join("\n") + 
+    `\n💰 รวม: ฿${saleData.totalAmount}`;
+  }
+
+  // Save ingredient purchases
+  async saveIngredientPurchases(purchaseData) {
+    try {
+      for (const item of purchaseData.items) {
+        if (!item.ingredientId) {
+          // Try to find ingredient again
+          const found = await this.findClosestIngredient(item.ingredientName);
+          if (found) item.ingredientId = found.id;
+        }
+
+        if (item.ingredientId && item.price) {
+          await window.POS.functions.processPurchase({
+            ingredient_id: item.ingredientId,
+            quantity: item.quantity,
+            unit: item.unit,
+            total_amount: item.price,
+            vendor: purchaseData.vendor || "Unknown",
+          });
+        }
+      }
+    } catch (error) {
+      logger.error("LINE", "Error saving purchases", error);
+      throw error;
+    }
+  }
+
+  // Save sale
+  async saveSale(saleData) {
+    try {
+      // Find menu IDs
+      for (const item of saleData.items) {
+        const { data: menus } = await window.supabase
+          .from("menus")
+          .select("id, price")
+          .ilike("name", `%${item.menuName}%`)
+          .limit(1);
+
+        if (menus && menus.length > 0) {
+          const menu = menus[0];
+          await window.POS.functions.processSale({
+            menu_id: menu.id,
+            quantity: item.quantity,
+            unit_price: menu.price,
+            platform: "ร้าน",
+          });
+        }
+      }
+    } catch (error) {
+      logger.error("LINE", "Error saving sale", error);
+      throw error;
+    }
+  }
+
+  // Learn from transaction to improve future parsing
+  async learnFromTransaction(transactionData) {
+    try {
+      // Store learning data in local storage or database
+      const learningKey = "line_bot_learning";
+      let learning = JSON.parse(localStorage.getItem(learningKey) || "{}");
+
+      // Update ingredient name mappings
+      transactionData.items.forEach(item => {
+        if (item.ingredientId && item.originalText) {
+          const originalName = item.originalText.match(/[ก-ฮ]+/)?.[0];
+          if (originalName && originalName !== item.ingredientName) {
+            if (!learning.ingredientMappings) learning.ingredientMappings = {};
+            learning.ingredientMappings[originalName] = item.ingredientName;
+          }
+        }
+      });
+
+      // Update pattern recognition
+      if (!learning.patterns) learning.patterns = [];
+      learning.patterns.push({
+        message: transactionData.originalMessage,
+        parsed: transactionData,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Keep only last 100 patterns
+      if (learning.patterns.length > 100) {
+        learning.patterns = learning.patterns.slice(-100);
+      }
+
+      localStorage.setItem(learningKey, JSON.stringify(learning));
+      logger.info("LINE", "Learned from transaction", learning);
+    } catch (error) {
+      logger.error("LINE", "Error learning from transaction", error);
+    }
+  }
+
+  // Helper methods
+  extractVendor(text) {
+    const vendorPatterns = [
+      /ร้าน[\s]*([^\n]+)/i,
+      /จาก[\s]*([^\n]+)/i,
+      /ที่[\s]*([^\n]+)/i,
+    ];
+    for (const pattern of vendorPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim().substring(0, 100);
+      }
+    }
+    return null;
+  }
+
+  extractDate(text) {
+    const today = new Date().toISOString().split("T")[0];
+    const datePatterns = [
+      /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
+      /(\d{4})-(\d{1,2})-(\d{1,2})/,
+    ];
+    for (const pattern of datePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && match[2] && match[3]) {
+        if (pattern.source.includes("\\d{4}")) {
+          return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+        } else {
+          return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+        }
+      }
+    }
+    return today;
+  }
+
+  formatPurchaseSummary(purchaseData) {
+    return purchaseData.items.map(item => 
+      `📦 ${item.ingredientName} ${item.quantity} ${item.unit} ฿${item.price || 0}`
+    ).join("\n") + 
+    (purchaseData.totalPrice ? `\n💰 รวม: ฿${purchaseData.totalPrice}` : "");
+  }
+
+  // Poll for new LINE messages from Supabase and check for unrecorded expenses
+  async pollLineMessages() {
+    try {
+      if (!window.supabase) return;
+
+      // Get unprocessed messages
+      const { data: messages, error } = await window.supabase
+        .from('line_messages')
+        .select('*')
+        .eq('processed', false)
+        .order('created_at', { ascending: true })
+        .limit(10);
+
+      if (error) {
+        logger.error('LINE', 'Error fetching LINE messages', error);
+        return;
+      }
+
+      // Process each message
+      for (const msg of messages || []) {
+        try {
+          const messageText = msg.message_text || '';
+          
+          // Check if it's an expense message and not already recorded
+          if (this.isExpenseMessage(messageText)) {
+            const expenseRecorded = await this.checkIfExpenseRecorded(messageText);
+            if (!expenseRecorded) {
+              // Process and record the expense
+              await this.processExpenseMessage(messageText);
+            }
+          } else {
+            // Process other types of messages
+            await this.processMessage(
+              messageText,
+              msg.source_type || 'user',
+              msg.image_url || null
+            );
+          }
+
+          // Mark as processed
+          await window.supabase
+            .from('line_messages')
+            .update({ 
+              processed: true,
+              processed_at: new Date().toISOString()
+            })
+            .eq('id', msg.id);
+        } catch (processError) {
+          logger.error('LINE', 'Error processing message', processError);
+          // Mark as processed even on error to avoid infinite loop
+          await window.supabase
+            .from('line_messages')
+            .update({ 
+              processed: true,
+              processed_at: new Date().toISOString()
+            })
+            .eq('id', msg.id);
+        }
+      }
+    } catch (error) {
+      logger.error('LINE', 'Error polling LINE messages', error);
+    }
+  }
+
+  // Check if expense is already recorded in database
+  async checkIfExpenseRecorded(messageText) {
+    try {
+      const expenseData = this.parseExpenseText(messageText);
+      if (!expenseData || !expenseData.amount) {
+        return false;
+      }
+
+      // Check recent expenses (last 30 days)
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+
+      const { data: expenses, error } = await window.supabase
+        .from('expenses')
+        .select('*')
+        .gte('expense_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('expense_date', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        logger.error('LINE', 'Error checking expenses', error);
+        return false;
+      }
+
+      // Check for duplicates
+      const duplicate = this.findDuplicateInExpenses(expenseData, expenses || []);
+      return !!duplicate;
+    } catch (error) {
+      logger.error('LINE', 'Error checking if expense recorded', error);
+      return false;
+    }
+  }
+
+  // Find duplicate in expenses list
+  findDuplicateInExpenses(newExpense, existingExpenses) {
+    if (!existingExpenses || existingExpenses.length === 0) {
+      return null;
+    }
+
+    const amountTolerance = 10; // Within 10 baht
+    const similarityThreshold = 0.7; // 70% similarity
+
+    for (const existing of existingExpenses) {
+      // Check amount similarity
+      const amountDiff = Math.abs(parseFloat(existing.amount) - newExpense.amount);
+      if (amountDiff > amountTolerance) {
+        continue;
+      }
+
+      // Check description similarity
+      const similarity = this.calculateSimilarity(
+        (newExpense.description || '').toLowerCase(),
+        (existing.description || '').toLowerCase()
+      );
+
+      if (similarity >= similarityThreshold) {
+        // Check date similarity (within 3 days)
+        const existingDate = new Date(existing.expense_date);
+        const newDate = newExpense.expense_date ? new Date(newExpense.expense_date) : new Date();
+        const daysDiff = Math.abs((existingDate - newDate) / (1000 * 60 * 60 * 24));
+
+        if (daysDiff <= 3) {
+          return existing;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // Start polling for messages
+  startPolling() {
+    // Poll every 5 seconds
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+    }
+    
+    this.pollInterval = setInterval(() => {
+      this.pollLineMessages();
+    }, 5000);
+
+    // Also poll immediately
+    this.pollLineMessages();
+    
+    logger.info("LINE", "Started polling for messages");
+  }
+
+  // Stop polling
+  stopPolling() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+    logger.info("LINE", "Stopped polling for messages");
   }
 }
 
@@ -1269,20 +2558,42 @@ async function initializeLineBot() {
   logger.info("LINE", "Starting Line Bot initialization...");
 
   try {
-    // Configuration - these should be set in your Firebase Functions or environment
-    window.lineBot.channelAccessToken = "YOUR_LINE_CHANNEL_ACCESS_TOKEN"; // Replace with your Line channel access token
-    window.lineBot.webhookUrl = "YOUR_WEBHOOK_URL"; // Replace with your webhook URL
-    window.lineBot.groupId = "YOUR_LINE_GROUP_ID"; // Replace with your Line group ID
+    // Get configuration from config/integrations.js or use defaults
+    const config = window.LINE_BOT_CONFIG || {};
+    
+    window.lineBot.channelAccessToken = config.CHANNEL_ACCESS_TOKEN || 
+      process.env?.LINE_CHANNEL_ACCESS_TOKEN || 
+      "YOUR_LINE_CHANNEL_ACCESS_TOKEN";
+    
+    window.lineBot.channelSecret = config.CHANNEL_SECRET || 
+      process.env?.LINE_CHANNEL_SECRET || 
+      "YOUR_LINE_CHANNEL_SECRET";
+    
+    window.lineBot.webhookUrl = config.WEBHOOK_URL || 
+      process.env?.LINE_WEBHOOK_URL || 
+      "YOUR_WEBHOOK_URL";
+    
+    window.lineBot.groupId = (config.GROUP_IDS && config.GROUP_IDS[0]) || 
+      process.env?.LINE_GROUP_ID || 
+      "YOUR_LINE_GROUP_ID";
 
     await window.lineBot.initialize();
 
     lineTimer();
     logger.info("LINE", "Line Bot initialized successfully", {
       connected: true,
-      webhookConfigured: !!window.lineBot.webhookUrl,
+      webhookConfigured: !!window.lineBot.webhookUrl && window.lineBot.webhookUrl !== "YOUR_WEBHOOK_URL",
+      hasToken: !!window.lineBot.channelAccessToken && window.lineBot.channelAccessToken !== "YOUR_LINE_CHANNEL_ACCESS_TOKEN",
     });
 
-    showToast("💬 Line Bot initialized successfully");
+    if (window.lineBot.webhookUrl === "YOUR_WEBHOOK_URL") {
+      showToast("⚠️ Line Bot: Please configure webhook URL in config/integrations.js");
+    } else if (window.lineBot.channelAccessToken === "YOUR_LINE_CHANNEL_ACCESS_TOKEN") {
+      showToast("⚠️ Line Bot: Please configure Channel Access Token");
+    } else {
+      showToast("💬 Line Bot initialized successfully");
+    }
+    
     return true;
   } catch (error) {
     lineTimer();
@@ -3484,6 +4795,376 @@ function openExpensesModal() {
 }
 function closeExpensesModal() {
   document.getElementById("expenses-modal")?.classList.add("hidden");
+}
+
+// Menu Listing Page Functions
+let menusState = {
+  search: "",
+  status: "all",
+};
+
+function openMenusPage() {
+  document.getElementById("pos-app")?.classList.add("hidden");
+  document.getElementById("menus-page")?.classList.remove("hidden");
+  loadMenus();
+}
+
+function closeMenusPage() {
+  document.getElementById("menus-page")?.classList.add("hidden");
+  document.getElementById("pos-app")?.classList.remove("hidden");
+}
+
+let menuSearchTimeout;
+function debounceMenuSearch() {
+  clearTimeout(menuSearchTimeout);
+  menuSearchTimeout = setTimeout(() => {
+    loadMenus();
+  }, 500);
+}
+
+async function loadMenus() {
+  const tableBody = document.getElementById("menus-table");
+  if (!tableBody) return;
+
+  // Update state from filters
+  menusState.search = document.getElementById("menu-search")?.value || "";
+  menusState.status = document.getElementById("menu-filter-status")?.value || "all";
+
+  // Show loading
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="8" class="text-center p-8">
+        <div class="spinner" style="margin: 20px auto"></div>
+      </td>
+    </tr>
+  `;
+
+  try {
+    const isActive = menusState.status === "all" ? null : menusState.status === "active";
+    const result = await window.POS.functions.getMenusWithAvailability({
+      search: menusState.search,
+      isActive: isActive,
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || "Failed to load menus");
+    }
+
+    const menus = result.menus || [];
+
+    // Calculate summary stats
+    const totalMenus = menus.length;
+    const availableMenus = menus.filter(m => m.available_dishes !== null && m.available_dishes > 0).length;
+    const outOfStockMenus = menus.filter(m => m.available_dishes !== null && m.available_dishes === 0).length;
+    const menusWithProfit = menus.filter(m => m.profit !== null && !isNaN(m.profit));
+    const avgProfit = menusWithProfit.length > 0 
+      ? menusWithProfit.reduce((sum, m) => sum + (m.profit || 0), 0) / menusWithProfit.length 
+      : 0;
+
+    // Update summary
+    document.getElementById("menu-total-count").textContent = totalMenus;
+    document.getElementById("menu-available-count").textContent = availableMenus;
+    document.getElementById("menu-out-of-stock-count").textContent = outOfStockMenus;
+    document.getElementById("menu-avg-profit").textContent = `฿${avgProfit.toFixed(2)}`;
+
+    // Render table
+    if (menus.length === 0) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center p-8 text-gray-500">
+            ไม่พบข้อมูลเมนู
+          </td>
+        </tr>
+      `;
+    } else {
+      tableBody.innerHTML = menus.map(menu => {
+        const price = parseFloat(menu.price) || 0;
+        const cost = menu.calculated_cost || 0;
+        const profit = menu.profit || 0;
+        const profitMargin = menu.profit_margin || 0;
+        const availableDishes = menu.available_dishes;
+
+        // Format available dishes
+        let availableDisplay = "-";
+        let availableClass = "";
+        if (availableDishes !== null) {
+          if (availableDishes === 0) {
+            availableDisplay = '<span class="text-red-600 font-bold">0</span>';
+            availableClass = "text-red-600";
+          } else if (availableDishes < 5) {
+            availableDisplay = `<span class="text-yellow-600 font-bold">${availableDishes}</span>`;
+            availableClass = "text-yellow-600";
+          } else {
+            availableDisplay = `<span class="text-green-600 font-bold">${availableDishes}</span>`;
+            availableClass = "text-green-600";
+          }
+        }
+
+        // Profit color
+        const profitClass = profit >= 0 ? "text-green-600" : "text-red-600";
+        const profitMarginClass = profitMargin >= 30 ? "text-green-600" : 
+                                   profitMargin >= 15 ? "text-yellow-600" : "text-red-600";
+
+        // Status badge
+        const statusBadge = menu.is_active && menu.is_available
+          ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">พร้อมขาย</span>'
+          : !menu.is_active
+          ? '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">ไม่ใช้งาน</span>'
+          : '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">ไม่พร้อมขาย</span>';
+
+        return `
+          <tr class="border-b hover:bg-gray-50">
+            <td class="p-2 text-sm font-mono">${menu.menu_id || "-"}</td>
+            <td class="p-2 text-sm">
+              <div class="font-medium">${menu.name || "-"}</div>
+              ${menu.description ? `<div class="text-xs text-gray-500">${menu.description}</div>` : ""}
+              ${menu.recipe_count > 0 ? `<div class="text-xs text-gray-400">มี ${menu.recipe_count} วัตถุดิบ</div>` : "<div class=\"text-xs text-gray-400\">ไม่มีสูตร</div>"}
+            </td>
+            <td class="p-2 text-sm text-right font-semibold">฿${price.toFixed(2)}</td>
+            <td class="p-2 text-sm text-right text-gray-600">฿${cost.toFixed(2)}</td>
+            <td class="p-2 text-sm text-right font-semibold ${profitClass}">฿${profit.toFixed(2)}</td>
+            <td class="p-2 text-sm text-right font-semibold ${profitMarginClass}">${profitMargin.toFixed(1)}%</td>
+            <td class="p-2 text-sm text-center ${availableClass}">${availableDisplay}</td>
+            <td class="p-2 text-sm text-center">${statusBadge}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  } catch (error) {
+    console.error("Error loading menus:", error);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center p-8 text-red-500">
+          เกิดข้อผิดพลาด: ${error.message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+// Expense History Page Functions
+let expensesHistoryState = {
+  page: 1,
+  pageSize: 50,
+  total: 0,
+  search: "",
+  category: "",
+  startDate: null,
+  endDate: null,
+};
+
+function openExpensesHistory() {
+  document.getElementById("pos-app")?.classList.add("hidden");
+  document.getElementById("expenses-history-page")?.classList.remove("hidden");
+  expensesHistoryState.page = 1;
+  loadExpensesHistory();
+}
+
+function closeExpensesHistory() {
+  document.getElementById("expenses-history-page")?.classList.add("hidden");
+  document.getElementById("pos-app")?.classList.remove("hidden");
+}
+
+let expenseSearchTimeout;
+function debounceExpenseSearch() {
+  clearTimeout(expenseSearchTimeout);
+  expenseSearchTimeout = setTimeout(() => {
+    expensesHistoryState.page = 1;
+    loadExpensesHistory();
+  }, 500);
+}
+
+function resetExpenseFilters() {
+  document.getElementById("expense-search").value = "";
+  document.getElementById("expense-filter-category").value = "";
+  document.getElementById("expense-filter-start").value = "";
+  document.getElementById("expense-filter-end").value = "";
+  expensesHistoryState.search = "";
+  expensesHistoryState.category = "";
+  expensesHistoryState.startDate = null;
+  expensesHistoryState.endDate = null;
+  expensesHistoryState.page = 1;
+  loadExpensesHistory();
+}
+
+async function loadExpensesHistory() {
+  const tableBody = document.getElementById("expenses-history-table");
+  if (!tableBody) return;
+
+  // Update state from filters
+  expensesHistoryState.search = document.getElementById("expense-search")?.value || "";
+  expensesHistoryState.category = document.getElementById("expense-filter-category")?.value || "";
+  const startDateInput = document.getElementById("expense-filter-start")?.value;
+  const endDateInput = document.getElementById("expense-filter-end")?.value;
+  expensesHistoryState.startDate = startDateInput || null;
+  expensesHistoryState.endDate = endDateInput || null;
+
+  // Show loading
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="9" class="text-center p-8">
+        <div class="spinner" style="margin: 20px auto"></div>
+      </td>
+    </tr>
+  `;
+
+  try {
+    const result = await window.POS.functions.getExpensesHistory({
+      search: expensesHistoryState.search,
+      category: expensesHistoryState.category,
+      page: expensesHistoryState.page,
+      pageSize: expensesHistoryState.pageSize,
+      startDate: expensesHistoryState.startDate,
+      endDate: expensesHistoryState.endDate,
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || "Failed to load expenses");
+    }
+
+    expensesHistoryState.total = result.total || 0;
+    const expenses = result.expenses || [];
+    const totalAmount = result.totalAmount !== undefined ? result.totalAmount : 
+                        expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+    // Update summary
+    document.getElementById("expense-total-count").textContent = expensesHistoryState.total;
+    document.getElementById("expense-total-amount").textContent = `฿${totalAmount.toFixed(2)}`;
+    document.getElementById("expense-page-count").textContent = expenses.length;
+    document.getElementById("expense-current-page").textContent = expensesHistoryState.page;
+
+    // Render table
+    if (expenses.length === 0) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center p-8 text-gray-500">
+            ไม่พบข้อมูลค่าใช้จ่าย
+          </td>
+        </tr>
+      `;
+    } else {
+      tableBody.innerHTML = expenses.map(expense => {
+        const categoryLabels = {
+          utility: "⚡ ค่าสาธารณูปโภค",
+          rental: "🏠 ค่าเช่า",
+          labor: "👷 ค่าแรง",
+          other: "📋 อื่นๆ",
+        };
+        const categoryLabel = categoryLabels[expense.category] || expense.category;
+        const subcategoryLabel = expense.subcategory === "electric" ? "ค่าไฟฟ้า" : 
+                                 expense.subcategory === "water" ? "ค่าน้ำ" : 
+                                 expense.subcategory || "";
+        
+        const paymentMethodLabels = {
+          cash: "เงินสด",
+          transfer: "โอนเงิน",
+          credit_card: "บัตรเครดิต",
+        };
+        const paymentLabel = paymentMethodLabels[expense.payment_method] || expense.payment_method;
+
+        const expenseDate = new Date(expense.expense_date);
+        const formattedDate = expenseDate.toLocaleDateString("th-TH", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+
+        const updatedDate = expense.updated_at ? new Date(expense.updated_at) : null;
+        const formattedUpdated = updatedDate ? updatedDate.toLocaleDateString("th-TH", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }) : "-";
+
+        const statusBadge = expense.status === "approved" 
+          ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">อนุมัติ</span>'
+          : expense.status === "pending"
+          ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">รอตรวจสอบ</span>'
+          : '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">' + (expense.status || "อื่นๆ") + "</span>";
+
+        return `
+          <tr class="border-b hover:bg-gray-50">
+            <td class="p-2 text-sm">${formattedDate}</td>
+            <td class="p-2 text-sm">
+              <div>${categoryLabel}</div>
+              ${subcategoryLabel ? `<div class="text-xs text-gray-500">${subcategoryLabel}</div>` : ""}
+            </td>
+            <td class="p-2 text-sm">
+              <div class="font-medium">${expense.description || "-"}</div>
+              ${expense.notes ? `<div class="text-xs text-gray-500">${expense.notes}</div>` : ""}
+            </td>
+            <td class="p-2 text-sm text-right font-semibold">฿${parseFloat(expense.amount || 0).toFixed(2)}</td>
+            <td class="p-2 text-sm">${expense.vendor || "-"}</td>
+            <td class="p-2 text-sm">${paymentLabel}</td>
+            <td class="p-2 text-sm">
+              <div>${expense.created_by_name || "Unknown"}</div>
+              <div class="text-xs text-gray-500">${new Date(expense.created_at).toLocaleDateString("th-TH")}</div>
+            </td>
+            <td class="p-2 text-sm text-xs text-gray-500">${formattedUpdated}</td>
+            <td class="p-2 text-sm">${statusBadge}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Update pagination
+    updateExpensesPagination();
+  } catch (error) {
+    console.error("Error loading expenses history:", error);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="9" class="text-center p-8 text-red-500">
+          เกิดข้อผิดพลาด: ${error.message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function updateExpensesPagination() {
+  const totalPages = Math.max(1, Math.ceil(expensesHistoryState.total / expensesHistoryState.pageSize));
+  const pageInfo = document.getElementById("expenses-page-info");
+  const prevBtn = document.getElementById("expenses-prev");
+  const nextBtn = document.getElementById("expenses-next");
+
+  if (pageInfo) {
+    pageInfo.textContent = `หน้า ${expensesHistoryState.page} จาก ${totalPages} (ทั้งหมด ${expensesHistoryState.total} รายการ)`;
+  }
+
+  if (prevBtn) {
+    prevBtn.disabled = expensesHistoryState.page <= 1;
+    if (expensesHistoryState.page <= 1) {
+      prevBtn.classList.add("opacity-50", "cursor-not-allowed");
+    } else {
+      prevBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+  }
+  
+  if (nextBtn) {
+    nextBtn.disabled = expensesHistoryState.page >= totalPages;
+    if (expensesHistoryState.page >= totalPages) {
+      nextBtn.classList.add("opacity-50", "cursor-not-allowed");
+    } else {
+      nextBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+  }
+}
+
+function expensesPrevPage() {
+  if (expensesHistoryState.page > 1) {
+    expensesHistoryState.page--;
+    loadExpensesHistory();
+  }
+}
+
+function expensesNextPage() {
+  const totalPages = Math.max(1, Math.ceil(expensesHistoryState.total / expensesHistoryState.pageSize));
+  if (expensesHistoryState.page < totalPages) {
+    expensesHistoryState.page++;
+    loadExpensesHistory();
+  }
 }
 
 // Labor modal functions

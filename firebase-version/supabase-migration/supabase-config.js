@@ -65,26 +65,57 @@ function initializeSupabase() {
     window.POS = window.POS || {};
     
     console.log("✅ Supabase client initialized");
+    
+    // Setup POS interface after Supabase is ready
+    setupPOSInterface();
+    
     return true;
   } else {
-    // Create a dummy supabase object to prevent crashes
-    console.warn("⚠️ Supabase library not loaded yet, using fallback");
-    supabase = {
-      from: () => ({ select: () => Promise.resolve({ data: [], error: null }) }),
-      auth: {
-        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-        signInWithPassword: () => Promise.reject(new Error("Supabase not loaded")),
-        signInWithOAuth: () => Promise.reject(new Error("Supabase not loaded")),
-        signOut: () => Promise.reject(new Error("Supabase not loaded")),
-        onAuthStateChange: () => ({ unsubscribe: () => {} }),
-        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-      },
-      rpc: () => Promise.reject(new Error("Supabase not loaded")),
-      removeChannel: () => {},
-    };
-    window.supabase = supabase;
+    // Wait for Supabase to load
+    console.warn("⚠️ Supabase library not loaded yet, waiting...");
+    
+    // Try to initialize when Supabase loads
+    const checkSupabase = setInterval(() => {
+      if (window.supabaseCreateClient && typeof window.supabaseCreateClient === "function") {
+        clearInterval(checkSupabase);
+        initializeSupabase();
+      }
+    }, 100);
+    
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      clearInterval(checkSupabase);
+      if (!supabase) {
+        console.error("❌ Supabase failed to load after 10 seconds");
+        // Create a minimal fallback
+        supabase = {
+          from: () => ({ select: () => Promise.resolve({ data: [], error: null }) }),
+          auth: {
+            getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+            signInWithPassword: () => Promise.reject(new Error("Supabase not loaded")),
+            signInWithOAuth: () => Promise.reject(new Error("Supabase not loaded")),
+            signOut: () => Promise.reject(new Error("Supabase not loaded")),
+            onAuthStateChange: () => ({ unsubscribe: () => {} }),
+            getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+          },
+          rpc: () => Promise.reject(new Error("Supabase not loaded")),
+          removeChannel: () => {},
+        };
+        window.supabase = supabase;
+      }
+    }, 10000);
+    
     return false;
   }
+}
+
+// Initialize when Supabase is ready
+if (window.supabaseLoaded) {
+  initializeSupabase();
+} else {
+  window.addEventListener('supabase-loaded', () => {
+    initializeSupabase();
+  }, { once: true });
 }
 
 // Database References - Maintain Firebase-like interface for compatibility
@@ -361,24 +392,44 @@ const POS_AUTH = {
       // You should configure this in Supabase dashboard to point to a local HTTP server
       // For now, try to use the full file path
       redirectUrl = window.location.href.split("?")[0]; // Remove query params if any
+      console.warn("⚠️ Using file:// protocol. OAuth may not work. Please use HTTP server (localhost:8000)");
     } else {
+      // Use current origin + pathname for redirect
       redirectUrl = window.location.origin + window.location.pathname;
     }
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: redirectUrl,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
+    // Log the redirect URL for debugging
+    console.log("🔐 OAuth redirect URL:", redirectUrl);
+    console.log("💡 Make sure this URL is added to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
         },
-      },
-    });
-    if (error) throw error;
-    // OAuth redirects immediately, so this may not return
-    // The auth state change listener will handle the actual sign-in
-    return { user: null, redirecting: true };
+      });
+      
+      if (error) {
+        console.error("❌ OAuth Error:", error);
+        throw error;
+      }
+      
+      // OAuth redirects immediately, so this may not return
+      // The auth state change listener will handle the actual sign-in
+      return { user: null, redirecting: true };
+    } catch (error) {
+      console.error("❌ Failed to initiate OAuth:", error);
+      console.log("📝 Troubleshooting:");
+      console.log("   1. Check if redirect URL is in Supabase Dashboard");
+      console.log("   2. Check if Google OAuth is enabled in Supabase");
+      console.log("   3. See FIX_OAUTH_REDIRECT.md for detailed instructions");
+      throw error;
+    }
   },
 
   signOut: async () => {
@@ -708,6 +759,233 @@ const POS_FUNCTIONS = {
       return { success: false, error: error.message };
     }
   },
+
+  // Get expenses history with user information
+  getExpensesHistory: async ({ search = "", category = "", page = 1, pageSize = 50, startDate = null, endDate = null } = {}) => {
+    try {
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      // First, get expenses
+      let query = supabase
+        .from("expenses")
+        .select("*", { count: "exact" })
+        .order("expense_date", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (search && search.trim() !== "") {
+        query = query.or(`description.ilike.%${search.trim()}%,vendor.ilike.%${search.trim()}%,notes.ilike.%${search.trim()}%`);
+      }
+
+      if (category && category !== "") {
+        query = query.eq("category", category);
+      }
+
+      if (startDate) {
+        query = query.gte("expense_date", startDate);
+      }
+
+      if (endDate) {
+        query = query.lte("expense_date", endDate);
+      }
+
+      const { data, error, count } = await query.range(from, to);
+      
+      if (error) throw error;
+
+      // Get total amount for all matching expenses (not just current page)
+      let totalAmount = 0;
+      try {
+        let totalQuery = supabase
+          .from("expenses")
+          .select("amount");
+
+        if (search && search.trim() !== "") {
+          totalQuery = totalQuery.or(`description.ilike.%${search.trim()}%,vendor.ilike.%${search.trim()}%,notes.ilike.%${search.trim()}%`);
+        }
+
+        if (category && category !== "") {
+          totalQuery = totalQuery.eq("category", category);
+        }
+
+        if (startDate) {
+          totalQuery = totalQuery.gte("expense_date", startDate);
+        }
+
+        if (endDate) {
+          totalQuery = totalQuery.lte("expense_date", endDate);
+        }
+
+        const { data: allExpenses, error: totalError } = await totalQuery;
+        if (!totalError && allExpenses) {
+          totalAmount = allExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+        }
+      } catch (totalError) {
+        console.warn("Error calculating total amount:", totalError);
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set([
+        ...(data || []).map(e => e.user_id).filter(Boolean),
+        ...(data || []).map(e => e.approved_by).filter(Boolean)
+      ])];
+
+      // Fetch user information
+      let userMap = {};
+      if (userIds.length > 0) {
+        const { data: users, error: userError } = await supabase
+          .from("users")
+          .select("id, email, display_name")
+          .in("id", userIds);
+        
+        if (!userError && users) {
+          userMap = Object.fromEntries(users.map(u => [u.id, u]));
+        }
+      }
+
+      // Format the data to include user names
+      const formattedData = (data || []).map(expense => {
+        const creator = userMap[expense.user_id];
+        const approver = expense.approved_by ? userMap[expense.approved_by] : null;
+        
+        return {
+          ...expense,
+          created_by_name: creator?.display_name || creator?.email || "Unknown",
+          approved_by_name: approver?.display_name || approver?.email || null,
+        };
+      });
+
+      return { success: true, expenses: formattedData, total: count || 0, totalAmount: totalAmount, page, pageSize };
+    } catch (error) {
+      console.error("Error getting expenses history:", error);
+      return { success: false, error: error.message, expenses: [], total: 0 };
+    }
+  },
+
+  // Get all menus with cost, price, and available dishes calculation
+  getMenusWithAvailability: async ({ search = "", category = "", isActive = true } = {}) => {
+    try {
+      // Get all menus
+      let menuQuery = supabase
+        .from("menus")
+        .select("*")
+        .order("menu_id", { ascending: true });
+
+      if (isActive !== null) {
+        menuQuery = menuQuery.eq("is_active", isActive);
+      }
+
+      if (search && search.trim() !== "") {
+        menuQuery = menuQuery.or(`name.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%,menu_id.ilike.%${search.trim()}%`);
+      }
+
+      if (category && category !== "") {
+        menuQuery = menuQuery.eq("category_id", category);
+      }
+
+      const { data: menus, error: menusError } = await menuQuery;
+      if (menusError) throw menusError;
+
+      if (!menus || menus.length === 0) {
+        return { success: true, menus: [] };
+      }
+
+      // Get all menu recipes for these menus
+      const menuIds = menus.map(m => m.id);
+      const { data: recipes, error: recipesError } = await supabase
+        .from("menu_recipes")
+        .select("menu_id, ingredient_id, quantity_per_serve, unit, is_optional")
+        .in("menu_id", menuIds);
+
+      if (recipesError) throw recipesError;
+
+      // Get all ingredients with current stock
+      const ingredientIds = [...new Set(recipes.map(r => r.ingredient_id).filter(Boolean))];
+      let ingredientsMap = {};
+      if (ingredientIds.length > 0) {
+        const { data: ingredients, error: ingredientsError } = await supabase
+          .from("ingredients")
+          .select("id, name, current_stock, unit, cost_per_unit")
+          .in("id", ingredientIds);
+
+        if (!ingredientsError && ingredients) {
+          ingredientsMap = Object.fromEntries(ingredients.map(i => [i.id, i]));
+        }
+      }
+
+      // Group recipes by menu
+      const recipesByMenu = {};
+      (recipes || []).forEach(recipe => {
+        if (!recipesByMenu[recipe.menu_id]) {
+          recipesByMenu[recipe.menu_id] = [];
+        }
+        recipesByMenu[recipe.menu_id].push(recipe);
+      });
+
+      // Calculate available dishes for each menu
+      const menusWithInfo = menus.map(menu => {
+        const menuRecipes = recipesByMenu[menu.id] || [];
+        
+        // Calculate cost if not already set
+        let calculatedCost = menu.cost_price || 0;
+        if (!calculatedCost && menuRecipes.length > 0) {
+          calculatedCost = menuRecipes.reduce((sum, recipe) => {
+            const ingredient = ingredientsMap[recipe.ingredient_id];
+            if (!ingredient) return sum;
+            const costPerUnit = parseFloat(ingredient.cost_per_unit) || 0;
+            const quantity = parseFloat(recipe.quantity_per_serve) || 0;
+            return sum + (quantity * costPerUnit);
+          }, 0);
+        }
+
+        // Calculate available dishes based on stock
+        let availableDishes = null;
+        if (menuRecipes.length > 0) {
+          const requiredRecipes = menuRecipes.filter(r => !r.is_optional);
+          
+          if (requiredRecipes.length > 0) {
+            const dishesPossible = requiredRecipes.map(recipe => {
+              const ingredient = ingredientsMap[recipe.ingredient_id];
+              if (!ingredient) return 0;
+              
+              const stock = parseFloat(ingredient.current_stock) || 0;
+              const required = parseFloat(recipe.quantity_per_serve) || 0;
+              
+              if (required <= 0) return Infinity; // No requirement, unlimited
+              
+              // Check if units match (simplified - assumes same unit for now)
+              // In a real system, you'd need unit conversion
+              return Math.floor(stock / required);
+            }).filter(d => isFinite(d));
+            
+            availableDishes = dishesPossible.length > 0 ? Math.min(...dishesPossible) : 0;
+          } else {
+            // No required ingredients, assume available
+            availableDishes = null;
+          }
+        }
+
+        // Calculate profit margin
+        const price = parseFloat(menu.price) || 0;
+        const profit = price - calculatedCost;
+        const profitMargin = price > 0 ? ((profit / price) * 100) : 0;
+
+        return {
+          ...menu,
+          calculated_cost: calculatedCost,
+          profit: profit,
+          profit_margin: profitMargin,
+          available_dishes: availableDishes,
+          recipe_count: menuRecipes.length,
+        };
+      });
+
+      return { success: true, menus: menusWithInfo };
+    } catch (error) {
+      console.error("Error getting menus with availability:", error);
+      return { success: false, error: error.message, menus: [] };
+    }
+  },
 };
 
 // Admin functions
@@ -762,6 +1040,13 @@ const POS_ADMIN = {
 
 // Setup POS interface - called after Supabase is initialized
 function setupPOSInterface() {
+  // Only setup if Supabase is initialized
+  if (!supabase) {
+    console.warn("⚠️ Cannot setup POS interface - Supabase not initialized");
+    return;
+  }
+
+  // Initialize POS object with real implementations
   window.POS = {
     database: POS_DATABASE,
     auth: POS_AUTH,
@@ -774,22 +1059,6 @@ function setupPOSInterface() {
 
   console.log("✅ Supabase POS initialized for project: rtfreafhlelpxqwohspq");
   
-  // Dispatch event so other scripts know POS is ready
+  // Dispatch event so other scripts know POS is ready (only once)
   window.dispatchEvent(new CustomEvent("pos-ready"));
 }
-
-// Initialize Supabase and setup POS interface
-(function initSupabaseAndPOS() {
-  // Try to initialize immediately
-  if (initializeSupabase()) {
-    // Supabase initialized successfully, setup POS interface
-    setupPOSInterface();
-  } else {
-    // Wait for the supabase-loaded event
-    window.addEventListener("supabase-loaded", function() {
-      if (initializeSupabase()) {
-        setupPOSInterface();
-      }
-    }, { once: true });
-  }
-})();

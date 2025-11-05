@@ -42,10 +42,10 @@ const LINE_BOT_CONFIG = {
     "r/DiyiGj+YDZ5VBLH4GUcRBahv4TIAj3naSZKlCjmwwnsfyzSYLAg3ZoEI7WXBkE0cZzsTDtKJnkNF5ZZ4mZHIrnHn1DETTfIVAIEIW2bqOu7Vd/pNWYrA2Ub2PifQM5b07S/GBp5S+YQPQ47Fqy1AdB04t89/1O/w1cDnyilFU=",
   CHANNEL_SECRET:
     (typeof process !== "undefined" && process.env?.LINE_CHANNEL_SECRET) ||
-    "475732756255-t80b46ohqc54uf93fdq08cu5mgm39vt1.apps.googleusercontent.com",
+    "5b2672bda43572ec8f2d5c4cb96c53d9",
 
   // Webhook configuration
-  WEBHOOK_URL: (typeof process !== "undefined" && process.env?.LINE_WEBHOOK_URL) || "YOUR_WEBHOOK_URL",
+  WEBHOOK_URL: (typeof process !== "undefined" && process.env?.LINE_WEBHOOK_URL) || "https://jade-cannoli-b0d851.netlify.app/.netlify/functions/line-webhook",
 
   // Your Line Group/Room IDs
   GROUP_IDS: [
@@ -106,6 +106,43 @@ const LINE_BOT_CONFIG = {
       /ราคา[\s]*[:\s]*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
       /(\d+(?:,\d{3})*(?:\.\d{2})?)/,
     ],
+  },
+
+  // Expense processing
+  EXPENSE_PROCESSING: {
+    KEYWORDS: [
+      "ค่าใช้จ่าย",
+      "ค่า",
+      "จ่าย",
+      "ค่าไฟ",
+      "ค่าน้ำ",
+      "ค่าเช่า",
+      "ค่าแรง",
+      "ค่าโทร",
+      "ค่าเน็ต",
+      "expense",
+      "paid",
+      "จ่ายเงิน",
+    ],
+    CATEGORY_MAPPING: {
+      "ค่าไฟ": { category: "utility", subcategory: "electric" },
+      "ค่าไฟฟ้า": { category: "utility", subcategory: "electric" },
+      "ค่าน้ำ": { category: "utility", subcategory: "water" },
+      "ค่าเช่า": { category: "rental", subcategory: null },
+      "ค่าแรง": { category: "labor", subcategory: null },
+      "ค่าโทร": { category: "utility", subcategory: null },
+      "ค่าเน็ต": { category: "utility", subcategory: null },
+      "ค่าสาธารณูปโภค": { category: "utility", subcategory: null },
+    },
+    AMOUNT_PATTERNS: [
+      /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/,
+      /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*฿/,
+      /฿\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/,
+      /ราคา[\s:]*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+    ],
+    SIMILARITY_THRESHOLD: 0.5, // 50% similarity to consider duplicate
+    AMOUNT_TOLERANCE: 10, // Within 10 baht to consider similar
+    UPDATE_THRESHOLD: 0.01, // 1% difference to trigger update
   },
 };
 

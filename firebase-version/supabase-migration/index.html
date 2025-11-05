@@ -186,7 +186,7 @@
         </div>
 
         <!-- Authentication Screen -->
-        <div id="auth-screen" class="container">
+        <div id="auth-screen" class="container" style="display: block;">
             <div class="card" style="max-width: 400px; margin: 50px auto">
                 <h2 class="text-2xl font-bold mb-6">POS System Login</h2>
 
@@ -281,7 +281,7 @@
         </div>
 
         <!-- Main POS Application -->
-        <div id="pos-app" class="container hidden" style="padding-top: 64px; padding-bottom: 88px;">
+        <div id="pos-app" class="container" style="padding-top: 64px; padding-bottom: 88px; display: none;">
             <header>
                 <h1 class="text-3xl font-bold mb-2">POS & Inventory</h1>
                 <p class="text-gray-600">
@@ -308,8 +308,14 @@
                 </div>
                 <div class="card">
                     <h3 class="font-semibold mb-3">💰 ค่าใช้จ่าย</h3>
-                    <button onclick="openExpensesModal()" class="btn brand w-full">
-                        บันทึกค่าใช้จ่าย
+                    <button onclick="openExpensesHistory()" class="btn brand w-full">
+                        ดูประวัติค่าใช้จ่าย
+                    </button>
+                </div>
+                <div class="card">
+                    <h3 class="font-semibold mb-3">🍽️ เมนู</h3>
+                    <button onclick="openMenusPage()" class="btn brand w-full">
+                        ดูรายการเมนู
                     </button>
                 </div>
                 <div class="card">
@@ -419,7 +425,7 @@
                     <span>📆</span>
                     <span>สรุป</span>
                 </button>
-                <button onclick="openExpensesModal()" class="py-2 flex flex-col items-center justify-center">
+                <button onclick="openExpensesHistory()" class="py-2 flex flex-col items-center justify-center">
                     <span>💰</span>
                     <span>ค่าใช้จ่าย</span>
                 </button>
@@ -817,6 +823,202 @@
                         <button type="button" onclick="closeExpensesModal()" class="btn ghost flex-1">ยกเลิก</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Menu Listing Page -->
+        <div id="menus-page" class="container hidden" style="padding-top: 64px; padding-bottom: 88px;">
+            <header class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-3xl font-bold">🍽️ รายการเมนู</h1>
+                    <button onclick="closeMenusPage()" class="btn ghost">
+                        ← กลับ
+                    </button>
+                </div>
+                <p class="text-gray-600">ดูข้อมูลเมนูทั้งหมด ราคา ต้นทุน และจำนวนที่สามารถทำได้</p>
+            </header>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ค้นหาเมนู</label>
+                        <input 
+                            type="text" 
+                            id="menu-search" 
+                            class="input" 
+                            placeholder="ค้นหาจากชื่อ, รหัสเมนู..."
+                            onkeyup="debounceMenuSearch()"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">สถานะ</label>
+                        <select id="menu-filter-status" class="input" onchange="loadMenus()">
+                            <option value="all">ทั้งหมด</option>
+                            <option value="active">ใช้งาน</option>
+                            <option value="inactive">ไม่ใช้งาน</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="loadMenus()" class="btn brand w-full">รีเฟรช</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div class="card">
+                    <div class="text-sm text-gray-600">จำนวนเมนูทั้งหมด</div>
+                    <div class="text-2xl font-bold" id="menu-total-count">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">เมนูพร้อมทำ</div>
+                    <div class="text-2xl font-bold text-green-600" id="menu-available-count">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">เมนูขาดสต๊อก</div>
+                    <div class="text-2xl font-bold text-red-600" id="menu-out-of-stock-count">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">กำไรเฉลี่ย</div>
+                    <div class="text-2xl font-bold text-blue-600" id="menu-avg-profit">฿0.00</div>
+                </div>
+            </div>
+
+            <!-- Menus Table -->
+            <div class="card">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left p-2 text-sm font-semibold">รหัส</th>
+                                <th class="text-left p-2 text-sm font-semibold">ชื่อเมนู</th>
+                                <th class="text-right p-2 text-sm font-semibold">ราคาขาย</th>
+                                <th class="text-right p-2 text-sm font-semibold">ต้นทุน</th>
+                                <th class="text-right p-2 text-sm font-semibold">กำไร</th>
+                                <th class="text-right p-2 text-sm font-semibold">% กำไร</th>
+                                <th class="text-center p-2 text-sm font-semibold">ทำได้ (จาน)</th>
+                                <th class="text-center p-2 text-sm font-semibold">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="menus-table">
+                            <tr>
+                                <td colspan="8" class="text-center p-8">
+                                    <div class="spinner" style="margin: 20px auto"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense History Page -->
+        <div id="expenses-history-page" class="container hidden" style="padding-top: 64px; padding-bottom: 88px;">
+            <header class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-3xl font-bold">📋 ประวัติค่าใช้จ่าย</h1>
+                    <button onclick="closeExpensesHistory()" class="btn ghost">
+                        ← กลับ
+                    </button>
+                </div>
+                <p class="text-gray-600">ดูประวัติการบันทึกและแก้ไขค่าใช้จ่ายทั้งหมด</p>
+            </header>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ค้นหา</label>
+                        <input 
+                            type="text" 
+                            id="expense-search" 
+                            class="input" 
+                            placeholder="ค้นหาจากรายละเอียด, ผู้ขาย, หมายเหตุ..."
+                            onkeyup="debounceExpenseSearch()"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ประเภท</label>
+                        <select id="expense-filter-category" class="input" onchange="loadExpensesHistory()">
+                            <option value="">ทั้งหมด</option>
+                            <option value="utility">⚡ ค่าสาธารณูปโภค</option>
+                            <option value="rental">🏠 ค่าเช่า</option>
+                            <option value="labor">👷 ค่าแรง</option>
+                            <option value="other">📋 อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ตั้งแต่</label>
+                        <input type="date" id="expense-filter-start" class="input" onchange="loadExpensesHistory()" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ถึง</label>
+                        <input type="date" id="expense-filter-end" class="input" onchange="loadExpensesHistory()" />
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button onclick="loadExpensesHistory()" class="btn brand">ค้นหา</button>
+                    <button onclick="resetExpenseFilters()" class="btn ghost">ล้างตัวกรอง</button>
+                    <button onclick="openExpensesModal()" class="btn brand">+ เพิ่มค่าใช้จ่าย</button>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="card mb-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <div class="text-sm text-gray-600">จำนวนรายการ</div>
+                        <div class="text-2xl font-bold" id="expense-total-count">0</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">ยอดรวม</div>
+                        <div class="text-2xl font-bold text-green-600" id="expense-total-amount">฿0.00</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">รายการในหน้านี้</div>
+                        <div class="text-2xl font-bold" id="expense-page-count">0</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-600">หน้า</div>
+                        <div class="text-2xl font-bold" id="expense-current-page">1</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses Table -->
+            <div class="card">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left p-2 text-sm font-semibold">วันที่</th>
+                                <th class="text-left p-2 text-sm font-semibold">ประเภท</th>
+                                <th class="text-left p-2 text-sm font-semibold">รายละเอียด</th>
+                                <th class="text-right p-2 text-sm font-semibold">จำนวนเงิน</th>
+                                <th class="text-left p-2 text-sm font-semibold">ผู้ขาย</th>
+                                <th class="text-left p-2 text-sm font-semibold">ชำระด้วย</th>
+                                <th class="text-left p-2 text-sm font-semibold">บันทึกโดย</th>
+                                <th class="text-left p-2 text-sm font-semibold">แก้ไขล่าสุด</th>
+                                <th class="text-left p-2 text-sm font-semibold">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-history-table">
+                            <tr>
+                                <td colspan="9" class="text-center p-8">
+                                    <div class="spinner" style="margin: 20px auto"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="expenses-pagination" class="flex items-center justify-between mt-4">
+                    <div class="text-sm text-gray-600" id="expenses-page-info"></div>
+                    <div class="flex gap-2">
+                        <button id="expenses-prev" onclick="expensesPrevPage()" class="btn ghost text-sm">ก่อนหน้า</button>
+                        <button id="expenses-next" onclick="expensesNextPage()" class="btn ghost text-sm">ถัดไป</button>
+                    </div>
+                </div>
             </div>
         </div>
 
