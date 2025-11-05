@@ -178,19 +178,33 @@ export async function onRequest(context) {
             console.error('Error storing message:', supabaseError);
           }
 
-          // Always monitor and record expenses, but give feedback only after successful database update
+          // Always monitor and record expenses silently, but give feedback only after successful database update
           if (messageText && messageType === 'text') {
             try {
               // Process and record expense (will return feedback only if database was updated)
               const expenseResult = await processAndRecordExpense(messageText, userId, sourceId, env);
               
-      // Only send feedback if expense was successfully recorded in database
-      // Also send feedback for duplicates (no database update but user should know)
-      if (expenseResult && expenseResult.feedback && 
-          ((expenseResult.recorded === true && expenseResult.expenseId) || expenseResult.duplicate === true) &&
-          env?.LINE_CHANNEL_ACCESS_TOKEN && evt.replyToken) {
-        await replyToLine(evt.replyToken, expenseResult.feedback, env.LINE_CHANNEL_ACCESS_TOKEN);
-      }
+              console.log('Expense processing result:', {
+                hasResult: !!expenseResult,
+                recorded: expenseResult?.recorded,
+                duplicate: expenseResult?.duplicate,
+                hasFeedback: !!expenseResult?.feedback,
+                hasAccessToken: !!env?.LINE_CHANNEL_ACCESS_TOKEN,
+                hasReplyToken: !!evt.replyToken,
+              });
+              
+              // Only send feedback if expense was successfully recorded in database
+              // Also send feedback for duplicates (no database update but user should know)
+              if (expenseResult && expenseResult.feedback && 
+                  ((expenseResult.recorded === true && expenseResult.expenseId) || expenseResult.duplicate === true) &&
+                  env?.LINE_CHANNEL_ACCESS_TOKEN && evt.replyToken) {
+                console.log('Sending expense feedback to LINE');
+                await replyToLine(evt.replyToken, expenseResult.feedback, env.LINE_CHANNEL_ACCESS_TOKEN);
+              } else {
+                if (expenseResult && expenseResult.parsed) {
+                  console.log('Expense parsed but not recorded (likely not an expense format)');
+                }
+              }
             } catch (expenseError) {
               console.error('Error processing expense:', expenseError);
               // Don't send feedback on error - database wasn't updated
@@ -279,8 +293,15 @@ async function processAndRecordExpense(messageText, userId, sourceId, env) {
     // Parse expense from message
     const expenseData = parseExpenseFromMessage(messageText);
     if (!expenseData) {
-      return { recorded: false };
+      console.log('Message does not match expense format:', messageText.substring(0, 50));
+      return { recorded: false, parsed: false };
     }
+    
+    console.log('Expense parsed successfully:', {
+      amount: expenseData.amount,
+      category: expenseData.category,
+      description: expenseData.description,
+    });
 
     // Check for duplicates (last 30 days)
     const today = new Date();
@@ -345,11 +366,13 @@ async function processAndRecordExpense(messageText, userId, sourceId, env) {
       console.error('Error inserting expense:', insertResponse.status, errorText);
       return {
         recorded: false,
-        feedback: null
+        feedback: null,
+        error: errorText
       };
     }
 
     const inserted = await insertResponse.json();
+    console.log('Expense recorded successfully:', inserted.id);
     const savedExpense = Array.isArray(inserted) ? inserted[0] : inserted;
 
     if (!savedExpense || !savedExpense.id) {
@@ -380,32 +403,49 @@ async function processAndRecordExpense(messageText, userId, sourceId, env) {
 function parseExpenseFromMessage(messageText) {
   const text = messageText.trim();
   
-  const expenseKeywords = ['ค่า', 'จ่าย', 'expense', 'ค่าไฟ', 'ค่าน้ำ', 'ค่าเช่า', 'ค่าแรง'];
-  const isExpense = expenseKeywords.some(keyword => text.toLowerCase().includes(keyword));
-  
-  if (!isExpense && !text.match(/\d+\s*บาท/)) {
-    return null;
-  }
-
+  // More flexible expense detection - look for amount patterns
+  // Patterns: "50 บาท", "50", "ซื้อ 50", "จ่าย 100", etc.
   const amountPatterns = [
     /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/,
     /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*฿/,
     /฿\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/,
     /(\d+(?:,\d{3})*(?:\.\d{2})?)/,
   ];
-
+  
   let amount = null;
   for (const pattern of amountPatterns) {
     const match = text.match(pattern);
     if (match) {
       amount = parseFloat(match[1].replace(/,/g, ''));
-      if (amount > 0) break;
+      if (amount > 0 && amount < 1000000) { // Reasonable expense range
+        break;
+      }
     }
   }
-
+  
+  // If no amount found, it's not an expense
   if (!amount || amount <= 0) {
     return null;
   }
+  
+  // Additional validation: check if message contains expense-related keywords
+  // This helps filter out prices in menus, phone numbers, etc.
+  const expenseKeywords = ['ค่า', 'จ่าย', 'ซื้อ', 'expense', 'ค่าไฟ', 'ค่าน้ำ', 'ค่าเช่า', 'ค่าแรง', 'บิล', 'ค่าใช้จ่าย', 'ชำระ', 'บัญชี'];
+  const purchaseKeywords = ['ซื้อ', 'ซื้อของ', 'จ่าย', 'ชำระ', 'ค่า', 'จาก'];
+  const isExpenseContext = expenseKeywords.some(keyword => text.toLowerCase().includes(keyword)) ||
+                           purchaseKeywords.some(keyword => text.toLowerCase().includes(keyword));
+  
+  // For small amounts (<1000), be more lenient - likely an expense
+  // For larger amounts, require some context to avoid false positives
+  if (amount >= 1000 && !isExpenseContext) {
+    // Check if it looks like a phone number (10 digits) or ID
+    if (/^\d{10}$/.test(amount.toString()) || amount > 100000) {
+      return null;
+    }
+  }
+  
+  // If amount is found and context looks reasonable, proceed
+  // This makes the bot more flexible in detecting expenses
 
   let category = 'other';
   let subcategory = null;
