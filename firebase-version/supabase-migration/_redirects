@@ -1,10 +1,5 @@
 # Cloudflare Pages redirects
 # Note: Functions in /functions folder are processed FIRST, before redirects
-# SPA routing - redirect all non-function routes to index.html
-# Function routes (/line-webhook, /midnight-stock-alert) are handled by functions/ folder
-# Exclude function routes and index.html to prevent infinite loop
-/line-webhook   200
-/midnight-stock-alert   200
-/index.html   200
-/*    /index.html   200
+# Function routes (/line-webhook, /midnight-stock-alert) are automatically handled
+# No redirects needed - static files and functions are served automatically
 
