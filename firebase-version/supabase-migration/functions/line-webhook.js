@@ -9,12 +9,23 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, X-Line-Signature',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
         },
       });
     }
 
-    // Only allow POST requests
+    // Handle GET requests (LINE verification)
+    if (request.method === 'GET') {
+      return new Response(JSON.stringify({ status: 'ok', message: 'LINE webhook endpoint is active' }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // Only allow POST requests for actual webhook events
     if (request.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         status: 405,
