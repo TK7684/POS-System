@@ -103,6 +103,19 @@ export default {
 
       console.log(`Received ${events.length} events from LINE`);
 
+      // Handle LINE verification request (empty events array)
+      // Always return 200 OK for verification, even if env vars aren't fully configured
+      if (events.length === 0) {
+        console.log('LINE webhook verification request received');
+        return new Response(JSON.stringify({ status: 'ok', message: 'Webhook verified' }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
+
       // Process each event
       for (const evt of events) {
         if (evt.type === 'message') {
