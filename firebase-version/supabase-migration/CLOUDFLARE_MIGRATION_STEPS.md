@@ -28,7 +28,7 @@ Complete guide to migrate from Netlify to Cloudflare Pages (100% Free).
 - **Framework preset**: None
 - **Build command**: (leave empty)
 - **Build output directory**: `.` (root directory)
-- **Root directory**: `/` (leave empty)
+- **Root directory**: `firebase-version/supabase-migration` ⚠️ **IMPORTANT: Set this to your project subdirectory**
 
 **Environment Variables:**
 Click "Save and Deploy" first, then add environment variables:

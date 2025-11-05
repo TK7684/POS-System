@@ -25,7 +25,7 @@
 - [ ] Framework preset: `None`
 - [ ] Build command: (leave empty)
 - [ ] Build output directory: `.` (root)
-- [ ] Root directory: `/` (leave empty)
+- [ ] Root directory: `firebase-version/supabase-migration` ⚠️ **IMPORTANT: Set this to your project subdirectory**
 - [ ] Click "Save and Deploy"
 
 ### 4. Add Environment Variables

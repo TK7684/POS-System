@@ -17,7 +17,7 @@
 - **Framework preset**: `None`
 - **Build command**: (leave empty - no build needed)
 - **Build output directory**: `.` (root)
-- **Root directory**: `/` (leave empty)
+- **Root directory**: `firebase-version/supabase-migration` ⚠️ **IMPORTANT: Set this to your project subdirectory**
 
 Click **Save and Deploy**
 
@@ -39,7 +39,7 @@ LINE_GROUP_ID = (your LINE group ID - get after adding bot to group)
 
 ## Step 5: Update LINE Webhook (1 minute)
 1. Go to: LINE Developers Console → Your Channel → Messaging API
-2. Update **Webhook URL** to: `https://your-project.pages.dev/line-webhook`
+2. Update **Webhook URL** to: `https://pos-admin-bho.pages.dev/line-webhook`
    (Replace `your-project` with your actual Cloudflare Pages project name)
 3. Click **Update** → **Verify** (should show "Success")
 4. Enable **Use webhook**
