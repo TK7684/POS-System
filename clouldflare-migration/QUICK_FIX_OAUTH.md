@@ -59,3 +59,4 @@ Make sure that **exact URL** is in Supabase redirect URLs list!
 
 
 
+

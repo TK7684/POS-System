@@ -166,22 +166,55 @@
                 .container {
                     padding: 0 var(--spacing-sm);
                 }
+                /* Hide top bar on mobile - bottom nav is sufficient */
+                #app-topbar {
+                    display: none !important;
+                }
+                /* Adjust padding for mobile */
+                #pos-app {
+                    padding-top: 16px !important;
+                    padding-bottom: 80px !important;
+                }
+                /* Hide Quick Actions on mobile - already in bottom nav */
+                .quick-actions-mobile-hide {
+                    display: none !important;
+                }
+                /* Make buttons smaller on mobile */
+                .btn {
+                    padding: var(--spacing-sm) var(--spacing-md);
+                    font-size: var(--fs-sm);
+                    min-height: 40px;
+                }
+                /* Ensure bottom nav buttons fit */
+                #app-bottomnav .grid {
+                    gap: 0;
+                }
+                #app-bottomnav button {
+                    padding: 8px 4px;
+                    font-size: 10px;
+                    min-height: 60px;
+                }
+                /* Make cards more compact on mobile */
+                .card {
+                    padding: 12px;
+                    margin-bottom: var(--spacing-sm);
+                }
             }
         </style>
     </head>
     <body>
-        <!-- Sticky Top App Bar -->
-        <div id="app-topbar" class="fixed top-0 inset-x-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200" style="display: none;">
+        <!-- Sticky Top App Bar (Desktop only) -->
+        <div id="app-topbar" class="fixed top-0 inset-x-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200 hidden md:block" style="display: none;">
             <div class="container" style="padding-top: 8px; padding-bottom: 8px;">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center font-bold">POS</div>
-                        <div class="font-semibold">Kiro POS</div>
+                        <div class="font-semibold">POS-20251106-1434</div>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="openSaleModal()" class="btn brand text-sm">ขาย</button>
                         <button onclick="openPurchaseModal()" class="btn ghost text-sm">ซื้อ</button>
-                        <button onclick="openExpensesModal()" class="btn ghost text-sm">ค่าใช้จ่าย</button>
+                        <button onclick="openExpensesHistory()" class="btn ghost text-sm">ค่าใช้จ่าย</button>
                         <button onclick="openCalendarModal()" class="btn ghost text-sm">สรุป</button>
                     </div>
                 </div>
@@ -297,8 +330,8 @@
                 </p>
             </header>
 
-            <!-- Quick Actions -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
+            <!-- Quick Actions (Desktop only - hidden on mobile since bottom nav exists) -->
+            <div class="quick-actions-mobile-hide grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
                 <div class="card">
                     <h3 class="font-semibold mb-3">🛒 ขายสินค้า</h3>
                     <button onclick="openSaleModal()" class="btn brand w-full">
@@ -424,28 +457,28 @@
             </div>
         </div>
 
-        <!-- Sticky Bottom Navigation (Mobile-first) -->
-        <nav id="app-bottomnav" class="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200" style="display: none;">
+        <!-- Sticky Bottom Navigation (Mobile-first, shown on all screens) -->
+        <nav id="app-bottomnav" class="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 md:hidden" style="display: none;">
             <div class="grid grid-cols-5 text-xs">
-                <button onclick="openSaleModal()" class="py-2 flex flex-col items-center justify-center">
-                    <span>🛒</span>
-                    <span>ขาย</span>
+                <button onclick="openSaleModal()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
+                    <span class="text-lg">🛒</span>
+                    <span class="text-[10px] leading-tight">ขาย</span>
                 </button>
-                <button onclick="openPurchaseModal()" class="py-2 flex flex-col items-center justify-center">
-                    <span>📦</span>
-                    <span>ซื้อ</span>
+                <button onclick="openPurchaseModal()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
+                    <span class="text-lg">📦</span>
+                    <span class="text-[10px] leading-tight">ซื้อ</span>
                 </button>
-                <button onclick="openCalendarModal()" class="py-2 flex flex-col items-center justify-center">
-                    <span>📆</span>
-                    <span>สรุป</span>
+                <button onclick="openCalendarModal()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
+                    <span class="text-lg">📆</span>
+                    <span class="text-[10px] leading-tight">สรุป</span>
                 </button>
-                <button onclick="openExpensesHistory()" class="py-2 flex flex-col items-center justify-center">
-                    <span>💰</span>
-                    <span>ค่าใช้จ่าย</span>
+                <button onclick="openExpensesHistory()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
+                    <span class="text-lg">💰</span>
+                    <span class="text-[10px] leading-tight">ค่าใช้จ่าย</span>
                 </button>
-                <button onclick="openAIChatbot()" class="py-2 flex flex-col items-center justify-center">
-                    <span>🤖</span>
-                    <span>ผู้ช่วย</span>
+                <button onclick="openAIChatbot()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
+                    <span class="text-lg">🤖</span>
+                    <span class="text-[10px] leading-tight">ผู้ช่วย</span>
                 </button>
             </div>
         </nav>
@@ -622,10 +655,15 @@
                                 สวัสดีครับ! ผมช่วยคุณจัดการข้อมูลและคำนวณราคาได้ค่ะ 🤖
                                 <br><br>
                                 <strong>ฟังก์ชันที่รองรับ:</strong><br>
-                                💰 <strong>ต้นทุน:</strong> "ต้นทุนเมนู กุ้งแช่น้ำปลา"<br>
+                                💰 <strong>ต้นทุน:</strong> "ต้นทุนเมนู กุ้งแช่น้ำปลา" หรือ "what are the cost of menu A"<br>
                                 💡 <strong>แนะนำราคา:</strong> "แนะนำราคา A1 บน Grab"<br>
                                 📊 <strong>ความคุ้มทุน:</strong> "เมนู กุ้งดอง มีกำไรไหม"<br>
                                 🛒 <strong>บันทึกการซื้อ:</strong> "ซื้อ กุ้งสด 100 ตัว ราคา 500 บาท"<br>
+                                📦 <strong>รายการซื้อล่าสุด:</strong> "รายการซื้อล่าสุด" หรือ "what are the recent purchase list"<br>
+                                🏆 <strong>เมนูขายดี:</strong> "เมนูขายดี" หรือ "what are the best seller menu"<br>
+                                💎 <strong>วัตถุดิบแพงที่สุด:</strong> "วัตถุดิบแพงที่สุด" หรือ "what are the most expensive ingredients"<br>
+                                <br>
+                                <strong>🤖 AI Powered:</strong> ใช้ Google Gemini หรือ Hugging Face สำหรับคำถามที่ซับซ้อน<br>
                                 <br>
                                 พิมพ์ "ช่วยเหลือ" เพื่อดูคำสั่งทั้งหมด หรือพิมพ์คำถามของคุณเลยค่ะ!
                             </p>
@@ -841,7 +879,7 @@
         </div>
 
         <!-- Menu Listing Page -->
-        <div id="menus-page" class="container hidden" style="padding-top: 64px; padding-bottom: 88px;">
+        <div id="menus-page" class="container hidden" style="padding-top: 16px; padding-bottom: 80px;">
             <header class="mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <h1 class="text-3xl font-bold">🍽️ รายการเมนู</h1>
@@ -928,7 +966,7 @@
         </div>
 
         <!-- Expense History Page -->
-        <div id="expenses-history-page" class="container hidden" style="padding-top: 64px; padding-bottom: 88px;">
+        <div id="expenses-history-page" class="container hidden" style="padding-top: 16px; padding-bottom: 80px;">
             <header class="mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <h1 class="text-3xl font-bold">📋 ประวัติค่าใช้จ่าย</h1>

@@ -1,5 +1,0 @@
-# Cloudflare Pages redirects
-# Note: Functions in /functions folder are processed FIRST, before redirects
-# Function routes (/line-webhook, /midnight-stock-alert) are automatically handled
-# No redirects needed - static files and functions are served automatically
-

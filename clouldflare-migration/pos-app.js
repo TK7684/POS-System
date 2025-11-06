@@ -676,12 +676,38 @@ function showMainApp() {
   // Show navigation menus when logged in
   const topBar = document.getElementById("app-topbar");
   const bottomNav = document.getElementById("app-bottomnav");
+  
+  // Check if mobile (screen width < 768px)
+  const isMobile = window.innerWidth < 768;
+  
   if (topBar) {
-    topBar.style.display = "block";
+    // Show top bar only on desktop
+    if (!isMobile) {
+      topBar.style.display = "block";
+    } else {
+      topBar.style.display = "none";
+    }
   }
+  
   if (bottomNav) {
-    bottomNav.style.display = "block";
+    // Show bottom nav only on mobile
+    if (isMobile) {
+      bottomNav.style.display = "block";
+    } else {
+      bottomNav.style.display = "none";
+    }
   }
+  
+  // Update on window resize
+  window.addEventListener('resize', () => {
+    const isMobileNow = window.innerWidth < 768;
+    if (topBar) {
+      topBar.style.display = isMobileNow ? "none" : "block";
+    }
+    if (bottomNav) {
+      bottomNav.style.display = isMobileNow ? "block" : "none";
+    }
+  });
   
   // Hide any other pages
   const menusPage = document.getElementById("menus-page");
@@ -2929,17 +2955,334 @@ function calculateProfitablePrice(costPrice, platformFeePercent = 55) {
   };
 }
 
+// Helper function to get recent purchases
+async function getRecentPurchases(limit = 10) {
+  try {
+    const { data, error } = await window.supabase
+      .from("purchases")
+      .select(`
+        id,
+        quantity,
+        unit,
+        total_amount,
+        vendor,
+        purchase_date,
+        purchase_time,
+        ingredients:ingredient_id (
+          name
+        )
+      `)
+      .order("purchase_date", { ascending: false })
+      .order("purchase_time", { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error("Error fetching recent purchases:", error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in getRecentPurchases:", error);
+    return null;
+  }
+}
+
+// Helper function to get best seller menus
+async function getBestSellerMenus(limit = 10) {
+  try {
+    const { data, error } = await window.supabase
+      .from("sales")
+      .select(`
+        menu_id,
+        quantity,
+        unit_price,
+        menus:menu_id (
+          menu_id,
+          name,
+          price
+        )
+      `);
+    
+    if (error) {
+      console.error("Error fetching sales:", error);
+      return null;
+    }
+    
+    // Group by menu and calculate totals
+    const menuStats = {};
+    for (const sale of data || []) {
+      const menuId = sale.menu_id;
+      if (!menuStats[menuId]) {
+        menuStats[menuId] = {
+          menu_id: sale.menus?.menu_id || menuId,
+          name: sale.menus?.name || "Unknown",
+          price: sale.menus?.price || 0,
+          totalQuantity: 0,
+          totalRevenue: 0,
+          saleCount: 0
+        };
+      }
+      menuStats[menuId].totalQuantity += sale.quantity || 0;
+      menuStats[menuId].totalRevenue += (sale.quantity || 0) * (sale.unit_price || 0);
+      menuStats[menuId].saleCount += 1;
+    }
+    
+    // Convert to array and sort by total quantity
+    const sortedMenus = Object.values(menuStats)
+      .sort((a, b) => b.totalQuantity - a.totalQuantity)
+      .slice(0, limit);
+    
+    return sortedMenus;
+  } catch (error) {
+    console.error("Error in getBestSellerMenus:", error);
+    return null;
+  }
+}
+
+// Helper function to get most expensive ingredients
+async function getMostExpensiveIngredients(limit = 10) {
+  try {
+    const { data, error } = await window.supabase
+      .from("ingredients")
+      .select("id, name, cost_per_unit, unit, current_stock")
+      .not("cost_per_unit", "is", null)
+      .gt("cost_per_unit", 0)
+      .order("cost_per_unit", { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error("Error fetching expensive ingredients:", error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in getMostExpensiveIngredients:", error);
+    return null;
+  }
+}
+
+// AI Assistant using Google Gemini or Hugging Face
+async function callAIService(userMessage, context = {}) {
+  // Try Google Gemini first (if API key available)
+  const googleApiKey = window.GOOGLE_CLOUD_API_KEY || 
+                       (typeof process !== 'undefined' && process.env?.GOOGLE_CLOUD_API_KEY) ||
+                       'AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE';
+  
+  // Try Hugging Face as fallback
+  const huggingFaceKey = window.HUGGING_FACE_API_KEY || 
+                         (typeof process !== 'undefined' && process.env?.HUGGING_FACE_API_KEY);
+  
+  // Build context for AI
+  const systemPrompt = `You are a helpful POS (Point of Sale) system assistant. You help users with:
+- Database queries (purchases, sales, expenses, menus, ingredients)
+- Cost calculations
+- Inventory management
+- Business insights
+
+Current context:
+${JSON.stringify(context, null, 2)}
+
+Respond in Thai language, be concise and helpful.`;
+
+  // Try Google Gemini API
+  if (googleApiKey && googleApiKey !== 'YOUR_API_KEY_HERE') {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`
+            }]
+          }]
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+          return data.candidates[0].content.parts[0].text;
+        }
+      }
+    } catch (error) {
+      console.warn('Google Gemini API error:', error);
+    }
+  }
+
+  // Fallback to Hugging Face
+  if (huggingFaceKey && huggingFaceKey !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE') {
+    try {
+      const response = await fetch('https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${huggingFaceKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: `${systemPrompt}\n\nUser: ${userMessage}`,
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.generated_text) {
+          return data.generated_text;
+        }
+      }
+    } catch (error) {
+      console.warn('Hugging Face API error:', error);
+    }
+  }
+
+  return null; // No AI service available
+}
+
 async function processAIMessage(userMessage) {
   const message = userMessage.toLowerCase().trim();
   
+  // First, try pattern-based matching (fast and free)
+  
+  // ========== RECENT PURCHASES QUERIES ==========
+  // Patterns: "รายการซื้อล่าสุด", "recent purchases", "what are the recent purchase list"
+  const recentPurchasesPatterns = [
+    /รายการซื้อ(?:ล่าสุด|เมื่อเร็วๆนี้|เมื่อไม่นานมานี้)/i,
+    /(?:recent|latest)\s+purchases?/i,
+    /what\s+are\s+(?:the\s+)?recent\s+purchases?/i,
+    /ซื้อ(?:ล่าสุด|เมื่อเร็วๆนี้)/i,
+  ];
+  
+  for (const pattern of recentPurchasesPatterns) {
+    if (pattern.test(message)) {
+      addChatMessage("กำลังดึงข้อมูลรายการซื้อล่าสุด...");
+      
+      const purchases = await getRecentPurchases(10);
+      
+      if (!purchases || purchases.length === 0) {
+        addChatMessage("ไม่พบรายการซื้อล่าสุดในระบบค่ะ");
+        return;
+      }
+      
+      let response = `<div style="margin-bottom: 12px;"><strong>📦 รายการซื้อล่าสุด (${purchases.length} รายการ)</strong></div>\n\n`;
+      
+      for (let i = 0; i < purchases.length; i++) {
+        const purchase = purchases[i];
+        const ingredientName = purchase.ingredients?.name || "ไม่ระบุ";
+        const date = purchase.purchase_date || "";
+        const time = purchase.purchase_time || "";
+        const quantity = purchase.quantity || 0;
+        const unit = purchase.unit || "";
+        const amount = purchase.total_amount || 0;
+        const vendor = purchase.vendor || "ไม่ระบุ";
+        
+        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #0891b2;">\n`;
+        response += `<div style="font-weight: bold; margin-bottom: 4px;">${i + 1}. ${ingredientName}</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📊 จำนวน: ${quantity} ${unit}</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">💰 ราคา: ฿${parseFloat(amount).toFixed(2)}</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">🏪 ผู้ขาย: ${vendor}</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280;">📅 วันที่: ${date} ${time}</div>\n`;
+        response += `</div>\n`;
+      }
+      
+      addChatMessage(response);
+      return;
+    }
+  }
+  
+  // ========== BEST SELLER MENUS QUERIES ==========
+  // Patterns: "เมนูขายดี", "best seller", "what are the best seller menu"
+  const bestSellerPatterns = [
+    /เมนู(?:ขายดี|ยอดนิยม|ขายเยอะ|ขายมาก)/i,
+    /(?:best\s+)?seller(?:s)?\s+(?:menu|menus)?/i,
+    /what\s+are\s+(?:the\s+)?best\s+seller(?:s)?\s+(?:menu|menus)?/i,
+    /ขายดี/i,
+    /ยอดนิยม/i,
+  ];
+  
+  for (const pattern of bestSellerPatterns) {
+    if (pattern.test(message)) {
+      addChatMessage("กำลังวิเคราะห์ข้อมูลการขาย...");
+      
+      const bestSellers = await getBestSellerMenus(10);
+      
+      if (!bestSellers || bestSellers.length === 0) {
+        addChatMessage("ไม่พบข้อมูลการขายในระบบค่ะ");
+        return;
+      }
+      
+      let response = `<div style="margin-bottom: 12px;"><strong>🏆 เมนูขายดี (Top ${bestSellers.length})</strong></div>\n\n`;
+      
+      for (let i = 0; i < bestSellers.length; i++) {
+        const menu = bestSellers[i];
+        const rankIcon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+        
+        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${i < 3 ? '#10b981' : '#0891b2'};">\n`;
+        response += `<div style="font-weight: bold; margin-bottom: 4px;">${rankIcon} ${menu.name} (${menu.menu_id})</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📊 ขายทั้งหมด: ${menu.totalQuantity} จาน</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">💰 รายได้รวม: ฿${parseFloat(menu.totalRevenue).toFixed(2)}</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📈 จำนวนครั้งที่ขาย: ${menu.saleCount} ครั้ง</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280;">💵 ราคาต่อจาน: ฿${parseFloat(menu.price).toFixed(2)}</div>\n`;
+        response += `</div>\n`;
+      }
+      
+      addChatMessage(response);
+      return;
+    }
+  }
+  
+  // ========== MOST EXPENSIVE INGREDIENTS QUERIES ==========
+  // Patterns: "วัตถุดิบแพงที่สุด", "most expensive ingredients", "what are the most expensive ingredients"
+  const expensiveIngredientsPatterns = [
+    /วัตถุดิบ(?:แพงที่สุด|ราคาสูงสุด|ราคาแพง)/i,
+    /(?:most\s+)?expensive\s+ingredients?/i,
+    /what\s+are\s+(?:the\s+)?most\s+expensive\s+ingredients?/i,
+    /แพงที่สุด/i,
+  ];
+  
+  for (const pattern of expensiveIngredientsPatterns) {
+    if (pattern.test(message)) {
+      addChatMessage("กำลังค้นหาวัตถุดิบที่แพงที่สุด...");
+      
+      const expensiveIngredients = await getMostExpensiveIngredients(10);
+      
+      if (!expensiveIngredients || expensiveIngredients.length === 0) {
+        addChatMessage("ไม่พบข้อมูลวัตถุดิบในระบบค่ะ");
+        return;
+      }
+      
+      let response = `<div style="margin-bottom: 12px;"><strong>💎 วัตถุดิบที่แพงที่สุด (Top ${expensiveIngredients.length})</strong></div>\n\n`;
+      
+      for (let i = 0; i < expensiveIngredients.length; i++) {
+        const ingredient = expensiveIngredients[i];
+        const cost = parseFloat(ingredient.cost_per_unit) || 0;
+        const stock = parseFloat(ingredient.current_stock) || 0;
+        const unit = ingredient.unit || "";
+        
+        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${i < 3 ? '#ef4444' : '#f59e0b'};">\n`;
+        response += `<div style="font-weight: bold; margin-bottom: 4px;">${i + 1}. ${ingredient.name}</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">💰 ราคาต่อหน่วย: ฿${cost.toFixed(2)}/${unit}</div>\n`;
+        response += `<div style="font-size: 13px; color: #6b7280;">📦 สต๊อกปัจจุบัน: ${stock} ${unit}</div>\n`;
+        response += `</div>\n`;
+      }
+      
+      addChatMessage(response);
+      return;
+    }
+  }
+  
   // ========== MENU COST QUERIES ==========
   // Patterns: "ต้นทุนเมนู X", "ค่าใช้จ่ายเมนู X", "cost of menu X", "ราคาทุน X"
-  // Also handle: "ต้นทุน A2", "ต้นทุน A2 คือเท่าไหร่"
+  // Also handle: "ต้นทุน A2", "ต้นทุน A2 คือเท่าไหร่", "what are the cost of menu A"
   const costQueryPatterns = [
     /ต้นทุน(?:ของ)?\s*(?:เมนู)?\s*(.+?)(?:\s+(?:คือ|เท่าไหร่|คือเท่าไหร่|ราคา|cost|คืออะไร))?$/i,
     /ค่าใช้จ่าย(?:ของ)?\s*(?:เมนู)?\s*(.+?)(?:\s+(?:คือ|เท่าไหร่|คือเท่าไหร่|ราคา|cost|คืออะไร))?$/i,
     /ราคาทุน(?:ของ)?\s*(?:เมนู)?\s*(.+?)(?:\s+(?:คือ|เท่าไหร่|คือเท่าไหร่|ราคา|cost|คืออะไร))?$/i,
-    /cost\s+(?:of\s+)?(.+?)(?:\s+(?:of|is|for))?$/i,
+    /what\s+are\s+(?:the\s+)?cost\s+(?:of\s+)?(?:menu\s+)?(.+?)(?:\s*$|\?)/i,
+    /cost\s+(?:of\s+)?(?:menu\s+)?(.+?)(?:\s+(?:of|is|for))?$/i,
   ];
   
   for (const pattern of costQueryPatterns) {
@@ -3515,14 +3858,34 @@ async function processAIMessage(userMessage) {
     return;
   }
 
-  // Default response
-  addChatMessage(
-    `ไม่เข้าใจคำสั่งของคุณค่ะ 😅\n\n` +
-    `ลองพิมพ์:\n` +
-    `• "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท"\n` +
-    `• "ช่วยเหลือ" เพื่อดูวิธีใช้\n\n` +
-    `ตัวอย่าง: "ซื้อ กุ้งสด 100 ตัว ราคา 500 บาท"`
-  );
+  // If no pattern matched, try AI service (Google Gemini or Hugging Face)
+  addChatMessage("กำลังประมวลผลด้วย AI...");
+  
+  // Build context from database
+  const context = {
+    hasMenuData: menuData.length > 0,
+    menuCount: menuData.length,
+    hasIngredientData: ingredientData.length > 0,
+    ingredientCount: ingredientData.length,
+  };
+  
+  const aiResponse = await callAIService(userMessage, context);
+  
+  if (aiResponse) {
+    addChatMessage(aiResponse);
+  } else {
+    // Fallback to helpful message
+    addChatMessage(
+      `ไม่เข้าใจคำสั่งของคุณค่ะ 😅\n\n` +
+      `ลองพิมพ์:\n` +
+      `• "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท"\n` +
+      `• "รายการซื้อล่าสุด"\n` +
+      `• "เมนูขายดี"\n` +
+      `• "ต้นทุนเมนู [ชื่อเมนู]"\n` +
+      `• "ช่วยเหลือ" เพื่อดูวิธีใช้\n\n` +
+      `💡 หมายเหตุ: หากต้องการใช้ AI แบบเต็มรูปแบบ กรุณาตั้งค่า Google Gemini API หรือ Hugging Face API key`
+    );
+  }
 }
 
 // Set up chat form handler
@@ -5068,15 +5431,38 @@ let expensesHistoryState = {
 };
 
 function openExpensesHistory() {
-  document.getElementById("pos-app")?.classList.add("hidden");
-  document.getElementById("expenses-history-page")?.classList.remove("hidden");
-  expensesHistoryState.page = 1;
-  loadExpensesHistory();
+  const posApp = document.getElementById("pos-app");
+  const expensesPage = document.getElementById("expenses-history-page");
+  
+  if (posApp) {
+    posApp.classList.add("hidden");
+    posApp.style.display = "none";
+  }
+  
+  if (expensesPage) {
+    expensesPage.classList.remove("hidden");
+    expensesPage.style.display = "block";
+    expensesHistoryState.page = 1;
+    loadExpensesHistory();
+  } else {
+    console.error("Expenses history page not found");
+    showError("ไม่พบหน้าประวัติค่าใช้จ่าย");
+  }
 }
 
 function closeExpensesHistory() {
-  document.getElementById("expenses-history-page")?.classList.add("hidden");
-  document.getElementById("pos-app")?.classList.remove("hidden");
+  const expensesPage = document.getElementById("expenses-history-page");
+  const posApp = document.getElementById("pos-app");
+  
+  if (expensesPage) {
+    expensesPage.classList.add("hidden");
+    expensesPage.style.display = "none";
+  }
+  
+  if (posApp) {
+    posApp.classList.remove("hidden");
+    posApp.style.display = "block";
+  }
 }
 
 let expenseSearchTimeout;
@@ -5304,34 +5690,51 @@ async function showBackfillPanel() {
   backfillModal.innerHTML = `
     <div class="card max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold">📥 Backfill Expenses</h3>
+        <h3 class="text-xl font-bold">📥 Backfill & Import</h3>
         <button onclick="this.closest('.fixed').remove()" class="btn ghost">✕</button>
       </div>
       
       <div class="space-y-4">
         <div class="card bg-blue-50">
-          <h4 class="font-semibold mb-2">📊 Import from Google Sheets</h4>
+          <h4 class="font-semibold mb-2">📁 Import CSV File (Intelligent Detection)</h4>
           <p class="text-sm text-gray-600 mb-4">
-            Import expenses from your Google Sheet. Make sure to copy the data in the correct format:
+            Upload a CSV file. The system will automatically detect columns for dates, descriptions, amounts, categories, etc.
+          </p>
+          <input
+            type="file"
+            id="csv-file-input"
+            accept=".csv,.txt"
+            class="w-full p-2 border rounded mb-2"
+            onchange="handleCSVFileUpload(event)"
+          />
+          <div class="text-xs text-gray-500 mb-2">
+            Supported formats: CSV files with headers. The system will auto-detect columns.
+          </div>
+        </div>
+
+        <div class="card bg-purple-50">
+          <h4 class="font-semibold mb-2">📊 Import from Pasted Data</h4>
+          <p class="text-sm text-gray-600 mb-4">
+            Paste CSV data here. The system will intelligently detect columns.
           </p>
           <textarea
             id="sheets-data"
             class="w-full p-2 border rounded"
             rows="10"
-            placeholder='Paste Google Sheets data here (CSV format):\nวันที่,ชื่อค่าใช้จ่าย,จำนวนค่าใช้จ่าย,กลุ่มค่าใช้จ่าย\n27-Aug-2025,สูตรน้ำจิ้ม 1,349,อื่นๆ\n27-Aug-2025,เครื่องปั่น,2241,ค่าพนักงาน'
+            placeholder='Paste CSV data here (with or without headers):\nวันที่,ชื่อค่าใช้จ่าย,จำนวนค่าใช้จ่าย,กลุ่มค่าใช้จ่าย\n27-Aug-2025,สูตรน้ำจิ้ม 1,349,อื่นๆ\n27-Aug-2025,เครื่องปั่น,2241,ค่าพนักงาน'
           ></textarea>
           <button
-            onclick="importFromSheets()"
+            onclick="importFromPastedData()"
             class="btn brand mt-2 w-full"
           >
-            📥 Import from Sheets Data
+            📥 Import from Pasted Data
           </button>
         </div>
 
         <div class="card bg-green-50">
           <h4 class="font-semibold mb-2">📱 Process Old LINE Messages</h4>
           <p class="text-sm text-gray-600 mb-4">
-            Process all unprocessed LINE messages and extract expenses automatically.
+            Process all unprocessed LINE messages and extract expenses and purchases automatically.
           </p>
           <button
             onclick="processOldMessages()"
@@ -5343,8 +5746,8 @@ async function showBackfillPanel() {
 
         <div id="backfill-results" class="hidden">
           <div class="card bg-gray-50">
-            <h4 class="font-semibold mb-2">📊 Results</h4>
-            <pre id="backfill-output" class="text-xs bg-white p-2 rounded overflow-auto"></pre>
+            <h4 class="font-semibold mb-2">📊 Import Results</h4>
+            <div id="backfill-output" class="text-sm bg-white p-4 rounded overflow-auto space-y-2"></div>
           </div>
         </div>
       </div>
@@ -5358,71 +5761,151 @@ async function showBackfillPanel() {
   document.body.appendChild(backfillModal);
 }
 
-async function importFromSheets() {
+async function handleCSVFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const resultsDiv = document.getElementById("backfill-results");
+  const outputDiv = document.getElementById("backfill-output");
+  resultsDiv.classList.remove("hidden");
+  outputDiv.innerHTML = `<div class="text-blue-600">📁 Reading file: ${file.name}...</div>`;
+
+  try {
+    const text = await file.text();
+    await importFromCSVText(text, outputDiv);
+  } catch (error) {
+    console.error("File read error:", error);
+    outputDiv.innerHTML = `<div class="text-red-600">❌ Error reading file: ${error.message}</div>`;
+    alert("Error reading file: " + error.message);
+  }
+}
+
+async function importFromPastedData() {
   const textarea = document.getElementById("sheets-data");
   const data = textarea.value.trim();
   
   if (!data) {
-    alert("Please paste the Google Sheets data first");
+    alert("Please paste the CSV data first");
     return;
   }
 
+  const resultsDiv = document.getElementById("backfill-results");
+  const outputDiv = document.getElementById("backfill-output");
+  resultsDiv.classList.remove("hidden");
+  outputDiv.innerHTML = `<div class="text-blue-600">📊 Processing data...</div>`;
+
+  await importFromCSVText(data, outputDiv);
+}
+
+async function importFromCSVText(csvText, outputDiv) {
   try {
-    // Parse CSV data
-    const lines = data.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
-    
-    const expenses = [];
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      if (values.length >= 3) {
-        const expense = {};
-        headers.forEach((header, idx) => {
-          expense[header] = values[idx] || '';
-        });
-        expenses.push(expense);
-      }
-    }
-
-    if (expenses.length === 0) {
-      alert("No valid expenses found in the data");
-      return;
-    }
-
-    const resultsDiv = document.getElementById("backfill-results");
-    const outputDiv = document.getElementById("backfill-output");
-    resultsDiv.classList.remove("hidden");
-    outputDiv.textContent = `Processing ${expenses.length} expenses...`;
-
-    if (window.backfillExpenses && window.backfillExpenses.fromGoogleSheets) {
-      const results = await window.backfillExpenses.fromGoogleSheets(expenses);
-      outputDiv.textContent = JSON.stringify(results, null, 2);
-      alert(`Import complete!\n✅ Imported: ${results.imported}\n↩️ Skipped (duplicates): ${results.skipped}\n❌ Errors: ${results.errors}`);
-    } else {
+    if (!window.backfillExpenses || !window.backfillExpenses.fromCSV) {
       throw new Error("Backfill functions not loaded. Please refresh the page.");
     }
+
+    outputDiv.innerHTML = `<div class="text-blue-600">🔄 Parsing CSV and detecting columns...</div>`;
+
+    const results = await window.backfillExpenses.fromCSV(csvText);
+
+    // Display results in a nice format
+    let html = `<div class="space-y-3">`;
+    
+    // Column mapping info
+    if (results.columnMapping) {
+      html += `<div class="bg-blue-50 p-3 rounded">`;
+      html += `<div class="font-semibold mb-2">📋 Detected Column Mapping:</div>`;
+      html += `<div class="text-xs space-y-1">`;
+      if (results.columnMapping.date !== null) html += `<div>📅 Date: Column ${results.columnMapping.date + 1}</div>`;
+      if (results.columnMapping.description !== null) html += `<div>📝 Description: Column ${results.columnMapping.description + 1}</div>`;
+      if (results.columnMapping.itemName !== null) html += `<div>📦 Item Name: Column ${results.columnMapping.itemName + 1}</div>`;
+      if (results.columnMapping.amount !== null) html += `<div>💰 Amount: Column ${results.columnMapping.amount + 1}</div>`;
+      if (results.columnMapping.category !== null) html += `<div>🏷️ Category: Column ${results.columnMapping.category + 1}</div>`;
+      html += `</div></div>`;
+    }
+
+    // Results summary
+    html += `<div class="grid grid-cols-3 gap-3">`;
+    html += `<div class="bg-green-50 p-3 rounded text-center">`;
+    html += `<div class="text-2xl font-bold text-green-600">${results.imported}</div>`;
+    html += `<div class="text-xs text-gray-600">✅ Imported</div>`;
+    html += `</div>`;
+    
+    html += `<div class="bg-yellow-50 p-3 rounded text-center">`;
+    html += `<div class="text-2xl font-bold text-yellow-600">${results.skipped}</div>`;
+    html += `<div class="text-xs text-gray-600">↩️ Skipped</div>`;
+    html += `</div>`;
+    
+    html += `<div class="bg-red-50 p-3 rounded text-center">`;
+    html += `<div class="text-2xl font-bold text-red-600">${results.errors}</div>`;
+    html += `<div class="text-xs text-gray-600">❌ Errors</div>`;
+    html += `</div>`;
+    html += `</div>`;
+
+    if (results.duplicates > 0) {
+      html += `<div class="bg-orange-50 p-3 rounded">`;
+      html += `<div class="text-sm">🔄 Duplicates found: ${results.duplicates}</div>`;
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+    outputDiv.innerHTML = html;
+
+    // Show alert
+    alert(`Import complete!\n✅ Imported: ${results.imported}\n↩️ Skipped: ${results.skipped}\n❌ Errors: ${results.errors}${results.duplicates > 0 ? `\n🔄 Duplicates: ${results.duplicates}` : ''}`);
   } catch (error) {
     console.error("Import error:", error);
+    outputDiv.innerHTML = `<div class="text-red-600">❌ Error: ${error.message}</div>`;
     alert("Error importing expenses: " + error.message);
   }
 }
+
 
 async function processOldMessages() {
   const resultsDiv = document.getElementById("backfill-results");
   const outputDiv = document.getElementById("backfill-output");
   resultsDiv.classList.remove("hidden");
-  outputDiv.textContent = "Processing old LINE messages...";
+  outputDiv.innerHTML = `<div class="text-blue-600">🔄 Processing old LINE messages...</div>`;
 
   try {
     if (window.backfillExpenses && window.backfillExpenses.processOldLineMessages) {
       const results = await window.backfillExpenses.processOldLineMessages();
-      outputDiv.textContent = JSON.stringify(results, null, 2);
-      alert(`Processing complete!\n✅ Processed: ${results.processed}\n💰 Expenses found: ${results.expensesFound}\n❌ Errors: ${results.errors}`);
+      
+      // Display results nicely
+      let html = `<div class="space-y-3">`;
+      html += `<div class="grid grid-cols-3 gap-3">`;
+      html += `<div class="bg-blue-50 p-3 rounded text-center">`;
+      html += `<div class="text-2xl font-bold text-blue-600">${results.processed}</div>`;
+      html += `<div class="text-xs text-gray-600">📱 Processed</div>`;
+      html += `</div>`;
+      
+      html += `<div class="bg-green-50 p-3 rounded text-center">`;
+      html += `<div class="text-2xl font-bold text-green-600">${results.expensesFound}</div>`;
+      html += `<div class="text-xs text-gray-600">💰 Expenses</div>`;
+      html += `</div>`;
+      
+      html += `<div class="bg-purple-50 p-3 rounded text-center">`;
+      html += `<div class="text-2xl font-bold text-purple-600">${results.purchasesFound || 0}</div>`;
+      html += `<div class="text-xs text-gray-600">📦 Purchases</div>`;
+      html += `</div>`;
+      html += `</div>`;
+      
+      if (results.errors > 0) {
+        html += `<div class="bg-red-50 p-3 rounded text-center">`;
+        html += `<div class="text-lg font-bold text-red-600">${results.errors}</div>`;
+        html += `<div class="text-xs text-gray-600">❌ Errors</div>`;
+        html += `</div>`;
+      }
+      
+      html += `</div>`;
+      outputDiv.innerHTML = html;
+      
+      alert(`Processing complete!\n✅ Processed: ${results.processed}\n💰 Expenses found: ${results.expensesFound}\n📦 Purchases found: ${results.purchasesFound || 0}\n❌ Errors: ${results.errors}`);
     } else {
       throw new Error("Backfill functions not loaded. Please refresh the page.");
     }
   } catch (error) {
     console.error("Processing error:", error);
+    outputDiv.innerHTML = `<div class="text-red-600">❌ Error: ${error.message}</div>`;
     alert("Error processing messages: " + error.message);
   }
 }
