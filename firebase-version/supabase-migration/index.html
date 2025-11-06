@@ -20,6 +20,13 @@
 
         <!-- Tailwind CSS -->
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+          // Suppress Tailwind CDN production warning
+          if (window.tailwind) {
+            window.tailwind.config = window.tailwind.config || {};
+            window.tailwind.config.silent = true;
+          }
+        </script>
 
         <!-- PWA Manifest -->
         <link rel="manifest" href="manifest.json" />

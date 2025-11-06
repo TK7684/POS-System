@@ -1005,13 +1005,14 @@ const POS_FUNCTIONS = {
 const POS_ADMIN = {
   seedIngredients: async (rows = []) => {
     try {
+      // Remove category field - it doesn't exist in schema (use category_id instead)
       const { error } = await supabase.from("ingredients").upsert(
         rows.map((r) => ({
           name: r.name,
           unit: r.unit || "pieces",
           min_stock: Number(r.min_stock ?? 0),
           current_stock: Number(r.current_stock ?? 0),
-          category: r.category || "other",
+          // category field removed - schema uses category_id (UUID reference)
         })),
         { onConflict: "name" }
       );
@@ -1023,12 +1024,13 @@ const POS_ADMIN = {
 
   seedMenus: async (menus = []) => {
     try {
+      // Remove category field - it doesn't exist in schema (use category_id instead)
       const { error } = await supabase.from("menus").upsert(
         menus.map((m) => ({
           menu_id: m.menu_id || m.id,
           name: m.name,
           price: Number(m.price ?? 0),
-          category: m.category || "main",
+          // category field removed - schema uses category_id (UUID reference)
           is_active: true,
         })),
         { onConflict: "menu_id" }

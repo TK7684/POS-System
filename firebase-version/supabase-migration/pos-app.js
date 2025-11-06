@@ -645,7 +645,15 @@ function updateUserInfo(user) {
 }
 
 // ---------- Data Loading ----------
+let isLoadingData = false; // Guard to prevent multiple simultaneous calls
 async function loadInitialData() {
+  // Prevent multiple simultaneous calls
+  if (isLoadingData) {
+    logger.warn("DB", "loadInitialData already in progress, skipping duplicate call");
+    return;
+  }
+  
+  isLoadingData = true;
   const dataLoadTimer = perf.start("initial_data_load");
   logger.db("Starting initial data load...");
 

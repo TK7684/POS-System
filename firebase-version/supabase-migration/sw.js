@@ -54,6 +54,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip chrome-extension and other unsupported schemes
+  if (event.request.url.startsWith('chrome-extension://') || 
+      event.request.url.startsWith('moz-extension://') ||
+      event.request.url.startsWith('safari-extension://')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -65,12 +72,24 @@ self.addEventListener('fetch', (event) => {
               return response;
             }
 
+            // Skip caching chrome-extension URLs
+            if (event.request.url.startsWith('chrome-extension://') || 
+                event.request.url.startsWith('moz-extension://') ||
+                event.request.url.startsWith('safari-extension://')) {
+              return response;
+            }
+
             // Clone the response
             const responseToCache = response.clone();
 
             caches.open(CACHE_NAME)
               .then((cache) => {
-                cache.put(event.request, responseToCache);
+                try {
+                  cache.put(event.request, responseToCache);
+                } catch (error) {
+                  // Silently fail if caching is not supported for this request
+                  console.warn('Service Worker: Could not cache request', event.request.url);
+                }
               });
 
             return response;
