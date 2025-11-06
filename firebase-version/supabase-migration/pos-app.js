@@ -542,6 +542,16 @@ function showAuthScreen() {
     posApp.style.display = "none";
   }
   
+  // Hide navigation menus on login page
+  const topBar = document.getElementById("app-topbar");
+  const bottomNav = document.getElementById("app-bottomnav");
+  if (topBar) {
+    topBar.style.display = "none";
+  }
+  if (bottomNav) {
+    bottomNav.style.display = "none";
+  }
+  
   // Ensure all menu sections are also hidden
   const menusPage = document.getElementById("menus-page");
   const expensesHistoryPage = document.getElementById("expenses-history-page");
@@ -577,6 +587,16 @@ function showMainApp() {
     posApp.style.display = "block";
     // Ensure menu buttons are visible
     loadInitialData();
+  }
+  
+  // Show navigation menus when logged in
+  const topBar = document.getElementById("app-topbar");
+  const bottomNav = document.getElementById("app-bottomnav");
+  if (topBar) {
+    topBar.style.display = "block";
+  }
+  if (bottomNav) {
+    bottomNav.style.display = "block";
   }
   
   // Hide any other pages
