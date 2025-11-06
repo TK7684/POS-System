@@ -682,6 +682,7 @@ function showMainApp() {
   
   if (topBar) {
     // Show top bar only on desktop
+    topBar.classList.remove("hidden");
     if (!isMobile) {
       topBar.style.display = "block";
     } else {
@@ -691,6 +692,7 @@ function showMainApp() {
   
   if (bottomNav) {
     // Show bottom nav only on mobile
+    bottomNav.classList.remove("hidden");
     if (isMobile) {
       bottomNav.style.display = "block";
     } else {
@@ -3830,45 +3832,28 @@ async function processAIMessagePatternMatching(userMessage) {
         return true;
       }
 
-      // Process the purchase
-      addChatMessage(`กำลังบันทึกการซื้อ ${ingredient.name}...`);
-      
-      try {
-        const purchaseData = {
-          ingredient_id: ingredient.id,
-          ingredient_name: ingredient.name,
-          quantity: quantity,
-          unit: unit,
-          total_amount: price,
-          type: "purchase",
-          date: new Date().toISOString(),
-        };
+      // Store pending purchase for confirmation
+      const pendingPurchase = {
+        ingredient_id: ingredient.id,
+        ingredient_name: ingredient.name,
+        quantity: quantity,
+        unit: unit,
+        total_amount: price,
+        type: "purchase",
+        date: new Date().toISOString(),
+      };
 
-        const result = await window.POS.functions.processPurchase(purchaseData);
+      // Store in global scope for confirmation
+      window._pendingPurchase = pendingPurchase;
 
-        if (result.success) {
-          // Refresh data
-          await loadIngredients();
-          if (window._refreshLowStock) {
-            await window._refreshLowStock();
-          }
-          if (window._refreshTransactions) {
-            await window._refreshTransactions();
-          }
-
-          addChatMessage(
-            `✅ บันทึกการซื้อสำเร็จ!\n\n` +
-            `📦 วัตถุดิบ: ${ingredient.name}\n` +
-            `📊 จำนวน: ${quantity} ${unit}\n` +
-            `💰 ราคา: ฿${price}\n` +
-            `\nสต็อกได้ถูกอัพเดทเรียบร้อยแล้วค่ะ!`
-          );
-        } else {
-          addChatMessage(`❌ เกิดข้อผิดพลาด: ${result.error}`);
-        }
-      } catch (error) {
-        addChatMessage(`❌ เกิดข้อผิดพลาด: ${error.message}`);
-      }
+      // Ask for confirmation
+      addChatMessage(
+        `❓ ยืนยันการซื้อ:\n\n` +
+        `📦 วัตถุดิบ: ${ingredient.name}\n` +
+        `📊 จำนวน: ${quantity} ${unit}\n` +
+        `💰 ราคา: ฿${price.toFixed(2)}\n\n` +
+        `พิมพ์ "ยืนยัน" เพื่อบันทึก หรือ "ยกเลิก" เพื่อยกเลิก`
+      );
       return true;
     }
   }
