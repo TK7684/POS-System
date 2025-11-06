@@ -134,6 +134,11 @@ async function executeDatabaseQuery(queryPlan) {
       return await calculateMenuCost(queryPlan);
     }
 
+    // Handle menu_recipes with manual joins (schema cache doesn't have foreign keys)
+    if (table === "menu_recipes" && joins) {
+      return await executeMenuRecipesQueryWithManualJoin(queryPlan);
+    }
+
     // Build select with joins
     let selectQuery = "*";
     if (joins) {
