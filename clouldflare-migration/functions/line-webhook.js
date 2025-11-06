@@ -714,10 +714,12 @@ Response format:
 
 Respond in Thai.`;
 
-  // Try Google Gemini
+  // Try Google Gemini API with gemini-2.5-flash (same as main chatbot)
   if (googleApiKey && googleApiKey !== 'YOUR_API_KEY_HERE') {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+      // Try gemini-2.5-flash first (fastest, free tier friendly)
+      // For free tier, try v1 endpoint first, then v1beta
+      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -728,10 +730,55 @@ Respond in Thai.`;
           }],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 1024,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
           }
         })
       });
+
+      // If v1 fails with 404, try v1beta with gemini-2.5-flash
+      if (!response.ok && response.status === 404) {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser: ${messageText}\n\nAssistant:`
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          })
+        });
+      }
+
+      // If still fails, try gemini-2.0-flash
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.warn('Gemini 2.5 Flash failed, trying gemini-2.0-flash...');
+        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser: ${messageText}\n\nAssistant:`
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          })
+        });
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -749,11 +796,19 @@ Respond in Thai.`;
                 return formatResultsForLine(parsed.queryPlan.table, results, parsed.explanation);
               }
             } catch (e) {
-              // If JSON parsing fails, return the explanation
+              // If JSON parsing fails, return the explanation or full text
+              console.warn('JSON parsing failed, returning AI text:', e);
               return aiText;
             }
           }
+          // If no JSON found, return the AI response directly (for general questions)
           return aiText;
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.warn('Google Gemini API error:', response.status, errorData);
+        if (response.status === 403 || response.status === 401) {
+          console.warn('This usually means the API key is invalid, expired, or lacks permissions. Please check your Google AI Studio.');
         }
       }
     } catch (error) {
