@@ -123,21 +123,20 @@
             }
             .supabase-status {
                 position: fixed;
-                top: 10px;
-                right: 10px;
-                padding: 8px 12px;
-                border-radius: 20px;
+                top: 0;
+                right: 0;
+                padding: 0;
                 font-size: 12px;
                 font-weight: 600;
                 z-index: 1000;
             }
             .supabase-status.connected {
-                background: #10b981;
-                color: #fff;
+                color: #10b981;
+                background: transparent;
             }
             .supabase-status.disconnected {
-                background: #ef4444;
-                color: #fff;
+                color: #ef4444;
+                background: transparent;
             }
             .supabase-status.demo {
                 background: #f59e0b;
@@ -260,7 +259,7 @@
         </div>
         <!-- Supabase Status Indicator -->
         <div id="supabase-status" class="supabase-status disconnected">
-            🔴 Disconnected
+            Disconnected
         </div>
 
         <!-- Authentication Screen -->

@@ -569,7 +569,13 @@ async function processAIMessageWithDatabase(userMessage) {
   const message = userMessage.toLowerCase().trim();
   
   // Check if it's a database-related question
-  const isDatabaseQuery = /รายการ|เมนู|วัตถุดิบ|ต้นทุน|ซื้อ|ขาย|ค่าใช้จ่าย|purchase|menu|ingredient|cost|expense|sales|recent|best|expensive|seller/i.test(message);
+  // Exclude purchase commands - let pattern matching handle those first
+  const isPurchaseCommand = /^ซื้อ\s+.+\s+\d+.*(?:บาท|ราคา)/i.test(message);
+  if (isPurchaseCommand) {
+    return null; // Let pattern matching handle purchase commands
+  }
+  
+  const isDatabaseQuery = /รายการ|เมนู|วัตถุดิบ|ต้นทุน|ขาย|ค่าใช้จ่าย|purchase|menu|ingredient|cost|expense|sales|recent|best|expensive|seller/i.test(message);
   
   if (!isDatabaseQuery) {
     // Not a database question, let pattern matching handle it

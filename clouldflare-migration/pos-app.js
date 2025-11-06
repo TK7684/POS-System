@@ -317,10 +317,10 @@ function checkSupabaseConnection() {
       "Supabase not initialized",
       new Error("window.supabase is undefined"),
     );
-    if (statusEl) {
-      statusEl.textContent = "🔴 Supabase not initialized";
-      statusEl.className = "supabase-status disconnected";
-    }
+      if (statusEl) {
+        statusEl.textContent = "Disconnected";
+        statusEl.className = "supabase-status disconnected";
+      }
     appState.firebaseConnected = false;
     // Retry after a short delay
     setTimeout(() => {
@@ -341,7 +341,7 @@ function checkSupabaseConnection() {
       if (error) {
         logger.error("DB", "Supabase connection failed", error);
         if (statusEl) {
-          statusEl.textContent = "🔴 Connection error";
+          statusEl.textContent = "Disconnected";
           statusEl.className = "supabase-status disconnected";
         }
         appState.firebaseConnected = false;
@@ -350,7 +350,7 @@ function checkSupabaseConnection() {
           duration: `${duration.toFixed(2)}ms`,
         });
         if (statusEl) {
-          statusEl.textContent = `🟢 Connected (${duration.toFixed(0)}ms)`;
+          statusEl.textContent = "Connected";
           statusEl.className = "supabase-status connected";
         }
         appState.firebaseConnected = true;
@@ -360,7 +360,7 @@ function checkSupabaseConnection() {
       const duration = connTimer();
       logger.error("DB", "Supabase connection failed", error);
       if (statusEl) {
-        statusEl.textContent = "🔴 Connection error";
+        statusEl.textContent = "Disconnected";
         statusEl.className = "supabase-status disconnected";
       }
       appState.firebaseConnected = false;
@@ -3798,19 +3798,33 @@ async function processAIMessagePatternMatching(userMessage) {
   }
   
   // Extract purchase information from natural language
+  // Support multiple formats: "ซื้อ [name] [price] บาท [qty] [unit]" or "ซื้อ [name] [qty] [unit] ราคา [price]"
   const purchasePatterns = [
-    /ซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i,
+    /ซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*บาท\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)/i,  // "ซื้อ กระเทียม 65 บาท 1 กก"
+    /ซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i,  // "ซื้อ กุ้ง 100 ตัว ราคา 500"
     /บันทึกการซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i,
     /เพิ่มสต็อก\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i,
   ];
 
-  for (const pattern of purchasePatterns) {
+  for (let i = 0; i < purchasePatterns.length; i++) {
+    const pattern = purchasePatterns[i];
     const match = message.match(pattern);
     if (match) {
-      const ingredientName = match[1].trim();
-      const quantity = parseFloat(match[2]);
-      const unit = match[3].trim();
-      const price = match[4] ? parseFloat(match[4]) : null;
+      let ingredientName, quantity, unit, price;
+      
+      // First pattern: "ซื้อ [name] [price] บาท [qty] [unit]"
+      if (i === 0) {
+        ingredientName = match[1].trim();
+        price = parseFloat(match[2]);
+        quantity = parseFloat(match[3]);
+        unit = match[4].trim();
+      } else {
+        // Other patterns: "ซื้อ [name] [qty] [unit] ราคา [price]"
+        ingredientName = match[1].trim();
+        quantity = parseFloat(match[2]);
+        unit = match[3].trim();
+        price = match[4] ? parseFloat(match[4]) : null;
+      }
 
       // Find matching ingredient
       const ingredient = ingredientData.find(ing => 
