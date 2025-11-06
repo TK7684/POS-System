@@ -203,9 +203,11 @@ async function initializeApp() {
     logger.ui("Initializing event listeners...");
     initializeEventListeners();
 
-    // Check Supabase connection
+    // Check Supabase connection (wait a bit for it to be fully ready)
     logger.db("Checking Supabase connection...");
-    checkSupabaseConnection();
+    setTimeout(() => {
+      checkSupabaseConnection();
+    }, 1000);
 
     // Set up auth state listener
     if (window.POS && window.POS.auth) {
@@ -258,6 +260,12 @@ function checkSupabaseConnection() {
       statusEl.className = "supabase-status disconnected";
     }
     appState.firebaseConnected = false;
+    // Retry after a short delay
+    setTimeout(() => {
+      if (window.supabase) {
+        checkSupabaseConnection();
+      }
+    }, 2000);
     return;
   }
 
@@ -406,14 +414,15 @@ async function signInWithGoogle() {
       '<div class="spinner" style="width:20px;height:20px;border:2px solid #ccc;border-top-color:#0891b2;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;margin-right:8px;"></div> Signing in...';
     btn.disabled = true;
 
-    // Wait for Supabase to be ready
-    if (!window.supabase) {
-      // Wait a bit for Supabase to initialize
+    // Wait for Supabase to be ready (with retries)
+    let retries = 0;
+    while (!window.supabase && retries < 10) {
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (!window.supabase) {
-        throw new Error("Supabase not initialized. Please refresh the page.");
-      }
+      retries++;
+    }
+    
+    if (!window.supabase) {
+      throw new Error("Supabase not initialized. Please wait a moment and try again.");
     }
 
     // Check if POS auth is available
@@ -2039,7 +2048,9 @@ class LineBotIntegration {
         // Combine prices from image and text
         prices = prices.length > 0 ? prices : textPrices;
         
-        matches2.forEach((match, index) => {
+        // Use for...of loop instead of forEach to properly handle await
+        for (let index = 0; index < matches2.length; index++) {
+          const match = matches2[index];
           const ingredientName = match[1].trim();
           const quantity = parseFloat(match[2]);
           const unit = match[3].trim();
@@ -2057,7 +2068,7 @@ class LineBotIntegration {
             originalText: match[0],
             needsConfirmation: !price || !matchedIngredient,
           });
-        });
+        }
       }
     }
 
