@@ -1078,8 +1078,6 @@ async function handlePurchaseSubmit(event) {
     const result = await window.POS.functions.processPurchase(purchaseData);
 
     if (result.success) {
-      showToast("บันทึกการซื้อสำเร็จ");
-      
       // Refresh ingredients and low stock list after successful purchase
       await loadIngredients();
       
@@ -1088,11 +1086,14 @@ async function handlePurchaseSubmit(event) {
         await window._refreshLowStock();
       }
       
-      // Manually refresh transactions list to show the new purchase
-      if (window._refreshTransactions) {
-        await window._refreshTransactions();
-      }
+      // Wait a moment for transaction to be saved, then refresh transactions
+      setTimeout(async () => {
+        if (window._refreshTransactions) {
+          await window._refreshTransactions();
+        }
+      }, 500);
       
+      showToast("บันทึกการซื้อสำเร็จ");
       closePurchaseModal();
       document.getElementById("purchase-form").reset();
     } else {
@@ -3988,16 +3989,20 @@ async function processAIMessagePatternMatching(userMessage) {
         if (window._refreshLowStock) {
           await window._refreshLowStock();
         }
-        if (window._refreshTransactions) {
-          await window._refreshTransactions();
-        }
+        
+        // Wait a moment for transaction to be saved, then refresh transactions
+        setTimeout(async () => {
+          if (window._refreshTransactions) {
+            await window._refreshTransactions();
+          }
+        }, 500);
 
+        // Only show success message if database was actually updated
         addChatMessage(
           `✅ บันทึกการซื้อสำเร็จ!\n\n` +
-          `📦 วัตถุดิบ: ${pendingPurchase.ingredient_name}\n` +
-          `📊 จำนวน: ${pendingPurchase.quantity} ${pendingPurchase.unit}\n` +
-          `💰 ราคา: ฿${pendingPurchase.total_amount.toFixed(2)}\n\n` +
-          `สต็อกได้ถูกอัพเดทเรียบร้อยแล้วค่ะ!\n` +
+          `📦 ${pendingPurchase.ingredient_name}\n` +
+          `📊 ${pendingPurchase.quantity} ${pendingPurchase.unit}\n` +
+          `💰 ฿${pendingPurchase.total_amount.toFixed(2)}\n\n` +
           `📝 ดูรายการใน "ธุรกรรมล่าสุด" ด้านซ้าย`
         );
       } else {
