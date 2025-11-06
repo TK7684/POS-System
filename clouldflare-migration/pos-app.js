@@ -5199,7 +5199,7 @@ function loadDemoData() {
 
   // Populate dropdowns with demo data
   logger.ui("Populating dropdowns with demo data");
-  populateIngredientDropdown();
+  await populateIngredientDropdown();
   populateMenuDropdown();
 
   // Show demo status

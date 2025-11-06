@@ -219,30 +219,34 @@ export async function onRequest(context) {
             }
           }
 
-          // Only respond to commands if wake word "พอส" is used
+          // Process commands - try with wake word first, then without
           const hasWakeWord = messageText && messageText.includes('พอส');
-          if (hasWakeWord && env?.LINE_CHANNEL_ACCESS_TOKEN && evt.replyToken) {
+          const command = hasWakeWord ? messageText.replace(/พอส\s*/i, '').trim() : messageText.trim();
+          
+          // Process command if it's not empty and we have access token
+          if (command && env?.LINE_CHANNEL_ACCESS_TOKEN && evt.replyToken) {
             try {
-              // Remove wake word and process the command
-              const command = messageText.replace(/พอส\s*/i, '').trim();
               const replyText = await processCommand(command, messageType, env);
               if (replyText) {
                 await replyToLine(evt.replyToken, replyText, env.LINE_CHANNEL_ACCESS_TOKEN);
                 processedCount++;
               } else {
-                console.log('No reply text generated for command:', command);
+                // If no reply and no wake word, don't respond (silent)
+                if (hasWakeWord) {
+                  console.log('No reply text generated for command:', command);
+                }
               }
             } catch (replyError) {
               console.error('Error processing command:', replyError);
-              // Send error message to user
-              if (evt.replyToken && env?.LINE_CHANNEL_ACCESS_TOKEN) {
+              // Send error message to user only if wake word was used
+              if (hasWakeWord && evt.replyToken && env?.LINE_CHANNEL_ACCESS_TOKEN) {
                 await replyToLine(evt.replyToken, 'เกิดข้อผิดพลาดในการประมวลผลคำสั่ง', env.LINE_CHANNEL_ACCESS_TOKEN);
               }
             }
           } else {
             // Log why message wasn't processed
-            if (!hasWakeWord) {
-              console.log('Message does not contain wake word "พอส"');
+            if (!command) {
+              console.log('Empty command after processing');
             }
             if (!env?.LINE_CHANNEL_ACCESS_TOKEN) {
               console.error('LINE_CHANNEL_ACCESS_TOKEN not configured');
