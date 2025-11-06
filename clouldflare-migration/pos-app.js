@@ -3165,10 +3165,11 @@ Respond in Thai language, be concise and helpful.`;
   return null; // No AI service available
 }
 
-async function processAIMessage(userMessage) {
+// Pattern matching function for common queries (extracted for reuse)
+async function processAIMessagePatternMatching(userMessage) {
   const message = userMessage.toLowerCase().trim();
   
-  // First, try pattern-based matching (fast and free)
+  // Pattern-based matching (fast and free)
   
   // ========== RECENT PURCHASES QUERIES ==========
   // Patterns: "รายการซื้อล่าสุด", "recent purchases", "what are the recent purchase list"
@@ -3212,7 +3213,7 @@ async function processAIMessage(userMessage) {
       }
       
       addChatMessage(response);
-      return;
+      return true;
     }
   }
   
@@ -3253,7 +3254,7 @@ async function processAIMessage(userMessage) {
       }
       
       addChatMessage(response);
-      return;
+      return true;
     }
   }
   
@@ -3274,7 +3275,7 @@ async function processAIMessage(userMessage) {
       
       if (!expensiveIngredients || expensiveIngredients.length === 0) {
         addChatMessage("ไม่พบข้อมูลวัตถุดิบในระบบค่ะ");
-        return;
+        return true;
       }
       
       let response = `<div style="margin-bottom: 12px;"><strong>💎 วัตถุดิบที่แพงที่สุด (Top ${expensiveIngredients.length})</strong></div>\n\n`;
@@ -3293,7 +3294,7 @@ async function processAIMessage(userMessage) {
       }
       
       addChatMessage(response);
-      return;
+      return true;
     }
   }
   
@@ -3354,7 +3355,7 @@ async function processAIMessage(userMessage) {
           `1. มีสูตรเมนูในระบบหรือไม่\n` +
           `2. วัตถุดิบมีราคา (cost_per_unit) หรือไม่`
         );
-        return;
+        return true;
       }
       
       const currentPrice = menu.price || 0;
@@ -3459,7 +3460,7 @@ async function processAIMessage(userMessage) {
       }
       
       addChatMessage(response);
-      return;
+      return true;
     }
   }
   
@@ -3496,7 +3497,7 @@ async function processAIMessage(userMessage) {
       
       if (!menu) {
         addChatMessage(`ไม่พบเมนู "${menuName}" ในระบบค่ะ`);
-        return;
+        return true;
       }
       
       addChatMessage(`กำลังคำนวณราคาที่แนะนำสำหรับ "${menu.name}"...`);
@@ -3508,7 +3509,7 @@ async function processAIMessage(userMessage) {
           `⚠️ ไม่สามารถคำนวณได้\n` +
           `กรุณาตรวจสอบว่ามีสูตรเมนูและราคาวัตถุดิบครบถ้วน`
         );
-        return;
+        return true;
       }
       
       // Determine platform fee
@@ -3535,7 +3536,7 @@ async function processAIMessage(userMessage) {
       
       if (!suggestion) {
         addChatMessage(`❌ ไม่สามารถคำนวณราคาที่แนะนำได้ เนื่องจาก Platform Fee สูงเกินไป`);
-        return;
+        return true;
       }
       
       let response = `💰 คำแนะนำราคาสำหรับ "${menu.name}"`;
@@ -3586,7 +3587,7 @@ async function processAIMessage(userMessage) {
       }
       
       addChatMessage(response);
-      return;
+      return true;
     }
   }
   
@@ -3618,7 +3619,7 @@ async function processAIMessage(userMessage) {
       
       if (!menu) {
         addChatMessage(`ไม่พบเมนู "${menuName}" ในระบบค่ะ`);
-        return;
+        return true;
       }
       
       const costPrice = await calculateMenuCostFromDB(menu.id);
@@ -3626,7 +3627,7 @@ async function processAIMessage(userMessage) {
       
       if (costPrice === null) {
         addChatMessage(`ไม่สามารถคำนวณได้ กรุณาตรวจสอบข้อมูลสูตรและราคาวัตถุดิบ`);
-        return;
+        return true;
       }
       
       let response = `📊 การวิเคราะห์ความคุ้มทุนของ "${menu.name}":\n\n`;
@@ -3656,7 +3657,7 @@ async function processAIMessage(userMessage) {
       }
       
       addChatMessage(response);
-      return;
+      return true;
     }
   }
   
@@ -3686,14 +3687,14 @@ async function processAIMessage(userMessage) {
           `ไม่พบวัตถุดิบ "${ingredientName}" ในระบบค่ะ\n` +
           `กรุณาเลือกจากรายการที่มีอยู่ หรือตรวจสอบการสะกดอีกครั้งค่ะ`
         );
-        return;
+        return true;
       }
 
       if (!price) {
         addChatMessage(
           `กรุณาระบุราคา เช่น "ซื้อ ${ingredient.name} ${quantity} ${unit} ราคา XXX บาท"`
         );
-        return;
+        return true;
       }
 
       // Process the purchase
@@ -3735,7 +3736,7 @@ async function processAIMessage(userMessage) {
       } catch (error) {
         addChatMessage(`❌ เกิดข้อผิดพลาด: ${error.message}`);
       }
-      return;
+      return true;
     }
   }
 
@@ -3746,7 +3747,7 @@ async function processAIMessage(userMessage) {
       `สำหรับการอัพเดทสต็อกโดยตรง กรุณาใช้ฟอร์ม "📦 ซื้อวัตถุดิบ" หรือ\n` +
       `พิมพ์ "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท" ค่ะ`
     );
-    return;
+    return true;
   }
 
   // ========== DATA DIAGNOSTICS ==========
@@ -3842,13 +3843,51 @@ async function processAIMessage(userMessage) {
         }
         
         addChatMessage(response);
-        return;
+        return true;
       } catch (error) {
         addChatMessage(`❌ เกิดข้อผิดพลาดในการตรวจสอบ: ${error.message}`);
-        return;
+        return true;
       }
     }
   }
+  
+  // Help message
+  const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน/i];
+  if (helpPatterns.some(p => p.test(message))) {
+    addChatMessage(
+      `📚 คู่มือการใช้งาน AI Assistant:\n\n` +
+      `🛒 <strong>บันทึกการซื้อ:</strong>\n` +
+      `   • "ซื้อ กุ้งสด 100 ตัว ราคา 500 บาท"\n` +
+      `   • "บันทึกการซื้อ แซลม่อนสด 1kg ราคา 300 บาท"\n\n` +
+      `💰 <strong>ตรวจสอบต้นทุน:</strong>\n` +
+      `   • "ต้นทุนเมนู กุ้งแช่น้ำปลา"\n` +
+      `   • "ค่าใช้จ่ายของเมนู A1"\n` +
+      `   • "cost of menu กุ้งดอง"\n\n` +
+      `💡 <strong>แนะนำราคา:</strong>\n` +
+      `   • "แนะนำราคา กุ้งแช่น้ำปลา"\n` +
+      `   • "ควรขาย กุ้งดอง เท่าไหร่"\n` +
+      `   • "แนะนำราคา A1 บน Grab"\n` +
+      `   • "suggest price for กุ้งสดลาบ"\n\n` +
+      `📊 <strong>ตรวจสอบความคุ้มทุน:</strong>\n` +
+      `   • "เมนู กุ้งแช่น้ำปลา มีกำไรไหม"\n` +
+      `   • "is menu A1 profitable"\n\n` +
+      `📦 <strong>ตรวจสอบสต็อก:</strong>\n` +
+      `   ดูรายการ "🚨 สต๊อกใกล้หมด" ด้านซ้าย\n\n` +
+      `🔍 <strong>ตรวจสอบข้อมูล:</strong>\n` +
+      `   • "ตรวจสอบข้อมูล" - ตรวจสอบสูตรและราคาวัตถุดิบ\n` +
+      `   • "check data" - Check if data is ready for cost calculation\n\n` +
+      `💡 <strong>หน่วยที่รองรับ:</strong>\n` +
+      `   ตัว, กก, kg, กรัม, ลิตร, ขวด, ชิ้น, ซอง`
+    );
+    return true;
+  }
+
+  // No pattern matched, return false to allow other handlers
+  return false;
+}
+
+async function processAIMessage(userMessage) {
+  const message = userMessage.toLowerCase().trim();
   
   // Help message
   const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน/i];
@@ -3884,13 +3923,20 @@ async function processAIMessage(userMessage) {
   // Try intelligent database-aware AI first (handles all database questions)
   if (window.processAIMessageWithDatabase) {
     const handled = await window.processAIMessageWithDatabase(userMessage);
-    if (handled !== null) {
+    if (handled !== null && handled !== false) {
       return; // AI handled it (either with query or explanation)
     }
   }
   
   // If AI didn't handle it, try pattern matching for common queries (fast fallback)
   // Pattern matching is kept as a fast fallback for reliability
+  // This handles common queries like "รายการซื้อล่าสุด", "เมนูขายดี", etc.
+  
+  // Call the pattern matching function (defined earlier in the file)
+  const patternMatched = await processAIMessagePatternMatching(userMessage);
+  if (patternMatched) {
+    return; // Pattern matching handled it
+  }
   
   // Build context from database
   const context = {
