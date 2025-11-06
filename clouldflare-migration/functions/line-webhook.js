@@ -695,8 +695,6 @@ async function processCommand(messageText, messageType, env) {
   // If no response was generated, return a helpful message
   console.log('No response generated for command:', messageText);
   return `ไม่เข้าใจคำสั่ง "${messageText}"\n\nพิมพ์ "help" เพื่อดูคำสั่งที่ใช้ได้`;
-
-  return `✅ รับคำสั่งแล้ว\nพิมพ์ "พอส help" เพื่อดูคำสั่งทั้งหมด`;
 }
 
 /**
