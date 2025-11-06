@@ -725,44 +725,32 @@ function formatQueryResults(table, data, originalQuestion) {
 
     case "menus":
       response = `🍽️ รายการเมนูทั้งหมด (${data.length} รายการ):\n\n`;
-      // Group by category if possible, otherwise just list
-      const menusByCategory = {};
-      data.forEach(menu => {
-        const category = menu.category_id || "อื่นๆ";
-        if (!menusByCategory[category]) {
-          menusByCategory[category] = [];
+      
+      // Simple list format - show menu ID, name, and price clearly
+      data.forEach((menu, i) => {
+        const status = menu.is_active && menu.is_available ? "✅" : "❌";
+        const menuId = menu.menu_id ? `[${menu.menu_id}]` : "";
+        response += `${i + 1}. ${status} ${menuId} ${menu.name || "ไม่ระบุชื่อ"}\n`;
+        response += `   💰 ราคา: ฿${parseFloat(menu.price || 0).toFixed(2)}\n`;
+        if (menu.cost_price && menu.cost_price > 0) {
+          const profit = (menu.price || 0) - menu.cost_price;
+          const profitMargin = menu.price ? ((profit / menu.price) * 100).toFixed(1) : 0;
+          response += `   💵 ต้นทุน: ฿${parseFloat(menu.cost_price).toFixed(2)}\n`;
+          response += `   📊 กำไร: ฿${profit.toFixed(2)} (${profitMargin}%)\n`;
         }
-        menusByCategory[category].push(menu);
+        if (menu.preparation_time_minutes) {
+          response += `   ⏱️ เวลาทำ: ${menu.preparation_time_minutes} นาที\n`;
+        }
+        response += `\n`;
       });
-
-      // If we have categories, group them
-      if (Object.keys(menusByCategory).length > 1) {
-        Object.entries(menusByCategory).forEach(([categoryId, menus]) => {
-          response += `\n📁 หมวดหมู่: ${categoryId}\n`;
-          menus.forEach((menu, i) => {
-            const status = menu.is_active && menu.is_available ? "✅" : "❌";
-            response += `${status} ${menu.menu_id || ""} ${menu.name || "ไม่ระบุชื่อ"}\n`;
-            response += `   ราคา: ฿${parseFloat(menu.price || 0).toFixed(2)}\n`;
-            if (menu.cost_price && menu.cost_price > 0) {
-              response += `   ต้นทุน: ฿${parseFloat(menu.cost_price).toFixed(2)}\n`;
-            }
-            response += `\n`;
-          });
-        });
-      } else {
-        // Simple list format
-        data.forEach((menu, i) => {
-          const status = menu.is_active && menu.is_available ? "✅" : "❌";
-          response += `${i + 1}. ${status} ${menu.menu_id || ""} ${menu.name || "ไม่ระบุชื่อ"}\n`;
-          response += `   ราคา: ฿${parseFloat(menu.price || 0).toFixed(2)}\n`;
-          if (menu.cost_price && menu.cost_price > 0) {
-            response += `   ต้นทุน: ฿${parseFloat(menu.cost_price).toFixed(2)}\n`;
-          }
-          if (menu.preparation_time_minutes) {
-            response += `   เวลาทำ: ${menu.preparation_time_minutes} นาที\n`;
-          }
-          response += `\n`;
-        });
+      
+      // Add summary if there are many menus
+      if (data.length > 20) {
+        const activeCount = data.filter(m => m.is_active && m.is_available).length;
+        const totalPrice = data.reduce((sum, m) => sum + (parseFloat(m.price || 0)), 0);
+        response += `\n📊 สรุป:\n`;
+        response += `   • เมนูที่เปิดขาย: ${activeCount}/${data.length}\n`;
+        response += `   • ราคาเฉลี่ย: ฿${(totalPrice / data.length).toFixed(2)}\n`;
       }
       break;
 
