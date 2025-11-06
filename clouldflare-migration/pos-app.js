@@ -2985,17 +2985,49 @@ async function getRecentPurchases(limit = 10) {
         vendor,
         purchase_date,
         purchase_time,
-        ingredients:ingredient_id (
-          name
-        )
+        ingredient_id
       `)
       .order("purchase_date", { ascending: false })
       .order("purchase_time", { ascending: false })
       .limit(limit);
     
     if (error) {
-      console.error("Error fetching recent purchases:", error);
-      return null;
+      // Fallback: try without join if relationship doesn't exist
+      console.warn("Error with join, trying without:", error);
+      const { data: simpleData, error: simpleError } = await window.supabase
+        .from("purchases")
+        .select("id, quantity, unit, total_amount, vendor, purchase_date, purchase_time, ingredient_id")
+        .order("purchase_date", { ascending: false })
+        .order("purchase_time", { ascending: false })
+        .limit(limit);
+      
+      if (simpleError) {
+        console.error("Error fetching recent purchases:", simpleError);
+        return null;
+      }
+      
+      // Manually join with ingredients if needed
+      if (simpleData && simpleData.length > 0) {
+        const ingredientIds = [...new Set(simpleData.map(p => p.ingredient_id).filter(Boolean))];
+        if (ingredientIds.length > 0) {
+          const { data: ingredients } = await window.supabase
+            .from("ingredients")
+            .select("id, name")
+            .in("id", ingredientIds);
+          
+          const ingredientMap = {};
+          ingredients?.forEach(ing => {
+            ingredientMap[ing.id] = ing.name;
+          });
+          
+          return simpleData.map(p => ({
+            ...p,
+            ingredients: p.ingredient_id ? { name: ingredientMap[p.ingredient_id] || "Unknown" } : null
+          }));
+        }
+      }
+      
+      return simpleData;
     }
     
     return data;
@@ -3939,9 +3971,14 @@ async function processAIMessage(userMessage) {
 
   // Try intelligent database-aware AI first (handles all database questions)
   if (window.processAIMessageWithDatabase) {
-    const handled = await window.processAIMessageWithDatabase(userMessage);
-    if (handled !== null && handled !== false) {
-      return; // AI handled it (either with query or explanation)
+    try {
+      const handled = await window.processAIMessageWithDatabase(userMessage);
+      if (handled !== null && handled !== false) {
+        return; // AI handled it (either with query or explanation)
+      }
+    } catch (error) {
+      console.warn("AI database assistant error, falling back to pattern matching:", error);
+      // Continue to pattern matching fallback
     }
   }
   
@@ -3963,23 +4000,33 @@ async function processAIMessage(userMessage) {
     ingredientCount: ingredientData.length,
   };
   
-  const aiResponse = await callAIService(userMessage, context);
+  // Try AI service as last resort (only if API keys are available)
+  const hasApiKeys = (window.GOOGLE_CLOUD_API_KEY && window.GOOGLE_CLOUD_API_KEY !== 'null' && window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') ||
+                     (window.HUGGING_FACE_API_KEY && window.HUGGING_FACE_API_KEY !== 'null' && window.HUGGING_FACE_API_KEY !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE');
   
-  if (aiResponse) {
-    addChatMessage(aiResponse);
-  } else {
-    // Final fallback to helpful message
-    addChatMessage(
-      `ไม่เข้าใจคำสั่งของคุณค่ะ 😅\n\n` +
-      `ลองพิมพ์:\n` +
-      `• "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท"\n` +
-      `• "รายการซื้อล่าสุด"\n` +
-      `• "เมนูขายดี"\n` +
-      `• "ต้นทุนเมนู [ชื่อเมนู]"\n` +
-      `• "ช่วยเหลือ" เพื่อดูวิธีใช้\n\n` +
-      `💡 หมายเหตุ: หากต้องการใช้ AI แบบเต็มรูปแบบ กรุณาตั้งค่า Google Gemini API หรือ Hugging Face API key`
-    );
+  if (hasApiKeys) {
+    try {
+      const aiResponse = await callAIService(userMessage, context);
+      if (aiResponse) {
+        addChatMessage(aiResponse);
+        return;
+      }
+    } catch (error) {
+      console.warn("AI service error:", error);
+    }
   }
+  
+  // Final fallback to helpful message
+  addChatMessage(
+    `ไม่เข้าใจคำสั่งของคุณค่ะ 😅\n\n` +
+    `ลองพิมพ์:\n` +
+    `• "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท"\n` +
+    `• "รายการซื้อล่าสุด"\n` +
+    `• "เมนูขายดี"\n` +
+    `• "ต้นทุนเมนู [ชื่อเมนู]"\n` +
+    `• "ช่วยเหลือ" เพื่อดูวิธีใช้\n\n` +
+    `${!hasApiKeys ? '💡 หมายเหตุ: API keys ถูกตั้งค่าแล้วใน Cloudflare แต่ยังมีปัญหา กรุณาตรวจสอบ API keys ใน Cloudflare Dashboard' : ''}`
+  );
 }
 
 // Set up chat form handler
