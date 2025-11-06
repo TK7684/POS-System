@@ -186,13 +186,36 @@
                     min-height: 40px;
                 }
                 /* Ensure bottom nav buttons fit */
+                #app-bottomnav {
+                    padding: 0;
+                }
                 #app-bottomnav .grid {
                     gap: 0;
+                    grid-template-columns: repeat(5, 1fr);
                 }
                 #app-bottomnav button {
-                    padding: 8px 4px;
-                    font-size: 10px;
-                    min-height: 60px;
+                    padding: 6px 2px;
+                    font-size: 9px;
+                    min-height: 56px;
+                    max-height: 56px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+                #app-bottomnav button span:first-child {
+                    font-size: 18px;
+                    line-height: 1;
+                    margin-bottom: 2px;
+                }
+                #app-bottomnav button span:last-child {
+                    font-size: 9px;
+                    line-height: 1.1;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 100%;
                 }
                 /* Make cards more compact on mobile */
                 .card {

@@ -3082,14 +3082,31 @@ async function getMostExpensiveIngredients(limit = 10) {
 
 // AI Assistant using Google Gemini or Hugging Face
 async function callAIService(userMessage, context = {}) {
-  // Try Google Gemini first (if API key available)
-  const googleApiKey = window.GOOGLE_CLOUD_API_KEY || 
-                       (typeof process !== 'undefined' && process.env?.GOOGLE_CLOUD_API_KEY) ||
-                       'AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE';
+  // Wait a bit for API keys to be loaded if they haven't been loaded yet
+  if (!window.GOOGLE_CLOUD_API_KEY && !window.HUGGING_FACE_API_KEY) {
+    // Wait up to 2 seconds for API keys to be loaded by index.html
+    for (let i = 0; i < 20; i++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (window.GOOGLE_CLOUD_API_KEY || window.HUGGING_FACE_API_KEY) {
+        break;
+      }
+    }
+  }
   
-  // Try Hugging Face as fallback
-  const huggingFaceKey = window.HUGGING_FACE_API_KEY || 
-                         (typeof process !== 'undefined' && process.env?.HUGGING_FACE_API_KEY);
+  // Get API keys - only use if they're valid (not null, not empty, not placeholder)
+  const googleApiKey = (window.GOOGLE_CLOUD_API_KEY && 
+                       window.GOOGLE_CLOUD_API_KEY !== 'null' && 
+                       window.GOOGLE_CLOUD_API_KEY !== '' &&
+                       window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') 
+                       ? window.GOOGLE_CLOUD_API_KEY 
+                       : null;
+  
+  const huggingFaceKey = (window.HUGGING_FACE_API_KEY && 
+                          window.HUGGING_FACE_API_KEY !== 'null' && 
+                          window.HUGGING_FACE_API_KEY !== '' &&
+                          window.HUGGING_FACE_API_KEY !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE') 
+                          ? window.HUGGING_FACE_API_KEY 
+                          : null;
   
   // Build context for AI
   const systemPrompt = `You are a helpful POS (Point of Sale) system assistant. You help users with:
@@ -3104,7 +3121,7 @@ ${JSON.stringify(context, null, 2)}
 Respond in Thai language, be concise and helpful.`;
 
   // Try Google Gemini API
-  if (googleApiKey && googleApiKey !== 'YOUR_API_KEY_HERE') {
+  if (googleApiKey) {
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
         method: 'POST',
