@@ -3115,23 +3115,28 @@ async function getMostExpensiveIngredients(limit = 10) {
 // AI Assistant using Google Gemini or Hugging Face
 async function callAIService(userMessage, context = {}) {
   // Wait a bit for API keys to be loaded if they haven't been loaded yet
-  if (!window.GOOGLE_CLOUD_API_KEY && !window.HUGGING_FACE_API_KEY) {
+  if (!window.GOOGLE_GEMINI_API_KEY && !window.GOOGLE_CLOUD_API_KEY && !window.HUGGING_FACE_API_KEY) {
     // Wait up to 2 seconds for API keys to be loaded by index.html
     for (let i = 0; i < 20; i++) {
       await new Promise(resolve => setTimeout(resolve, 100));
-      if (window.GOOGLE_CLOUD_API_KEY || window.HUGGING_FACE_API_KEY) {
+      if (window.GOOGLE_GEMINI_API_KEY || window.GOOGLE_CLOUD_API_KEY || window.HUGGING_FACE_API_KEY) {
         break;
       }
     }
   }
   
-  // Get API keys - only use if they're valid (not null, not empty, not placeholder)
-  const googleApiKey = (window.GOOGLE_CLOUD_API_KEY && 
-                       window.GOOGLE_CLOUD_API_KEY !== 'null' && 
-                       window.GOOGLE_CLOUD_API_KEY !== '' &&
-                       window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') 
-                       ? window.GOOGLE_CLOUD_API_KEY 
-                       : null;
+  // Get API keys - support both new (GOOGLE_GEMINI_API_KEY) and old (GOOGLE_CLOUD_API_KEY) names
+  const googleApiKey = (window.GOOGLE_GEMINI_API_KEY && 
+                       window.GOOGLE_GEMINI_API_KEY !== 'null' && 
+                       window.GOOGLE_GEMINI_API_KEY !== '' &&
+                       window.GOOGLE_GEMINI_API_KEY !== 'YOUR_API_KEY_HERE') 
+                       ? window.GOOGLE_GEMINI_API_KEY 
+                       : (window.GOOGLE_CLOUD_API_KEY && 
+                          window.GOOGLE_CLOUD_API_KEY !== 'null' && 
+                          window.GOOGLE_CLOUD_API_KEY !== '' &&
+                          window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') 
+                          ? window.GOOGLE_CLOUD_API_KEY 
+                          : null;
   
   const huggingFaceKey = (window.HUGGING_FACE_API_KEY && 
                           window.HUGGING_FACE_API_KEY !== 'null' && 
@@ -4001,7 +4006,8 @@ async function processAIMessage(userMessage) {
   };
   
   // Try AI service as last resort (only if API keys are available)
-  const hasApiKeys = (window.GOOGLE_CLOUD_API_KEY && window.GOOGLE_CLOUD_API_KEY !== 'null' && window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') ||
+  const hasApiKeys = (window.GOOGLE_GEMINI_API_KEY && window.GOOGLE_GEMINI_API_KEY !== 'null' && window.GOOGLE_GEMINI_API_KEY !== 'YOUR_API_KEY_HERE') ||
+                     (window.GOOGLE_CLOUD_API_KEY && window.GOOGLE_CLOUD_API_KEY !== 'null' && window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') ||
                      (window.HUGGING_FACE_API_KEY && window.HUGGING_FACE_API_KEY !== 'null' && window.HUGGING_FACE_API_KEY !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE');
   
   if (hasApiKeys) {

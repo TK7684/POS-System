@@ -671,7 +671,7 @@ async function processCommand(messageText, messageType, env) {
 async function processDatabaseQuery(messageText, env) {
   const supabaseUrl = env?.SUPABASE_URL || 'https://rtfreafhlelpxqwohspq.supabase.co';
   const supabaseKey = env?.SUPABASE_SERVICE_ROLE_KEY || env?.SUPABASE_ANON_KEY;
-  const googleApiKey = env?.GOOGLE_CLOUD_API_KEY || 'AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE';
+  const googleApiKey = env?.GOOGLE_GEMINI_API || env?.GOOGLE_CLOUD_API_KEY || 'AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE';
   
   if (!supabaseKey || !supabaseUrl) {
     return null;

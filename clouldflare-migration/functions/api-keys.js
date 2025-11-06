@@ -13,8 +13,8 @@ export async function onRequest(context) {
     });
   }
 
-  // Get API keys from environment
-  const googleApiKey = env?.GOOGLE_CLOUD_API_KEY || '';
+  // Get API keys from environment (support both old and new variable names for backward compatibility)
+  const googleApiKey = env?.GOOGLE_GEMINI_API || env?.GOOGLE_CLOUD_API_KEY || '';
   const huggingFaceKey = env?.HUGGING_FACE_API_KEY || '';
 
   // Return as JavaScript that sets window variables
@@ -27,6 +27,8 @@ export async function onRequest(context) {
   const escapedHuggingFaceKey = hasHuggingFaceKey ? huggingFaceKey.replace(/"/g, '\\"') : '';
   
   const js = `// API Keys injected from Cloudflare Pages environment
+// Support both variable names for backward compatibility
+${hasGoogleKey ? `window.GOOGLE_GEMINI_API_KEY = "${escapedGoogleKey}";` : 'window.GOOGLE_GEMINI_API_KEY = null;'}
 ${hasGoogleKey ? `window.GOOGLE_CLOUD_API_KEY = "${escapedGoogleKey}";` : 'window.GOOGLE_CLOUD_API_KEY = null;'}
 ${hasHuggingFaceKey ? `window.HUGGING_FACE_API_KEY = "${escapedHuggingFaceKey}";` : 'window.HUGGING_FACE_API_KEY = null;'}
 console.log('✅ API keys loaded from Cloudflare Pages:', {
