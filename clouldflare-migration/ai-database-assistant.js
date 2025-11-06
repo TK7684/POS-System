@@ -723,6 +723,49 @@ function formatQueryResults(table, data, originalQuestion) {
       });
       break;
 
+    case "menus":
+      response = `🍽️ รายการเมนูทั้งหมด (${data.length} รายการ):\n\n`;
+      // Group by category if possible, otherwise just list
+      const menusByCategory = {};
+      data.forEach(menu => {
+        const category = menu.category_id || "อื่นๆ";
+        if (!menusByCategory[category]) {
+          menusByCategory[category] = [];
+        }
+        menusByCategory[category].push(menu);
+      });
+
+      // If we have categories, group them
+      if (Object.keys(menusByCategory).length > 1) {
+        Object.entries(menusByCategory).forEach(([categoryId, menus]) => {
+          response += `\n📁 หมวดหมู่: ${categoryId}\n`;
+          menus.forEach((menu, i) => {
+            const status = menu.is_active && menu.is_available ? "✅" : "❌";
+            response += `${status} ${menu.menu_id || ""} ${menu.name || "ไม่ระบุชื่อ"}\n`;
+            response += `   ราคา: ฿${parseFloat(menu.price || 0).toFixed(2)}\n`;
+            if (menu.cost_price && menu.cost_price > 0) {
+              response += `   ต้นทุน: ฿${parseFloat(menu.cost_price).toFixed(2)}\n`;
+            }
+            response += `\n`;
+          });
+        });
+      } else {
+        // Simple list format
+        data.forEach((menu, i) => {
+          const status = menu.is_active && menu.is_available ? "✅" : "❌";
+          response += `${i + 1}. ${status} ${menu.menu_id || ""} ${menu.name || "ไม่ระบุชื่อ"}\n`;
+          response += `   ราคา: ฿${parseFloat(menu.price || 0).toFixed(2)}\n`;
+          if (menu.cost_price && menu.cost_price > 0) {
+            response += `   ต้นทุน: ฿${parseFloat(menu.cost_price).toFixed(2)}\n`;
+          }
+          if (menu.preparation_time_minutes) {
+            response += `   เวลาทำ: ${menu.preparation_time_minutes} นาที\n`;
+          }
+          response += `\n`;
+        });
+      }
+      break;
+
     default:
       // Generic formatting
       response = `📊 ผลลัพธ์ (${data.length} รายการ):\n\n`;
