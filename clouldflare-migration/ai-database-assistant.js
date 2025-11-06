@@ -427,8 +427,9 @@ IMPORTANT:
   // Try Google Gemini API
   if (googleApiKey) {
     try {
-      // Try gemini-1.5-flash first (faster, cheaper), fallback to gemini-pro
-      let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+      // Try gemini-1.5-flash first (faster, free tier friendly)
+      // For free tier, try v1 endpoint first, then v1beta
+      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -448,6 +449,53 @@ IMPORTANT:
         })
       });
 
+      // If v1 fails with 404, try v1beta
+      if (!response.ok && response.status === 404) {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser Question: ${userMessage}\n\nAssistant Response (JSON format):`
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          })
+        });
+      }
+
+      // If still fails, try gemini-pro
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.warn('Gemini 1.5 Flash failed, trying gemini-pro...');
+        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser Question: ${userMessage}\n\nAssistant Response (JSON format):`
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          })
+        });
+      }
+
       if (response.ok) {
         const data = await response.json();
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
@@ -466,55 +514,12 @@ IMPORTANT:
             return { explanation: aiResponse, queryPlan: null };
           }
         }
-      } else if (response.status === 403) {
-        // If 403, try with gemini-pro as fallback
-        console.warn('Gemini 1.5 Flash returned 403, trying gemini-pro...');
-        try {
-          response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `${systemPrompt}\n\nUser Question: ${userMessage}\n\nAssistant Response (JSON format):`
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.3,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 2048,
-              }
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-              const aiResponse = data.candidates[0].content.parts[0].text;
-              try {
-                const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                  const parsed = JSON.parse(jsonMatch[0]);
-                  return parsed;
-                }
-              } catch (e) {
-                return { explanation: aiResponse, queryPlan: null };
-              }
-            }
-          } else {
-            const errorData = await response.json().catch(() => ({}));
-            console.warn('Google Gemini API 403 error:', errorData);
-            console.warn('This usually means the API key is invalid, expired, or lacks permissions. Please check your Google Cloud Console.');
-          }
-        } catch (fallbackError) {
-          console.warn('Google Gemini fallback error:', fallbackError);
-        }
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.warn('Google Gemini API error:', response.status, errorData);
+        if (response.status === 403 || response.status === 401) {
+          console.warn('This usually means the API key is invalid, expired, or lacks permissions. Please check your Google AI Studio.');
+        }
       }
     } catch (error) {
       console.warn('Google Gemini API error:', error);

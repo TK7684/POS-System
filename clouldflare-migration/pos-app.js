@@ -3160,7 +3160,9 @@ Respond in Thai language, be concise and helpful.`;
   // Try Google Gemini API
   if (googleApiKey) {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+      // Try gemini-1.5-flash first (faster, free tier friendly), then gemini-pro
+      // For free tier, try v1 endpoint first, then v1beta
+      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3170,15 +3172,64 @@ Respond in Thai language, be concise and helpful.`;
             parts: [{
               text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`
             }]
-          }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          }
         })
       });
+
+      // If v1 fails, try v1beta
+      if (!response.ok && response.status === 404) {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          })
+        });
+      }
+
+      // If still fails, try gemini-pro
+      if (!response.ok && response.status === 404) {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`
+              }]
+            }]
+          })
+        });
+      }
 
       if (response.ok) {
         const data = await response.json();
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
           return data.candidates[0].content.parts[0].text;
         }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.warn('Google Gemini API error:', response.status, errorData);
       }
     } catch (error) {
       console.warn('Google Gemini API error:', error);
