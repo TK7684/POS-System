@@ -380,6 +380,14 @@ function handleAuthStateChange(user) {
       creationTime: user.created_at,
     });
 
+    // Clean up OAuth callback URL parameters
+    if (window.location.search.includes('code=') || window.location.search.includes('access_token=')) {
+      // Remove OAuth callback parameters from URL
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+      logger.auth("Cleaned OAuth callback URL");
+    }
+
     appState.currentView = "main";
     showMainApp();
     loadInitialData();

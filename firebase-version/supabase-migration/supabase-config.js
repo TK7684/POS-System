@@ -387,26 +387,31 @@ const POS_AUTH = {
   signInWithGoogle: async () => {
     // Handle OAuth redirect URL for Cloudflare Pages
     let redirectUrl;
+    
+    // Remove any existing query parameters (like code=) to get clean URL
+    const currentUrl = window.location.origin + window.location.pathname;
+    
     if (window.location.protocol === "file:") {
       // For file:// protocol, we need to use a URL that can handle the callback
       // You should configure this in Supabase dashboard to point to a local HTTP server
-      // For now, try to use the full file path
-      redirectUrl = window.location.href.split("?")[0]; // Remove query params if any
+      redirectUrl = currentUrl;
       console.warn("⚠️ Using file:// protocol. OAuth may not work. Please use HTTP server (localhost:8000)");
     } else {
       // Use current origin + pathname for redirect (works for Cloudflare Pages)
-      redirectUrl = window.location.origin + window.location.pathname;
+      redirectUrl = currentUrl;
       
       // For Cloudflare Pages, ensure we're using the correct URL
       if (window.location.hostname.includes('pages.dev')) {
         console.log("🌐 Cloudflare Pages detected, using:", redirectUrl);
+      } else if (window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1') {
+        console.log("🏠 Local development detected, using:", redirectUrl);
       }
     }
 
     // Log the redirect URL for debugging
     console.log("🔐 OAuth redirect URL:", redirectUrl);
     console.log("💡 Make sure this URL is added to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs");
-    console.log("💡 For Cloudflare Pages, add both:");
+    console.log("💡 Add both with and without wildcard:");
     console.log("   -", redirectUrl);
     console.log("   -", redirectUrl + "/*");
 
