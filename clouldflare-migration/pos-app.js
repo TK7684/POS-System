@@ -5446,13 +5446,16 @@ document.addEventListener("DOMContentLoaded", function () {
         cost_per_unit: document.getElementById("ingredient-cost").value === '' ? undefined : parseFloat(document.getElementById("ingredient-cost").value),
       };
       const res = await window.POS.functions.upsertIngredient(payload);
-      if (res.success) {
+      if (res.success && res.data) {
+        // Verify the update was actually saved
+        console.log('Ingredient saved:', res.data);
         showToast("บันทึกวัตถุดิบเรียบร้อย");
         closeIngredientModal();
+        // Reload from database to ensure we have the latest data
         await loadStockPage(stockState.page);
         if (window._refreshLowStock) await window._refreshLowStock();
       } else {
-        showError("บันทึกวัตถุดิบล้มเหลว: " + res.error);
+        showError("บันทึกวัตถุดิบล้มเหลว: " + (res.error || 'ไม่สามารถบันทึกได้'));
       }
     });
   }

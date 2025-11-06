@@ -436,12 +436,20 @@ function parseExpenseFromMessage(messageText) {
     return null;
   }
   
+  // Check if this looks like a purchase (ingredient name + amount + unit)
+  // Pattern: "[ingredient] [amount] บาท [quantity] [unit]" or "[ingredient] [quantity] [unit] [amount] บาท"
+  const purchasePattern = /(.+?)\s+(\d+(?:\.\d+)?)\s*บาท\s+(\d+(?:\.\d+)?)\s*(กก|kg|กรัม|ตัว|ลิตร|ขวด|ชิ้น|ซอง)/i;
+  const purchasePattern2 = /(.+?)\s+(\d+(?:\.\d+)?)\s*(กก|kg|กรัม|ตัว|ลิตร|ขวด|ชิ้น|ซอง)\s+(\d+(?:\.\d+)?)\s*บาท/i;
+  
+  if (purchasePattern.test(text) || purchasePattern2.test(text)) {
+    // This looks like a purchase, not an expense - don't parse as expense
+    return null;
+  }
+  
   // Additional validation: check if message contains expense-related keywords
   // This helps filter out prices in menus, phone numbers, etc.
-  const expenseKeywords = ['ค่า', 'จ่าย', 'ซื้อ', 'expense', 'ค่าไฟ', 'ค่าน้ำ', 'ค่าเช่า', 'ค่าแรง', 'บิล', 'ค่าใช้จ่าย', 'ชำระ', 'บัญชี'];
-  const purchaseKeywords = ['ซื้อ', 'ซื้อของ', 'จ่าย', 'ชำระ', 'ค่า', 'จาก'];
-  const isExpenseContext = expenseKeywords.some(keyword => text.toLowerCase().includes(keyword)) ||
-                           purchaseKeywords.some(keyword => text.toLowerCase().includes(keyword));
+  const expenseKeywords = ['ค่า', 'จ่าย', 'expense', 'ค่าไฟ', 'ค่าน้ำ', 'ค่าเช่า', 'ค่าแรง', 'บิล', 'ค่าใช้จ่าย', 'ชำระ', 'บัญชี'];
+  const isExpenseContext = expenseKeywords.some(keyword => text.toLowerCase().includes(keyword));
   
   // For small amounts (<1000), be more lenient - likely an expense
   // For larger amounts, require some context to avoid false positives

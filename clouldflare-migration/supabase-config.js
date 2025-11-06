@@ -630,15 +630,34 @@ const POS_FUNCTIONS = {
       const row = {
         id: id || undefined,
         name: name?.trim(),
-        unit: unit || null,
+        unit: unit?.trim() || null,  // Ensure unit is saved even if empty string
         min_stock: min_stock != null ? Number(min_stock) : undefined,
         current_stock: current_stock != null ? Number(current_stock) : undefined,
         cost_per_unit: cost_per_unit != null ? Number(cost_per_unit) : undefined,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("ingredients").upsert([row]).select("id");
+      
+      // Remove undefined fields to avoid issues
+      Object.keys(row).forEach(key => {
+        if (row[key] === undefined) {
+          delete row[key];
+        }
+      });
+      
+      const { data, error } = await supabase
+        .from("ingredients")
+        .upsert([row], { onConflict: id ? 'id' : 'name' })
+        .select("id, name, unit")
+        .single();
+        
       if (error) throw error;
-      return { success: true };
+      
+      // Verify the update was successful
+      if (data && unit !== undefined) {
+        console.log('Ingredient updated:', { id: data.id, name: data.name, unit: data.unit });
+      }
+      
+      return { success: true, data };
     } catch (error) {
       console.error("Error upserting ingredient:", error);
       return { success: false, error: error.message };
