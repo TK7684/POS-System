@@ -351,22 +351,14 @@ async function calculateMenuCost(queryPlan) {
       throw new Error(`ไม่พบเมนู "${menuId}"`);
     }
 
-    // Get recipes with ingredient costs
-    const { data: recipes, error } = await window.supabase
+    // Get recipes (using manual join to avoid schema cache issues)
+    const { data: recipes, error: recipesError } = await window.supabase
       .from("menu_recipes")
-      .select(`
-        quantity_per_serve,
-        unit,
-        ingredients (
-          name,
-          cost_per_unit,
-          unit
-        )
-      `)
+      .select("*")
       .eq("menu_id", menu.id);
 
-    if (error) {
-      throw error;
+    if (recipesError) {
+      throw recipesError;
     }
 
     if (!recipes || recipes.length === 0) {
@@ -378,10 +370,32 @@ async function calculateMenuCost(queryPlan) {
       };
     }
 
+    // Manual join: fetch ingredients separately
+    const ingredientIds = [...new Set(recipes.map(r => r.ingredient_id).filter(Boolean))];
+    let ingredientsMap = {};
+    
+    if (ingredientIds.length > 0) {
+      const { data: ingredients, error: ingredientsError } = await window.supabase
+        .from("ingredients")
+        .select("id, name, cost_per_unit, unit")
+        .in("id", ingredientIds);
+      
+      if (ingredientsError) {
+        throw ingredientsError;
+      }
+      
+      if (ingredients) {
+        ingredientsMap = ingredients.reduce((acc, ing) => {
+          acc[ing.id] = ing;
+          return acc;
+        }, {});
+      }
+    }
+
     // Calculate total cost
     let totalCost = 0;
     const ingredients = recipes.map(recipe => {
-      const ingredient = recipe.ingredients;
+      const ingredient = ingredientsMap[recipe.ingredient_id];
       const cost = (parseFloat(recipe.quantity_per_serve) || 0) * (parseFloat(ingredient?.cost_per_unit) || 0);
       totalCost += cost;
       
