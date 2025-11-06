@@ -253,9 +253,24 @@ function handleOAuthRedirectMismatch() {
     
     if (targetUrl && targetUrl !== window.location.href) {
       console.log('🔄 Detected OAuth redirect mismatch. Redirecting to:', targetUrl);
+      console.log('⚠️ IMPORTANT: Add your Cloudflare Pages URL to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs');
       // Redirect to the correct URL with the code
       window.location.href = targetUrl + '?code=' + code;
       return true;
+    } else {
+      // Show error message if we can't redirect
+      console.error('❌ OAuth redirect mismatch detected!');
+      console.error('You were redirected to localhost:3000 but should be on Cloudflare Pages.');
+      console.error('Please add your Cloudflare Pages URL to Supabase Dashboard:');
+      console.error('1. Go to: https://supabase.com/dashboard');
+      console.error('2. Select project: rtfreafhlelpxqwohspq');
+      console.error('3. Go to: Authentication → URL Configuration');
+      console.error('4. Add your Cloudflare Pages URL to Redirect URLs');
+      console.error('5. Example: https://your-project.pages.dev');
+      console.error('6. Also add: https://your-project.pages.dev/*');
+      
+      // Show user-friendly error
+      alert('OAuth Redirect Error!\n\nYou were redirected to localhost:3000 instead of your Cloudflare Pages URL.\n\nPlease add your Cloudflare Pages URL to Supabase Dashboard:\n1. Go to Authentication → URL Configuration\n2. Add your Cloudflare Pages URL to Redirect URLs\n3. Example: https://your-project.pages.dev\n\nThen try logging in again.');
     }
   }
   
