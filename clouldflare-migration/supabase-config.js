@@ -292,6 +292,8 @@ const POS_DATABASE = {
             menu_name: null,
             transaction_date: item.purchase_date,
             transaction_time: item.purchase_time,
+            quantity: item.quantity,  // Include quantity
+            unit: item.unit,  // Include unit
           })),
           ...(salesData || []).map(item => ({
             ...item,

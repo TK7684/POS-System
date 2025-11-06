@@ -887,7 +887,14 @@ async function loadIngredients() {
 
       const option = document.createElement("option");
       option.value = ingredient.id;
-      option.textContent = `${ingredient.name} (${ingredient.unit})`;
+      // Show name, unit, and recent purchase info if available
+      let displayText = `${ingredient.name} (${ingredient.unit || 'ไม่มีหน่วย'})`;
+      if (ingredient.cost_per_unit && ingredient.cost_per_unit > 0) {
+        displayText += ` - ฿${parseFloat(ingredient.cost_per_unit).toFixed(2)}/${ingredient.unit || ''}`;
+      }
+      option.textContent = displayText;
+      option.setAttribute('data-unit', ingredient.unit || '');
+      option.setAttribute('data-cost', ingredient.cost_per_unit || '0');
       selectEl.appendChild(option);
     });
 
@@ -985,10 +992,16 @@ function setupRealtimeListeners() {
         ? (transaction.menu_name || "Unknown Menu")
         : (transaction.item_name || "Unknown Ingredient");
       
+      // Show unit and quantity for purchases
+      let purchaseDetails = '';
+      if (transaction.type === "purchase" && transaction.quantity && transaction.unit) {
+        purchaseDetails = ` ${transaction.quantity} ${transaction.unit}`;
+      }
+      
       html += `
                 <div class="flex justify-between items-center p-2 border-b">
-                    <span>${icon} ${displayName}</span>
-                    <span class="text-sm">฿${transaction.total_amount || 0}</span>
+                    <span>${icon} ${displayName}${purchaseDetails}</span>
+                    <span class="text-sm">฿${parseFloat(transaction.total_amount || 0).toFixed(2)}</span>
                 </div>
             `;
     });
@@ -5220,13 +5233,64 @@ function loadDemoData() {
 
 function populateIngredientDropdown() {
   const selectEl = document.getElementById("purchase-ingredient");
+  if (!selectEl) return;
+  
   selectEl.innerHTML = '<option value="">เลือกวัตถุดิบ...</option>';
 
   ingredientData.forEach((ingredient) => {
     const option = document.createElement("option");
     option.value = ingredient.id;
-    option.textContent = `${ingredient.name} (${ingredient.unit})`;
+    // Show name, unit, and recent purchase info if available
+    let displayText = `${ingredient.name} (${ingredient.unit || 'ไม่มีหน่วย'})`;
+    if (ingredient.cost_per_unit && ingredient.cost_per_unit > 0) {
+      displayText += ` - ฿${parseFloat(ingredient.cost_per_unit).toFixed(2)}/${ingredient.unit || ''}`;
+    }
+    option.textContent = displayText;
+    option.setAttribute('data-unit', ingredient.unit || '');
+    option.setAttribute('data-cost', ingredient.cost_per_unit || '0');
     selectEl.appendChild(option);
+  });
+  
+  // Add change event to auto-fill unit and show recent purchase info
+  // Remove old listeners first to avoid duplicates
+  const newSelectEl = selectEl.cloneNode(true);
+  selectEl.parentNode.replaceChild(newSelectEl, selectEl);
+  
+  newSelectEl.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption && selectedOption.value) {
+      const unit = selectedOption.getAttribute('data-unit');
+      const costPerUnit = parseFloat(selectedOption.getAttribute('data-cost') || '0');
+      
+      // Auto-fill unit if empty
+      const unitInput = document.getElementById("purchase-unit");
+      if (unitInput && !unitInput.value && unit) {
+        unitInput.value = unit;
+      }
+      
+      // Show cost per unit hint
+      const priceInput = document.getElementById("purchase-price");
+      const qtyInput = document.getElementById("purchase-qty");
+      
+      if (costPerUnit > 0 && priceInput && qtyInput) {
+        // Update placeholder when quantity changes
+        const updatePriceHint = () => {
+          const qty = parseFloat(qtyInput.value) || 0;
+          if (qty > 0 && costPerUnit > 0) {
+            const estimatedPrice = qty * costPerUnit;
+            priceInput.placeholder = `ประมาณ ฿${estimatedPrice.toFixed(2)} (${costPerUnit.toFixed(2)}/${unit})`;
+          } else {
+            priceInput.placeholder = '';
+          }
+        };
+        
+        // Remove old listeners and add new one
+        const newQtyInput = qtyInput.cloneNode(true);
+        qtyInput.parentNode.replaceChild(newQtyInput, qtyInput);
+        newQtyInput.addEventListener('input', updatePriceHint);
+        updatePriceHint(); // Initial update
+      }
+    }
   });
 }
 
