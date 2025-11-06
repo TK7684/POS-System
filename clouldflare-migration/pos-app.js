@@ -5782,77 +5782,111 @@ async function showBackfillPanel() {
   backfillModal.className =
     "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
   backfillModal.innerHTML = `
-    <div class="card max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+    <div class="card max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold">📥 Backfill & Import</h3>
         <button onclick="this.closest('.fixed').remove()" class="btn ghost">✕</button>
       </div>
       
+      <!-- Tab Navigation -->
+      <div class="flex border-b mb-4">
+        <button
+          onclick="switchBackfillTab('file')"
+          id="backfill-tab-file"
+          class="flex-1 px-4 py-2 text-center border-b-2 border-teal-500 font-semibold text-teal-600"
+        >
+          📁 Upload File
+        </button>
+        <button
+          onclick="switchBackfillTab('text')"
+          id="backfill-tab-text"
+          class="flex-1 px-4 py-2 text-center border-b-2 border-transparent text-gray-600 hover:text-teal-600"
+        >
+          📝 Paste CSV Text
+        </button>
+      </div>
+      
       <div class="space-y-4">
-        <div class="card bg-blue-50">
-          <h4 class="font-semibold mb-2">📁 Import CSV File (Intelligent Detection)</h4>
-          <p class="text-sm text-gray-600 mb-4">
-            Upload a CSV file. The system will automatically detect columns for dates, descriptions, amounts, categories, etc.
-          </p>
-          <input
-            type="file"
-            id="csv-file-input"
-            accept=".csv,.txt"
-            class="w-full p-2 border rounded mb-2"
-            onchange="handleCSVFileUpload(event)"
-          />
-          <div class="text-xs text-gray-500 mb-2">
-            Supported formats: CSV files with headers. The system will auto-detect columns.
+        <!-- File Upload Tab -->
+        <div id="backfill-tab-content-file">
+          <div class="card bg-blue-50">
+            <h4 class="font-semibold mb-2">📁 Upload CSV File</h4>
+            <p class="text-sm text-gray-600 mb-4">
+              Upload a CSV file. The system will automatically detect columns for dates, descriptions, amounts, categories, etc.
+            </p>
+            <input
+              type="file"
+              id="csv-file-input"
+              accept=".csv,.txt"
+              class="w-full p-2 border rounded mb-2"
+              onchange="handleCSVFileUpload(event)"
+            />
+            <div class="text-xs text-gray-500">
+              Supported formats: CSV files with headers. The system will auto-detect columns.
+            </div>
           </div>
         </div>
 
-        <div class="card bg-purple-50">
-          <h4 class="font-semibold mb-2">📊 Import from Pasted Data</h4>
-          <p class="text-sm text-gray-600 mb-4">
-            Paste CSV data here. The system will intelligently detect columns.
-          </p>
-          <textarea
-            id="sheets-data"
-            class="w-full p-2 border rounded"
-            rows="10"
-            placeholder='Paste CSV data here (with or without headers):\nวันที่,ชื่อค่าใช้จ่าย,จำนวนค่าใช้จ่าย,กลุ่มค่าใช้จ่าย\n27-Aug-2025,สูตรน้ำจิ้ม 1,349,อื่นๆ\n27-Aug-2025,เครื่องปั่น,2241,ค่าพนักงาน'
-          ></textarea>
-          <button
-            onclick="importFromPastedData()"
-            class="btn brand mt-2 w-full"
-          >
-            📥 Import from Pasted Data
-          </button>
-        </div>
-
-        <div class="card bg-green-50">
-          <h4 class="font-semibold mb-2">📱 Process Old LINE Messages</h4>
-          <p class="text-sm text-gray-600 mb-4">
-            Process all unprocessed LINE messages and extract expenses and purchases automatically.
-          </p>
-          <button
-            onclick="processOldMessages()"
-            class="btn brand w-full"
-          >
-            🔄 Process Old Messages
-          </button>
+        <!-- CSV Text Input Tab -->
+        <div id="backfill-tab-content-text" class="hidden">
+          <div class="card bg-purple-50">
+            <h4 class="font-semibold mb-2">📝 Paste CSV Data</h4>
+            <p class="text-sm text-gray-600 mb-4">
+              Paste CSV data here. The system will intelligently detect columns.
+            </p>
+            <textarea
+              id="sheets-data"
+              class="w-full p-2 border rounded"
+              rows="12"
+              placeholder='Paste CSV data here (with or without headers):\nวันที่,ชื่อค่าใช้จ่าย,จำนวนค่าใช้จ่าย,กลุ่มค่าใช้จ่าย\n27-Aug-2025,สูตรน้ำจิ้ม 1,349,อื่นๆ\n27-Aug-2025,เครื่องปั่น,2241,ค่าพนักงาน'
+            ></textarea>
+            <button
+              onclick="importFromPastedData()"
+              class="btn brand mt-2 w-full"
+            >
+              📥 Import from Pasted Data
+            </button>
+          </div>
         </div>
 
         <div id="backfill-results" class="hidden">
           <div class="card bg-gray-50">
             <h4 class="font-semibold mb-2">📊 Import Results</h4>
-            <div id="backfill-output" class="text-sm bg-white p-4 rounded overflow-auto space-y-2"></div>
+            <div id="backfill-output" class="text-sm bg-white p-4 rounded overflow-auto space-y-2 max-h-64"></div>
           </div>
         </div>
       </div>
 
       <div class="flex gap-2 mt-4">
-        <button onclick="this.closest('.fixed').remove()" class="btn ghost">✕ Close</button>
+        <button onclick="this.closest('.fixed').remove()" class="btn ghost w-full">✕ Close</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(backfillModal);
+}
+
+function switchBackfillTab(tab) {
+  // Hide all tab contents
+  document.getElementById('backfill-tab-content-file')?.classList.add('hidden');
+  document.getElementById('backfill-tab-content-text')?.classList.add('hidden');
+  
+  // Remove active styling from all tabs
+  document.getElementById('backfill-tab-file')?.classList.remove('border-teal-500', 'text-teal-600', 'font-semibold');
+  document.getElementById('backfill-tab-file')?.classList.add('border-transparent', 'text-gray-600');
+  document.getElementById('backfill-tab-text')?.classList.remove('border-teal-500', 'text-teal-600', 'font-semibold');
+  document.getElementById('backfill-tab-text')?.classList.add('border-transparent', 'text-gray-600');
+  
+  // Show selected tab content
+  if (tab === 'file') {
+    document.getElementById('backfill-tab-content-file')?.classList.remove('hidden');
+    document.getElementById('backfill-tab-file')?.classList.remove('border-transparent', 'text-gray-600');
+    document.getElementById('backfill-tab-file')?.classList.add('border-teal-500', 'text-teal-600', 'font-semibold');
+  } else if (tab === 'text') {
+    document.getElementById('backfill-tab-content-text')?.classList.remove('hidden');
+    document.getElementById('backfill-tab-text')?.classList.remove('border-transparent', 'text-gray-600');
+    document.getElementById('backfill-tab-text')?.classList.add('border-teal-500', 'text-teal-600', 'font-semibold');
+  }
 }
 
 async function handleCSVFileUpload(event) {

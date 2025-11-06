@@ -188,34 +188,40 @@
                 /* Ensure bottom nav buttons fit */
                 #app-bottomnav {
                     padding: 0;
+                    padding-bottom: env(safe-area-inset-bottom, 0);
                 }
                 #app-bottomnav .grid {
                     gap: 0;
                     grid-template-columns: repeat(5, 1fr);
+                    width: 100%;
                 }
                 #app-bottomnav button {
-                    padding: 6px 2px;
-                    font-size: 9px;
-                    min-height: 56px;
-                    max-height: 56px;
+                    padding: 4px 1px;
+                    font-size: 8px;
+                    min-height: 52px;
+                    max-height: 52px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
                     overflow: hidden;
+                    width: 100%;
+                    border: none;
+                    background: transparent;
                 }
                 #app-bottomnav button span:first-child {
-                    font-size: 18px;
+                    font-size: 16px;
                     line-height: 1;
-                    margin-bottom: 2px;
+                    margin-bottom: 1px;
                 }
                 #app-bottomnav button span:last-child {
-                    font-size: 9px;
-                    line-height: 1.1;
+                    font-size: 8px;
+                    line-height: 1;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     max-width: 100%;
+                    padding: 0 1px;
                 }
                 /* Make cards more compact on mobile */
                 .card {
@@ -447,40 +453,22 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <button
-                            onclick="initializeSeedData()"
-                            class="btn ghost text-xs md:text-sm px-2 md:px-4"
-                        >
-                            🌱 Seed Data
-                        </button>
-                        <button
-                            onclick="initializeGoogleSheets()"
-                            class="btn ghost text-xs md:text-sm px-2 md:px-4"
-                        >
-                            📊 Sheets
-                        </button>
-                        <button
                             onclick="openAIChatbot()"
                             class="btn brand text-xs md:text-sm px-2 md:px-4"
                         >
                             🤖 AI
                         </button>
                         <button
-                            onclick="initializeLineBot()"
+                            onclick="showBackfillPanel()"
                             class="btn ghost text-xs md:text-sm px-2 md:px-4"
                         >
-                            💬 Line
+                            📥 Backfill
                         </button>
                         <button
                             onclick="showDebugPanel()"
                             class="btn ghost text-xs md:text-sm px-2 md:px-4 hidden md:inline-flex"
                         >
                             🔍 Debug
-                        </button>
-                        <button
-                            onclick="showBackfillPanel()"
-                            class="btn ghost text-xs md:text-sm px-2 md:px-4"
-                        >
-                            📥 Backfill
                         </button>
                         <button onclick="logout()" class="btn ghost text-xs md:text-sm px-2 md:px-4">
                             ออกจากระบบ
