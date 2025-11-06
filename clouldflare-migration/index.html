@@ -199,6 +199,15 @@
                     padding: 12px;
                     margin-bottom: var(--spacing-sm);
                 }
+                /* Make user info buttons wrap and smaller on mobile */
+                #pos-app .card:last-child .flex {
+                    flex-wrap: wrap;
+                }
+                #pos-app .card:last-child button {
+                    font-size: 0.75rem;
+                    padding: 0.375rem 0.5rem;
+                    min-height: 36px;
+                }
             }
         </style>
     </head>
@@ -408,49 +417,49 @@
 
             <!-- User Info -->
             <div class="card mt-6">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                     <div>
                         <span class="text-sm text-gray-600">ผู้ใช้: </span>
                         <span id="user-email" class="font-medium"></span>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         <button
                             onclick="initializeSeedData()"
-                            class="btn ghost text-sm"
+                            class="btn ghost text-xs md:text-sm px-2 md:px-4"
                         >
                             🌱 Seed Data
                         </button>
                         <button
                             onclick="initializeGoogleSheets()"
-                            class="btn ghost text-sm"
+                            class="btn ghost text-xs md:text-sm px-2 md:px-4"
                         >
-                            📊 Connect Sheets
+                            📊 Sheets
                         </button>
                         <button
                             onclick="openAIChatbot()"
-                            class="btn brand text-sm"
+                            class="btn brand text-xs md:text-sm px-2 md:px-4"
                         >
-                            🤖 AI Assistant
+                            🤖 AI
                         </button>
                         <button
                             onclick="initializeLineBot()"
-                            class="btn ghost text-sm"
+                            class="btn ghost text-xs md:text-sm px-2 md:px-4"
                         >
-                            💬 Line Bot
+                            💬 Line
                         </button>
                         <button
                             onclick="showDebugPanel()"
-                            class="btn ghost text-sm"
+                            class="btn ghost text-xs md:text-sm px-2 md:px-4 hidden md:inline-flex"
                         >
                             🔍 Debug
                         </button>
                         <button
                             onclick="showBackfillPanel()"
-                            class="btn ghost text-sm"
+                            class="btn ghost text-xs md:text-sm px-2 md:px-4"
                         >
                             📥 Backfill
                         </button>
-                        <button onclick="logout()" class="btn ghost">
+                        <button onclick="logout()" class="btn ghost text-xs md:text-sm px-2 md:px-4">
                             ออกจากระบบ
                         </button>
                     </div>

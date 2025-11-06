@@ -3014,7 +3014,7 @@ async function getBestSellerMenus(limit = 10) {
         menu_id,
         quantity,
         unit_price,
-        menus:menu_id (
+        menus (
           menu_id,
           name,
           price
@@ -3131,16 +3131,17 @@ Respond in Thai language, be concise and helpful.`;
     }
   }
 
-  // Fallback to Hugging Face
+  // Fallback to Hugging Face (via Cloudflare Function proxy to avoid CORS)
   if (huggingFaceKey && huggingFaceKey !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE') {
     try {
-      const response = await fetch('https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill', {
+      // Use Cloudflare Function proxy to avoid CORS issues
+      const response = await fetch('/api/huggingface', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${huggingFaceKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          model: 'facebook/blenderbot-400M-distill',
           inputs: `${systemPrompt}\n\nUser: ${userMessage}`,
         })
       });
@@ -3149,7 +3150,12 @@ Respond in Thai language, be concise and helpful.`;
         const data = await response.json();
         if (data.generated_text) {
           return data.generated_text;
+        } else if (data.error) {
+          console.warn('Hugging Face API error:', data.error);
         }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.warn('Hugging Face proxy error:', errorData);
       }
     } catch (error) {
       console.warn('Hugging Face API error:', error);
