@@ -1,30 +1,40 @@
-// Netlify Scheduled Function - Runs every midnight to check low stock
-// Configure in netlify.toml as a scheduled function
+// Cloudflare Pages Function for Midnight Stock Alert
+// Runs daily at midnight to check low stock
 
-const crypto = require('crypto');
+export async function onRequest(context) {
+  const { request, env } = context;
+    // Also allow manual trigger via HTTP request
+    if (request.method === 'POST' || request.method === 'GET') {
+      const result = await processStockAlert(env);
+      return new Response(JSON.stringify(result), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response('Method not allowed', { status: 405 });
+}
 
-exports.handler = async (event, context) => {
+async function processStockAlert(env) {
   try {
     console.log('Running midnight stock check...');
     
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://rtfreafhlelpxqwohspq.supabase.co';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-    const lineChannelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-    const lineGroupId = process.env.LINE_GROUP_ID;
+    const supabaseUrl = env?.SUPABASE_URL || 'https://rtfreafhlelpxqwohspq.supabase.co';
+    const supabaseKey = env?.SUPABASE_SERVICE_ROLE_KEY || env?.SUPABASE_ANON_KEY;
+    const lineChannelAccessToken = env?.LINE_CHANNEL_ACCESS_TOKEN;
+    const lineGroupId = env?.LINE_GROUP_ID;
     
     if (!supabaseKey || !supabaseUrl) {
       console.error('Supabase not configured');
-      return { statusCode: 500, body: JSON.stringify({ error: 'Supabase not configured' }) };
+      return { success: false, error: 'Supabase not configured' };
     }
 
     if (!lineChannelAccessToken || !lineGroupId) {
       console.error('LINE Bot not configured for stock alerts');
-      return { statusCode: 500, body: JSON.stringify({ error: 'LINE Bot not configured' }) };
+      return { success: false, error: 'LINE Bot not configured' };
     }
 
     // Get all ingredients with low stock
     const ingredientsResponse = await fetch(
-      `${supabaseUrl}/rest/v1/ingredients?select=id,name,current_stock,min_stock,unit&current_stock=not.is.null&min_stock=not.is.null`,
+      `${supabaseUrl}/rest/v1/ingredients?select=id,name,current_stock,min_stock,unit&current_stock=not.is.null&min_stock=not.is.null&is_active=eq.true`,
       {
         headers: {
           'apikey': supabaseKey,
@@ -48,10 +58,7 @@ exports.handler = async (event, context) => {
 
     if (lowStockItems.length === 0) {
       console.log('No low stock items found');
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'No low stock items', count: 0 })
-      };
+      return { success: true, message: 'No low stock items', count: 0 };
     }
 
     // Format message
@@ -94,19 +101,13 @@ exports.handler = async (event, context) => {
     console.log(`Stock alert sent: ${lowStockItems.length} items`);
     
     return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        lowStockCount: lowStockItems.length,
-        message: 'Stock alert sent successfully'
-      })
+      success: true,
+      lowStockCount: lowStockItems.length,
+      message: 'Stock alert sent successfully'
     };
   } catch (error) {
     console.error('Error in midnight stock check:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message })
-    };
+    return { success: false, error: error.message };
   }
-};
+}
 
