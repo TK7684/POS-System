@@ -502,14 +502,31 @@ async function signInWithGoogle() {
 
     // Check if POS auth is available
     if (!window.POS || !window.POS.auth) {
-      // Try to initialize if not available
-      if (window.supabase && !window.POS) {
-        // POS should be initialized in supabase-config.js
-        logger.warn("AUTH", "POS not initialized, waiting...");
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      // Wait for POS to be initialized (listen for pos-ready event)
+      logger.warn("AUTH", "POS not initialized, waiting...");
       
-      if (!window.POS || !window.POS.auth) {
+      // Wait for pos-ready event or timeout
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          window.removeEventListener('pos-ready', onReady);
+          reject(new Error("Authentication system not ready. Please refresh the page."));
+        }, 5000);
+        
+        const onReady = () => {
+          clearTimeout(timeout);
+          window.removeEventListener('pos-ready', onReady);
+          resolve();
+        };
+        
+        if (window.POS && window.POS.auth && window.POS.auth.signInWithGoogle) {
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          window.addEventListener('pos-ready', onReady);
+        }
+      });
+      
+      if (!window.POS || !window.POS.auth || !window.POS.auth.signInWithGoogle) {
         throw new Error("Authentication system not ready. Please refresh the page.");
       }
     }
