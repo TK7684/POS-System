@@ -4103,7 +4103,14 @@ async function processAIMessage(userMessage) {
     return;
   }
 
-  // Try intelligent database-aware AI first (handles all database questions)
+  // Try pattern matching FIRST for purchase commands (before AI)
+  // This ensures purchases are handled correctly with confirmation
+  const patternMatched = await processAIMessagePatternMatching(userMessage);
+  if (patternMatched) {
+    return; // Pattern matching handled it (purchase, etc.)
+  }
+  
+  // Try intelligent database-aware AI for queries (not purchase commands)
   if (window.processAIMessageWithDatabase) {
     try {
       const handled = await window.processAIMessageWithDatabase(userMessage);
@@ -4111,19 +4118,9 @@ async function processAIMessage(userMessage) {
         return; // AI handled it (either with query or explanation)
       }
     } catch (error) {
-      console.warn("AI database assistant error, falling back to pattern matching:", error);
-      // Continue to pattern matching fallback
+      console.warn("AI database assistant error, falling back to general AI:", error);
+      // Continue to general AI fallback
     }
-  }
-  
-  // If AI didn't handle it, try pattern matching for common queries (fast fallback)
-  // Pattern matching is kept as a fast fallback for reliability
-  // This handles common queries like "รายการซื้อล่าสุด", "เมนูขายดี", etc.
-  
-  // Call the pattern matching function (defined earlier in the file)
-  const patternMatched = await processAIMessagePatternMatching(userMessage);
-  if (patternMatched) {
-    return; // Pattern matching handled it
   }
   
   // Build context from database
