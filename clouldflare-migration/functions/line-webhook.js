@@ -824,28 +824,6 @@ IMPORTANT:
         });
       }
 
-      // If still fails, try gemini-2.0-flash
-      if (!response.ok && (response.status === 404 || response.status === 403)) {
-        console.warn('Gemini 2.5 Flash failed, trying gemini-2.0-flash...');
-        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `${systemPrompt}\n\nUser: ${messageText}\n\nAssistant:`
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.3,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 2048,
-            }
-          })
-        });
-      }
-
       if (response.ok) {
         const data = await response.json();
         if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -876,6 +854,9 @@ IMPORTANT:
         if (response.status === 403 || response.status === 401) {
           console.warn('This usually means the API key is invalid, expired, or lacks permissions. Please check your Google AI Studio.');
         }
+        // Don't throw - let it fall through to pattern matching
+        console.log('Falling back to pattern matching due to Gemini API error');
+        return null;
       }
     } catch (error) {
       console.warn('Gemini API error:', error);
