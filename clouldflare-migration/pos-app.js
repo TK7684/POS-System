@@ -833,7 +833,7 @@ async function loadInitialData() {
 
     // Fallback to demo data if Supabase fails
     logger.warn("DB", "Falling back to demo data");
-    loadDemoData();
+    await loadDemoData();
   }
 }
 
@@ -4461,7 +4461,7 @@ async function initializeSeedData() {
     logger.error("DB", "Error initializing seed data", error);
     // If Firebase seeding fails, load demo data
     logger.warn("DB", "Falling back to demo data due to seed failure");
-    loadDemoData();
+    await loadDemoData();
   }
 }
 
@@ -5205,7 +5205,7 @@ async function createSeedData() {
   }
 }
 
-function loadDemoData() {
+async function loadDemoData() {
   const demoTimer = perf.start("load_demo_data");
   logger.warn("DB", "Loading demo data as fallback");
 

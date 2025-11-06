@@ -638,14 +638,17 @@ async function processCommand(messageText, messageType, env) {
            `💡 หมายเหตุ: พอสจะบันทึกค่าใช้จ่ายอัตโนมัติโดยไม่ต้องเรียก`;
   }
 
-  // Try intelligent AI database queries first
-  try {
-    const aiResponse = await processDatabaseQuery(messageText, env);
-    if (aiResponse) {
-      return aiResponse;
+  // Try intelligent AI database queries first (but skip for simple help commands)
+  if (text !== 'help' && text !== 'ช่วย' && text !== '?' && text !== 'help me' && text !== '') {
+    try {
+      const aiResponse = await processDatabaseQuery(messageText, env);
+      if (aiResponse && aiResponse.trim().length > 0) {
+        console.log('AI query succeeded, returning response');
+        return aiResponse;
+      }
+    } catch (error) {
+      console.warn('AI query failed, falling back to pattern matching:', error.message);
     }
-  } catch (error) {
-    console.warn('AI query failed, falling back to pattern matching:', error);
   }
 
   // Expense summary commands
@@ -679,12 +682,19 @@ async function processCommand(messageText, messageType, env) {
   // Try AI for unknown commands
   try {
     const aiResponse = await processDatabaseQuery(messageText, env);
-    if (aiResponse) {
+    if (aiResponse && aiResponse.trim().length > 0) {
+      console.log('AI query succeeded for unknown command, returning response');
       return aiResponse;
+    } else {
+      console.log('AI query returned empty response');
     }
   } catch (error) {
-    console.warn('AI query failed:', error);
+    console.warn('AI query failed:', error.message);
   }
+  
+  // If no response was generated, return a helpful message
+  console.log('No response generated for command:', messageText);
+  return `ไม่เข้าใจคำสั่ง "${messageText}"\n\nพิมพ์ "help" เพื่อดูคำสั่งที่ใช้ได้`;
 
   return `✅ รับคำสั่งแล้ว\nพิมพ์ "พอส help" เพื่อดูคำสั่งทั้งหมด`;
 }
