@@ -3040,22 +3040,50 @@ async function getRecentPurchases(limit = 10) {
 // Helper function to get best seller menus
 async function getBestSellerMenus(limit = 10) {
   try {
-    const { data, error } = await window.supabase
+    // First try with join, if it fails, do manual join
+    let { data, error } = await window.supabase
       .from("sales")
       .select(`
         menu_id,
         quantity,
-        unit_price,
-        menus (
-          menu_id,
-          name,
-          price
-        )
+        unit_price
       `);
     
     if (error) {
-      console.error("Error fetching sales:", error);
-      return null;
+      console.warn("Error fetching sales, trying without join:", error);
+      // Fallback: fetch without join
+      const { data: simpleData, error: simpleError } = await window.supabase
+        .from("sales")
+        .select("menu_id, quantity, unit_price")
+        .limit(1000);
+      
+      if (simpleError) {
+        console.error("Error fetching sales:", simpleError);
+        return null;
+      }
+      data = simpleData;
+    }
+    
+    // If we have data, manually join with menus if needed
+    if (data && data.length > 0 && (!data[0].menus)) {
+      const menuIds = [...new Set(data.map(s => s.menu_id).filter(Boolean))];
+      if (menuIds.length > 0) {
+        const { data: menus } = await window.supabase
+          .from("menus")
+          .select("id, menu_id, name, price")
+          .in("id", menuIds);
+        
+        const menuMap = {};
+        menus?.forEach(menu => {
+          menuMap[menu.id] = menu;
+        });
+        
+        // Add menu data to sales
+        data = data.map(sale => ({
+          ...sale,
+          menus: sale.menu_id ? menuMap[sale.menu_id] : null
+        }));
+      }
     }
     
     // Group by menu and calculate totals
@@ -3160,9 +3188,9 @@ Respond in Thai language, be concise and helpful.`;
   // Try Google Gemini API
   if (googleApiKey) {
     try {
-      // Try gemini-1.5-flash first (faster, free tier friendly), then gemini-pro
+      // Try gemini-2.5-flash first (fastest, free tier friendly), then other models
       // For free tier, try v1 endpoint first, then v1beta
-      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3182,9 +3210,9 @@ Respond in Thai language, be concise and helpful.`;
         })
       });
 
-      // If v1 fails, try v1beta
+      // If v1 fails, try v1beta with gemini-2.5-flash
       if (!response.ok && response.status === 404) {
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3205,9 +3233,9 @@ Respond in Thai language, be concise and helpful.`;
         });
       }
 
-      // If still fails, try gemini-pro
+      // If still fails, try gemini-2.0-flash
       if (!response.ok && response.status === 404) {
-        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

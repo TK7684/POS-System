@@ -427,9 +427,9 @@ IMPORTANT:
   // Try Google Gemini API
   if (googleApiKey) {
     try {
-      // Try gemini-1.5-flash first (faster, free tier friendly)
+      // Try gemini-2.5-flash first (fastest, free tier friendly)
       // For free tier, try v1 endpoint first, then v1beta
-      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -449,9 +449,9 @@ IMPORTANT:
         })
       });
 
-      // If v1 fails with 404, try v1beta
+      // If v1 fails with 404, try v1beta with gemini-2.5-flash
       if (!response.ok && response.status === 404) {
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -472,10 +472,10 @@ IMPORTANT:
         });
       }
 
-      // If still fails, try gemini-pro
+      // If still fails, try gemini-2.0-flash
       if (!response.ok && (response.status === 404 || response.status === 403)) {
-        console.warn('Gemini 1.5 Flash failed, trying gemini-pro...');
-        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+        console.warn('Gemini 2.5 Flash failed, trying gemini-2.0-flash...');
+        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
