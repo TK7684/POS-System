@@ -597,15 +597,31 @@ async function processCommand(messageText, messageType, env) {
   const text = messageText.trim().toLowerCase();
 
   if (text === '' || text === 'help' || text === 'ช่วย' || text === '?' || text === 'help me') {
-    return `🤖 พอส Bot\n\n` +
+    return `🤖 พอส Bot - AI Assistant\n\n` +
            `📋 คำสั่งที่ใช้ได้:\n` +
            `• "พอส" - ดูคำสั่งทั้งหมด\n` +
            `• "พอส ค่าใช้จ่ายวันนี้" - ดูค่าใช้จ่ายวันนี้\n` +
-           `• "พอส ค่าใช้จ่ายสัปดาห์" - ดูค่าใช้จ่ายสัปดาห์นี้\n` +
+           `• "พอส รายการซื้อล่าสุด" - ดูรายการซื้อล่าสุด\n` +
+           `• "พอส เมนูขายดี" - ดูเมนูที่ขายดีที่สุด\n` +
+           `• "พอส ต้นทุนเมนู A1" - คำนวณต้นทุนเมนู\n` +
            `• "พอส สต็อก" - ดูสต็อกที่ใกล้หมด\n` +
-           `• "พอส ลบรายการล่าสุด" - ลบรายการล่าสุด\n` +
            `• "พอส สถิติ" - ดูสถิติค่าใช้จ่าย\n\n` +
+           `💡 คุณสามารถถามคำถามเกี่ยวกับฐานข้อมูลได้ เช่น:\n` +
+           `• "รายการซื้อล่าสุด"\n` +
+           `• "เมนูขายดี"\n` +
+           `• "วัตถุดิบแพงที่สุด"\n` +
+           `• "ต้นทุนเมนู [ชื่อเมนู]"\n\n` +
            `💡 หมายเหตุ: พอสจะบันทึกค่าใช้จ่ายอัตโนมัติโดยไม่ต้องเรียก`;
+  }
+
+  // Try intelligent AI database queries first
+  try {
+    const aiResponse = await processDatabaseQuery(messageText, env);
+    if (aiResponse) {
+      return aiResponse;
+    }
+  } catch (error) {
+    console.warn('AI query failed, falling back to pattern matching:', error);
   }
 
   // Expense summary commands
@@ -636,7 +652,236 @@ async function processCommand(messageText, messageType, env) {
     return await handleDeleteLatestEntry(messageText, env);
   }
 
+  // Try AI for unknown commands
+  try {
+    const aiResponse = await processDatabaseQuery(messageText, env);
+    if (aiResponse) {
+      return aiResponse;
+    }
+  } catch (error) {
+    console.warn('AI query failed:', error);
+  }
+
   return `✅ รับคำสั่งแล้ว\nพิมพ์ "พอส help" เพื่อดูคำสั่งทั้งหมด`;
+}
+
+/**
+ * Process database query using AI
+ */
+async function processDatabaseQuery(messageText, env) {
+  const supabaseUrl = env?.SUPABASE_URL || 'https://rtfreafhlelpxqwohspq.supabase.co';
+  const supabaseKey = env?.SUPABASE_SERVICE_ROLE_KEY || env?.SUPABASE_ANON_KEY;
+  const googleApiKey = env?.GOOGLE_CLOUD_API_KEY || 'AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE';
+  
+  if (!supabaseKey || !supabaseUrl) {
+    return null;
+  }
+
+  // Database schema for AI
+  const dbSchema = {
+    tables: {
+      purchases: { columns: ["id", "ingredient_id", "quantity", "unit", "total_amount", "vendor", "purchase_date"], relationships: ["ingredient_id -> ingredients"] },
+      sales: { columns: ["id", "menu_id", "quantity", "unit_price", "order_date"], relationships: ["menu_id -> menus"] },
+      expenses: { columns: ["id", "description", "amount", "expense_date", "category"], relationships: [] },
+      ingredients: { columns: ["id", "name", "cost_per_unit", "current_stock", "unit"], relationships: [] },
+      menus: { columns: ["id", "menu_id", "name", "price"], relationships: [] },
+      menu_recipes: { columns: ["id", "menu_id", "ingredient_id", "quantity_per_serve"], relationships: ["menu_id -> menus", "ingredient_id -> ingredients"] }
+    }
+  };
+
+  // Build AI prompt
+  const systemPrompt = `You are a POS system assistant. Answer questions about the database.
+
+DATABASE SCHEMA:
+${JSON.stringify(dbSchema, null, 2)}
+
+For user questions, determine:
+1. Which table to query
+2. What filters/ordering to apply
+3. Return a JSON query plan
+
+Response format:
+{
+  "queryPlan": {
+    "table": "table_name",
+    "filters": [{"column": "col", "operator": "eq|gte|lte", "value": "val"}],
+    "orderBy": {"column": "col", "ascending": false},
+    "limit": 10,
+    "joins": "table:col(fields)" (optional)
+  },
+  "explanation": "What you're doing"
+}
+
+Respond in Thai.`;
+
+  // Try Google Gemini
+  if (googleApiKey && googleApiKey !== 'YOUR_API_KEY_HERE') {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `${systemPrompt}\n\nUser: ${messageText}\n\nAssistant:`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 1024,
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          const aiText = data.candidates[0].content.parts[0].text;
+          
+          // Try to extract JSON query plan
+          const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (parsed.queryPlan) {
+                // Execute the query
+                const results = await executeQuery(parsed.queryPlan, supabaseUrl, supabaseKey);
+                return formatResultsForLine(parsed.queryPlan.table, results, parsed.explanation);
+              }
+            } catch (e) {
+              // If JSON parsing fails, return the explanation
+              return aiText;
+            }
+          }
+          return aiText;
+        }
+      }
+    } catch (error) {
+      console.warn('Gemini API error:', error);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Execute database query
+ */
+async function executeQuery(queryPlan, supabaseUrl, supabaseKey) {
+  const { table, filters, orderBy, limit, joins } = queryPlan;
+  
+  let url = `${supabaseUrl}/rest/v1/${table}?`;
+  
+  // Build select with joins
+  if (joins) {
+    url += `select=${joins}`;
+  } else {
+    url += `select=*`;
+  }
+  
+  // Add filters
+  if (filters) {
+    filters.forEach(filter => {
+      const { column, operator, value } = filter;
+      if (operator === 'eq') url += `&${column}=eq.${value}`;
+      else if (operator === 'gte') url += `&${column}=gte.${value}`;
+      else if (operator === 'lte') url += `&${column}=lte.${value}`;
+      else if (operator === 'like') url += `&${column}=like.*${value}*`;
+    });
+  }
+  
+  // Add ordering
+  if (orderBy) {
+    url += `&order=${orderBy.column}.${orderBy.ascending !== false ? 'asc' : 'desc'}`;
+  }
+  
+  // Add limit
+  if (limit) {
+    url += `&limit=${limit}`;
+  } else {
+    url += `&limit=10`;
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+    }
+  });
+
+  if (response.ok) {
+    return await response.json();
+  }
+  
+  throw new Error(`Query failed: ${response.status}`);
+}
+
+/**
+ * Format results for LINE message
+ */
+function formatResultsForLine(table, data, explanation) {
+  if (!data || data.length === 0) {
+    return `ไม่พบข้อมูลที่ต้องการค่ะ\n\n${explanation || ''}`;
+  }
+
+  let response = explanation ? `${explanation}\n\n` : '';
+
+  switch (table) {
+    case 'purchases':
+      response += `📦 รายการซื้อล่าสุด (${data.length} รายการ):\n\n`;
+      data.slice(0, 5).forEach((p, i) => {
+        const name = p.ingredients?.name || 'ไม่ระบุ';
+        response += `${i + 1}. ${name}\n`;
+        response += `   ${p.quantity} ${p.unit} - ฿${parseFloat(p.total_amount || 0).toFixed(2)}\n`;
+        response += `   ${p.vendor || ''} - ${p.purchase_date || ''}\n\n`;
+      });
+      break;
+      
+    case 'sales':
+      response += `🏆 เมนูขายดี:\n\n`;
+      // Group and sort
+      const menuStats = {};
+      data.forEach(sale => {
+        const menuId = sale.menu_id;
+        if (!menuStats[menuId]) {
+          menuStats[menuId] = {
+            name: sale.menus?.name || 'Unknown',
+            menu_id: sale.menus?.menu_id || menuId,
+            total: 0,
+            count: 0
+          };
+        }
+        menuStats[menuId].total += (sale.quantity || 0) * (sale.unit_price || 0);
+        menuStats[menuId].count += sale.quantity || 0;
+      });
+      const sorted = Object.values(menuStats).sort((a, b) => b.count - a.count).slice(0, 5);
+      sorted.forEach((m, i) => {
+        response += `${i + 1}. ${m.name} (${m.menu_id})\n`;
+        response += `   ขาย: ${m.count} จาน - ฿${m.total.toFixed(2)}\n\n`;
+      });
+      break;
+      
+    case 'ingredients':
+      response += `💎 วัตถุดิบแพงที่สุด:\n\n`;
+      data.slice(0, 5).forEach((ing, i) => {
+        response += `${i + 1}. ${ing.name}\n`;
+        response += `   ฿${parseFloat(ing.cost_per_unit || 0).toFixed(2)}/${ing.unit || ''}\n\n`;
+      });
+      break;
+      
+    case 'expenses':
+      response += `💰 ค่าใช้จ่ายล่าสุด:\n\n`;
+      data.slice(0, 5).forEach((exp, i) => {
+        response += `${i + 1}. ${exp.description || ''}\n`;
+        response += `   ฿${parseFloat(exp.amount || 0).toFixed(2)} - ${exp.expense_date || ''}\n\n`;
+      });
+      break;
+      
+    default:
+      response += `📊 ผลลัพธ์ (${data.length} รายการ)`;
+  }
+
+  return response;
 }
 
 async function getExpenseSummary(period, env) {

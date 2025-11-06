@@ -699,14 +699,25 @@ function showMainApp() {
   }
   
   // Update on window resize
+  let resizeTimeout;
   window.addEventListener('resize', () => {
-    const isMobileNow = window.innerWidth < 768;
-    if (topBar) {
-      topBar.style.display = isMobileNow ? "none" : "block";
-    }
-    if (bottomNav) {
-      bottomNav.style.display = isMobileNow ? "block" : "none";
-    }
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const isMobileNow = window.innerWidth < 768;
+      if (topBar) {
+        // Use CSS class instead of inline style for better control
+        if (isMobileNow) {
+          topBar.classList.add('hidden');
+          topBar.style.display = 'none';
+        } else {
+          topBar.classList.remove('hidden');
+          topBar.style.display = 'block';
+        }
+      }
+      if (bottomNav) {
+        bottomNav.style.display = isMobileNow ? "block" : "none";
+      }
+    }, 100);
   });
   
   // Hide any other pages
@@ -3858,8 +3869,16 @@ async function processAIMessage(userMessage) {
     return;
   }
 
-  // If no pattern matched, try AI service (Google Gemini or Hugging Face)
-  addChatMessage("กำลังประมวลผลด้วย AI...");
+  // Try intelligent database-aware AI first (handles all database questions)
+  if (window.processAIMessageWithDatabase) {
+    const handled = await window.processAIMessageWithDatabase(userMessage);
+    if (handled !== null) {
+      return; // AI handled it (either with query or explanation)
+    }
+  }
+  
+  // If AI didn't handle it, try pattern matching for common queries (fast fallback)
+  // Pattern matching is kept as a fast fallback for reliability
   
   // Build context from database
   const context = {
@@ -3874,7 +3893,7 @@ async function processAIMessage(userMessage) {
   if (aiResponse) {
     addChatMessage(aiResponse);
   } else {
-    // Fallback to helpful message
+    // Final fallback to helpful message
     addChatMessage(
       `ไม่เข้าใจคำสั่งของคุณค่ะ 😅\n\n` +
       `ลองพิมพ์:\n` +

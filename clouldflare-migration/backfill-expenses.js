@@ -124,25 +124,60 @@ function detectColumns(headers, sampleRows) {
     /ผู้ขาย|vendor|Vendor|ร้าน|supplier/i,
   ];
 
-  // Detect by header name first
+  // Detect by header name first (Thai and English)
   headers.forEach((header, idx) => {
     const headerLower = header.toLowerCase().trim();
     
-    if (!detection.date && datePatterns.some(p => p.test(header))) {
+    // Date detection (Thai: วันที่, English: date, Date)
+    if (!detection.date && (
+      headerLower.includes('วันที่') || 
+      headerLower.includes('date') || 
+      datePatterns.some(p => p.test(header))
+    )) {
       detection.date = idx;
-    } else if (!detection.amount && amountPatterns.some(p => p.test(header))) {
+    } 
+    // Amount detection (Thai: จำนวนค่าใช้จ่าย, ราคา, English: amount, price)
+    else if (!detection.amount && (
+      headerLower.includes('จำนวน') || 
+      headerLower.includes('ราคา') || 
+      headerLower.includes('amount') || 
+      headerLower.includes('price') ||
+      amountPatterns.some(p => p.test(header))
+    )) {
       detection.amount = idx;
-    } else if (!detection.description && descriptionPatterns.some(p => p.test(header))) {
+    } 
+    // Description detection (Thai: ชื่อค่าใช้จ่าย, รายละเอียด, English: description)
+    else if (!detection.description && (
+      headerLower.includes('ชื่อ') || 
+      headerLower.includes('รายละเอียด') || 
+      headerLower.includes('description') ||
+      descriptionPatterns.some(p => p.test(header))
+    )) {
       detection.description = idx;
-    } else if (!detection.category && categoryPatterns.some(p => p.test(header))) {
+    } 
+    // Category detection (Thai: กลุ่มค่าใช้จ่าย, ประเภท, English: category)
+    else if (!detection.category && (
+      headerLower.includes('กลุ่ม') || 
+      headerLower.includes('ประเภท') || 
+      headerLower.includes('category') ||
+      categoryPatterns.some(p => p.test(header))
+    )) {
       detection.category = idx;
-    } else if (!detection.itemName && itemNamePatterns.some(p => p.test(header))) {
+    } 
+    // Item name detection
+    else if (!detection.itemName && itemNamePatterns.some(p => p.test(header))) {
       detection.itemName = idx;
-    } else if (!detection.quantity && quantityPatterns.some(p => p.test(header))) {
+    } 
+    // Quantity detection
+    else if (!detection.quantity && quantityPatterns.some(p => p.test(header))) {
       detection.quantity = idx;
-    } else if (!detection.unit && unitPatterns.some(p => p.test(header))) {
+    } 
+    // Unit detection
+    else if (!detection.unit && unitPatterns.some(p => p.test(header))) {
       detection.unit = idx;
-    } else if (!detection.vendor && vendorPatterns.some(p => p.test(header))) {
+    } 
+    // Vendor detection
+    else if (!detection.vendor && vendorPatterns.some(p => p.test(header))) {
       detection.vendor = idx;
     }
   });
@@ -207,16 +242,21 @@ function detectColumns(headers, sampleRows) {
 function parseDate(dateStr) {
   if (!dateStr) return new Date().toISOString().split('T')[0];
 
-  // Try "DD-MMM-YYYY" format (27-Aug-2025)
+  // Try "DD-MMM-YYYY" format (27-Aug-2025, 01-Sep-2025)
   const dateMatch = dateStr.match(/(\d{1,2})-(\w{3})-(\d{4})/);
   if (dateMatch) {
     const [, day, month, year] = dateMatch;
     const monthMap = {
       'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
       'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
-      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12',
+      // Handle case variations
+      'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+      'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+      'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
     };
-    return `${year}-${monthMap[month] || '01'}-${day.padStart(2, '0')}`;
+    const monthKey = month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
+    return `${year}-${monthMap[monthKey] || monthMap[month] || '01'}-${day.padStart(2, '0')}`;
   }
 
   // Try "YYYY-MM-DD" format
