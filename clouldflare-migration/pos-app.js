@@ -749,6 +749,7 @@ function showMainApp() {
   // Hide any other pages
   const menusPage = document.getElementById("menus-page");
   const expensesHistoryPage = document.getElementById("expenses-history-page");
+  const stockPage = document.getElementById("stock-management-page");
   if (menusPage) {
     menusPage.classList.add("hidden");
     menusPage.style.display = "none";
@@ -756,6 +757,10 @@ function showMainApp() {
   if (expensesHistoryPage) {
     expensesHistoryPage.classList.add("hidden");
     expensesHistoryPage.style.display = "none";
+  }
+  if (stockPage) {
+    stockPage.classList.add("hidden");
+    stockPage.style.display = "none";
   }
   
   // Ensure expenses page is properly initialized
@@ -5676,14 +5681,68 @@ let menusState = {
 };
 
 function openMenusPage() {
-  document.getElementById("pos-app")?.classList.add("hidden");
-  document.getElementById("menus-page")?.classList.remove("hidden");
+  const posApp = document.getElementById("pos-app");
+  const menusPage = document.getElementById("menus-page");
+  const stockPage = document.getElementById("stock-management-page");
+  
+  if (posApp) posApp.classList.add("hidden");
+  if (menusPage) {
+    menusPage.classList.remove("hidden");
+    menusPage.style.display = "block";
+  }
+  if (stockPage) {
+    stockPage.classList.add("hidden");
+    stockPage.style.display = "none";
+  }
   loadMenus();
 }
 
 function closeMenusPage() {
-  document.getElementById("menus-page")?.classList.add("hidden");
-  document.getElementById("pos-app")?.classList.remove("hidden");
+  const menusPage = document.getElementById("menus-page");
+  const posApp = document.getElementById("pos-app");
+  
+  if (menusPage) {
+    menusPage.classList.add("hidden");
+    menusPage.style.display = "none";
+  }
+  if (posApp) {
+    posApp.classList.remove("hidden");
+    posApp.style.display = "block";
+  }
+}
+
+function openStockPage() {
+  const posApp = document.getElementById("pos-app");
+  const stockPage = document.getElementById("stock-management-page");
+  const menusPage = document.getElementById("menus-page");
+  
+  if (posApp) posApp.classList.add("hidden");
+  if (stockPage) {
+    stockPage.classList.remove("hidden");
+    stockPage.style.display = "block";
+    // Load stock data if not already loaded
+    if (stockState.items.length === 0) {
+      loadStockPage(1);
+    }
+  }
+  if (menusPage) {
+    menusPage.classList.add("hidden");
+    menusPage.style.display = "none";
+  }
+}
+
+function closeStockPage() {
+  const stockPage = document.getElementById("stock-management-page");
+  const posApp = document.getElementById("pos-app");
+  
+  if (stockPage) {
+    stockPage.classList.add("hidden");
+    stockPage.style.display = "none";
+  }
+  if (posApp) {
+    posApp.classList.remove("hidden");
+    posApp.style.display = "block";
+  }
 }
 
 let menuSearchTimeout;
