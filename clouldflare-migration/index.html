@@ -331,7 +331,8 @@
             </header>
 
             <!-- Quick Actions (Desktop only - hidden on mobile since bottom nav exists) -->
-            <div class="quick-actions-mobile-hide grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
+            <!-- These are duplicates of bottom nav, so we hide them completely to avoid confusion -->
+            <div class="hidden md:grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
                 <div class="card">
                     <h3 class="font-semibold mb-3">🛒 ขายสินค้า</h3>
                     <button onclick="openSaleModal()" class="btn brand w-full">
@@ -966,7 +967,7 @@
         </div>
 
         <!-- Expense History Page -->
-        <div id="expenses-history-page" class="container hidden" style="padding-top: 16px; padding-bottom: 80px;">
+        <div id="expenses-history-page" class="container hidden" style="display: none; padding-top: 16px; padding-bottom: 80px;">
             <header class="mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <h1 class="text-3xl font-bold">📋 ประวัติค่าใช้จ่าย</h1>
@@ -1160,6 +1161,9 @@
 
         <!-- Backfill Expenses Script -->
         <script src="backfill-expenses.js"></script>
+        
+        <!-- Load API Keys from Cloudflare Pages Environment -->
+        <script src="/api-keys.js"></script>
         
         <!-- Intelligent Database-Aware AI Assistant -->
         <script src="ai-database-assistant.js"></script>
