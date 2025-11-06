@@ -1163,7 +1163,31 @@
         <script src="backfill-expenses.js"></script>
         
         <!-- Load API Keys from Cloudflare Pages Environment -->
-        <script src="/api-keys.js"></script>
+        <script>
+            // Load API keys from Cloudflare Function
+            (async function() {
+                try {
+                    const response = await fetch('/api-keys.js', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/javascript, text/javascript, */*'
+                        }
+                    });
+                    
+                    if (response.ok && response.headers.get('content-type')?.includes('javascript')) {
+                        const jsCode = await response.text();
+                        // Execute the JavaScript code
+                        eval(jsCode);
+                    } else {
+                        console.warn('⚠️ Could not load API keys from /api-keys.js:', response.status, response.statusText);
+                        console.warn('⚠️ Make sure GOOGLE_CLOUD_API_KEY and HUGGING_FACE_API_KEY are set in Cloudflare Pages environment variables');
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Error loading API keys:', error);
+                    console.warn('⚠️ AI will fall back to pattern matching if API keys are not available');
+                }
+            })();
+        </script>
         
         <!-- Intelligent Database-Aware AI Assistant -->
         <script src="ai-database-assistant.js"></script>
