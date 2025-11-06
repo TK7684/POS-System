@@ -5231,20 +5231,51 @@ function loadDemoData() {
   showToast("⚠️ Running in Demo Mode - Supabase connection issues");
 }
 
-function populateIngredientDropdown() {
+async function populateIngredientDropdown() {
   const selectEl = document.getElementById("purchase-ingredient");
   if (!selectEl) return;
   
   selectEl.innerHTML = '<option value="">เลือกวัตถุดิบ...</option>';
 
+  // Get recent purchases to show in dropdown
+  let purchaseMap = {};
+  try {
+    const recentPurchases = await getRecentPurchases(50);
+    if (recentPurchases) {
+      recentPurchases.forEach(p => {
+        if (p.ingredient_id && (!purchaseMap[p.ingredient_id] || 
+            new Date(p.purchase_date) > new Date(purchaseMap[p.ingredient_id].purchase_date))) {
+          purchaseMap[p.ingredient_id] = {
+            total_amount: p.total_amount,
+            quantity: p.quantity,
+            unit: p.unit,
+            purchase_date: p.purchase_date
+          };
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('Could not load recent purchases for dropdown:', err);
+  }
+
   ingredientData.forEach((ingredient) => {
     const option = document.createElement("option");
     option.value = ingredient.id;
-    // Show name, unit, and recent purchase info if available
+    
+    // Show name, unit, cost per unit, and recent purchase info
     let displayText = `${ingredient.name} (${ingredient.unit || 'ไม่มีหน่วย'})`;
+    
+    // Add cost per unit if available
     if (ingredient.cost_per_unit && ingredient.cost_per_unit > 0) {
       displayText += ` - ฿${parseFloat(ingredient.cost_per_unit).toFixed(2)}/${ingredient.unit || ''}`;
     }
+    
+    // Add recent purchase info if available
+    const recentPurchase = purchaseMap[ingredient.id];
+    if (recentPurchase) {
+      displayText += ` | ล่าสุด: ${recentPurchase.quantity} ${recentPurchase.unit} ฿${parseFloat(recentPurchase.total_amount).toFixed(2)}`;
+    }
+    
     option.textContent = displayText;
     option.setAttribute('data-unit', ingredient.unit || '');
     option.setAttribute('data-cost', ingredient.cost_per_unit || '0');
