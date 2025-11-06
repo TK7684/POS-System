@@ -107,6 +107,18 @@ export async function onRequest(context) {
         hasSupabaseUrl: !!env.SUPABASE_URL,
         hasSupabaseKey: !!env.SUPABASE_SERVICE_ROLE_KEY,
       });
+      
+      // Log actual values (first few chars only for security)
+      if (env.LINE_CHANNEL_SECRET) {
+        console.log('LINE_CHANNEL_SECRET:', env.LINE_CHANNEL_SECRET.substring(0, 10) + '...');
+      } else {
+        console.error('❌ LINE_CHANNEL_SECRET is missing!');
+      }
+      if (env.LINE_CHANNEL_ACCESS_TOKEN) {
+        console.log('LINE_CHANNEL_ACCESS_TOKEN:', env.LINE_CHANNEL_ACCESS_TOKEN.substring(0, 10) + '...');
+      } else {
+        console.error('❌ LINE_CHANNEL_ACCESS_TOKEN is missing!');
+      }
 
       // Handle LINE verification request (empty events array)
       // Always return 200 OK for verification, even if env vars aren't fully configured
