@@ -782,7 +782,30 @@ IMPORTANT:
 
       // If v1 fails with 404, try v1beta with gemini-2.5-flash
       if (!response.ok && response.status === 404) {
+        console.log('Gemini v1 endpoint failed, trying v1beta...');
         response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser: ${messageText}\n\nAssistant:`
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          })
+        });
+      }
+      
+      // If still failing, try gemini-2.0-flash
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.log('Gemini 2.5-flash failed, trying 2.0-flash...');
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
