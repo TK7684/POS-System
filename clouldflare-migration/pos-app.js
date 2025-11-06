@@ -3969,6 +3969,52 @@ async function processAIMessagePatternMatching(userMessage) {
     }
   }
   
+  // Handle purchase confirmation
+  const confirmPatterns = [/ยืนยัน|confirm|ใช่|ok|ตกลง/i];
+  const cancelPatterns = [/ยกเลิก|cancel|ไม่|no|ไม่ใช่/i];
+  
+  if (confirmPatterns.some(p => p.test(message)) && window._pendingPurchase) {
+    const pendingPurchase = window._pendingPurchase;
+    delete window._pendingPurchase;
+    
+    addChatMessage(`กำลังบันทึกการซื้อ...`);
+    
+    try {
+      const result = await window.POS.functions.processPurchase(pendingPurchase);
+
+      if (result.success) {
+        // Refresh data
+        await loadIngredients();
+        if (window._refreshLowStock) {
+          await window._refreshLowStock();
+        }
+        if (window._refreshTransactions) {
+          await window._refreshTransactions();
+        }
+
+        addChatMessage(
+          `✅ บันทึกการซื้อสำเร็จ!\n\n` +
+          `📦 วัตถุดิบ: ${pendingPurchase.ingredient_name}\n` +
+          `📊 จำนวน: ${pendingPurchase.quantity} ${pendingPurchase.unit}\n` +
+          `💰 ราคา: ฿${pendingPurchase.total_amount.toFixed(2)}\n\n` +
+          `สต็อกได้ถูกอัพเดทเรียบร้อยแล้วค่ะ!\n` +
+          `📝 ดูรายการใน "ธุรกรรมล่าสุด" ด้านซ้าย`
+        );
+      } else {
+        addChatMessage(`❌ เกิดข้อผิดพลาด: ${result.error}`);
+      }
+    } catch (error) {
+      addChatMessage(`❌ เกิดข้อผิดพลาด: ${error.message}`);
+    }
+    return true;
+  }
+  
+  if (cancelPatterns.some(p => p.test(message)) && window._pendingPurchase) {
+    delete window._pendingPurchase;
+    addChatMessage(`❌ ยกเลิกการซื้อแล้วค่ะ`);
+    return true;
+  }
+
   // Help message
   const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน|what can you do|what.*you.*do|capabilities|features/i];
   if (helpPatterns.some(p => p.test(message))) {
