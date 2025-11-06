@@ -532,6 +532,13 @@ async function signInWithGoogle() {
     }
 
     logger.auth("Calling Supabase Google sign-in...");
+    console.log("🔐 Google sign-in - POS.auth available:", !!window.POS?.auth);
+    console.log("🔐 Google sign-in - signInWithGoogle available:", !!window.POS?.auth?.signInWithGoogle);
+    
+    if (!window.POS?.auth?.signInWithGoogle) {
+      throw new Error("Google sign-in function not available. Please check Supabase configuration.");
+    }
+    
     const result = await window.POS.auth.signInWithGoogle();
 
     googleTimer();
