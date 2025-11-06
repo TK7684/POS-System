@@ -1,5 +1,5 @@
 // Cloudflare Pages Function to expose API keys to client (safely)
-// Route: /api-keys.js
+// Route: /api-keys (Cloudflare Pages Functions route without .js extension)
 // Only exposes the keys, doesn't expose other secrets
 
 export async function onRequest(context) {

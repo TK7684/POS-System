@@ -732,6 +732,12 @@ function showMainApp() {
     expensesHistoryPage.style.display = "none";
   }
   
+  // Ensure expenses page is properly initialized
+  if (expensesHistoryPage && typeof loadExpensesHistory === 'function') {
+    // Don't load data yet, just ensure the page is ready
+    expensesHistoryState.page = 1;
+  }
+  
   logger.ui("Main app displayed", { 
     authHidden: authScreen?.classList.contains("hidden"),
     posVisible: !posApp?.classList.contains("hidden")

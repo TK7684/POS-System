@@ -459,7 +459,7 @@
         </div>
 
         <!-- Sticky Bottom Navigation (Mobile-first, shown on all screens) -->
-        <nav id="app-bottomnav" class="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 md:hidden" style="display: none;">
+        <nav id="app-bottomnav" class="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 md:hidden hidden">
             <div class="grid grid-cols-5 text-xs">
                 <button onclick="openSaleModal()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
                     <span class="text-lg">🛒</span>
@@ -1187,9 +1187,12 @@
                             console.warn('⚠️ Unexpected content type:', contentType);
                         }
                     } else {
+                        const errorText = await response.text().catch(() => '');
                         console.warn('⚠️ Could not load API keys from /api-keys:', response.status, response.statusText);
+                        console.warn('⚠️ Response:', errorText.substring(0, 200));
                         console.warn('⚠️ Make sure GOOGLE_CLOUD_API_KEY and HUGGING_FACE_API_KEY are set in Cloudflare Pages environment variables');
-                        console.warn('⚠️ Check Cloudflare Dashboard → Workers & Pages → pos-admin-bho → Functions tab');
+                        console.warn('⚠️ Check Cloudflare Dashboard → Workers & Pages → pos-admin-bho → Settings → Environment Variables');
+                        console.warn('⚠️ Also check Functions tab to ensure functions/api-keys.js is deployed');
                     }
                 } catch (error) {
                     console.warn('⚠️ Error loading API keys:', error);

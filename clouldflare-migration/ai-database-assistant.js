@@ -305,32 +305,33 @@ async function calculateMenuCost(queryPlan) {
  * Intelligent AI Assistant with Database Knowledge
  */
 async function intelligentAIAssistant(userMessage) {
-  // Get API keys from window (injected by /api-keys.js Cloudflare Function)
-  // Wait a bit for the script to load if it hasn't loaded yet
+  // Get API keys from window (injected by /api-keys Cloudflare Function)
+  // The keys are loaded by index.html via fetch('/api-keys') and eval()
+  // Wait a bit for the keys to be loaded if they haven't been loaded yet
   if (!window.GOOGLE_CLOUD_API_KEY && !window.HUGGING_FACE_API_KEY) {
-    // Try to load API keys if not already loaded
-    try {
-      const script = document.createElement('script');
-      script.src = '/api-keys.js';
-      script.async = true;
-      await new Promise((resolve, reject) => {
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-        setTimeout(resolve, 500); // Timeout after 500ms
-      });
-    } catch (e) {
-      console.warn('Could not load API keys:', e);
+    // Wait up to 2 seconds for API keys to be loaded by index.html
+    for (let i = 0; i < 20; i++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (window.GOOGLE_CLOUD_API_KEY || window.HUGGING_FACE_API_KEY) {
+        break;
+      }
     }
   }
   
-  const googleApiKey = window.GOOGLE_CLOUD_API_KEY || 
-                       (typeof process !== 'undefined' && process.env?.GOOGLE_CLOUD_API_KEY) ||
-                       null; // Don't use default key, require environment variable
+  // Get API keys - only use if they're valid (not null, not empty, not placeholder)
+  const googleApiKey = (window.GOOGLE_CLOUD_API_KEY && 
+                       window.GOOGLE_CLOUD_API_KEY !== 'null' && 
+                       window.GOOGLE_CLOUD_API_KEY !== '' &&
+                       window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') 
+                       ? window.GOOGLE_CLOUD_API_KEY 
+                       : null;
   
-  const huggingFaceKey = window.HUGGING_FACE_API_KEY || 
-                         (typeof process !== 'undefined' && process.env?.HUGGING_FACE_API_KEY) ||
-                         null;
+  const huggingFaceKey = (window.HUGGING_FACE_API_KEY && 
+                          window.HUGGING_FACE_API_KEY !== 'null' && 
+                          window.HUGGING_FACE_API_KEY !== '' &&
+                          window.HUGGING_FACE_API_KEY !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE') 
+                          ? window.HUGGING_FACE_API_KEY 
+                          : null;
 
   // Get database context
   const dbContext = await getDatabaseContext();
@@ -419,7 +420,7 @@ IMPORTANT:
 - For calculations, explain the formula you would use`;
 
   // Try Google Gemini API
-  if (googleApiKey && googleApiKey !== 'YOUR_API_KEY_HERE' && googleApiKey !== 'null' && googleApiKey !== '') {
+  if (googleApiKey) {
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
         method: 'POST',
@@ -466,7 +467,7 @@ IMPORTANT:
   }
 
   // Fallback to Hugging Face
-  if (huggingFaceKey && huggingFaceKey !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE' && huggingFaceKey !== 'null' && huggingFaceKey !== '') {
+  if (huggingFaceKey) {
     try {
       const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-large', {
         method: 'POST',
