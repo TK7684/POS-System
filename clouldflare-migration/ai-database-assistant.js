@@ -206,6 +206,108 @@ async function executeDatabaseQuery(queryPlan) {
 }
 
 /**
+ * Execute menu_recipes query with manual joins (fallback for schema cache issues)
+ */
+async function executeMenuRecipesQueryWithManualJoin(queryPlan) {
+  try {
+    const { filters, orderBy, limit, joins } = queryPlan;
+    
+    // Build base query for menu_recipes
+    let query = window.supabase.from("menu_recipes").select("*");
+    
+    // Apply filters
+    if (filters) {
+      for (const filter of filters) {
+        const { column, operator, value } = filter;
+        if (operator === "eq") query = query.eq(column, value);
+        else if (operator === "like") query = query.ilike(column, `%${value}%`);
+      }
+    }
+    
+    // Apply ordering
+    if (orderBy) {
+      query = query.order(orderBy.column, { ascending: orderBy.ascending !== false });
+    }
+    
+    // Apply limit
+    if (limit) {
+      query = query.limit(limit);
+    } else {
+      query = query.limit(50); // Default limit for safety
+    }
+    
+    // Execute query
+    const { data: recipes, error } = await query;
+    
+    if (error) {
+      throw error;
+    }
+    
+    if (!recipes || recipes.length === 0) {
+      return [];
+    }
+    
+    // Manual join: fetch related data
+    const menuIds = [...new Set(recipes.map(r => r.menu_id).filter(Boolean))];
+    const ingredientIds = [...new Set(recipes.map(r => r.ingredient_id).filter(Boolean))];
+    
+    // Fetch menus
+    let menusMap = {};
+    if (menuIds.length > 0) {
+      const { data: menus } = await window.supabase
+        .from("menus")
+        .select("id, menu_id, name")
+        .in("id", menuIds);
+      
+      if (menus) {
+        menusMap = menus.reduce((acc, menu) => {
+          acc[menu.id] = menu;
+          return acc;
+        }, {});
+      }
+    }
+    
+    // Fetch ingredients
+    let ingredientsMap = {};
+    if (ingredientIds.length > 0) {
+      const { data: ingredients } = await window.supabase
+        .from("ingredients")
+        .select("*")
+        .in("id", ingredientIds);
+      
+      if (ingredients) {
+        ingredientsMap = ingredients.reduce((acc, ing) => {
+          acc[ing.id] = ing;
+          return acc;
+        }, {});
+      }
+    }
+    
+    // Combine data
+    const result = recipes.map(recipe => {
+      const result = { ...recipe };
+      
+      // Add menu data if requested
+      if (joins && (joins.includes("menus") || joins.includes("menu"))) {
+        result.menus = menusMap[recipe.menu_id] || null;
+      }
+      
+      // Add ingredient data if requested
+      if (joins && (joins.includes("ingredients") || joins.includes("ingredient"))) {
+        result.ingredients = ingredientsMap[recipe.ingredient_id] || null;
+      }
+      
+      return result;
+    });
+    
+    return result;
+  } catch (error) {
+    console.error("Error executing menu_recipes query with manual join:", error);
+    throw error;
+  }
+}
+
+/**
  * Calculate menu cost from recipes
  */
 async function calculateMenuCost(queryPlan) {
