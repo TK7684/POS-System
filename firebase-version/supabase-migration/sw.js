@@ -61,11 +61,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip localhost:3000 requests (OAuth redirect mismatch - let browser handle)
+  if (event.request.url.includes('localhost:3000')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Return cached version or fetch from network
-        return response || fetch(event.request)
+        if (response) {
+          return response;
+        }
+        
+        return fetch(event.request)
           .then((response) => {
             // Don't cache non-successful responses
             if (!response || response.status !== 200 || response.type !== 'basic') {
@@ -76,6 +85,11 @@ self.addEventListener('fetch', (event) => {
             if (event.request.url.startsWith('chrome-extension://') || 
                 event.request.url.startsWith('moz-extension://') ||
                 event.request.url.startsWith('safari-extension://')) {
+              return response;
+            }
+
+            // Skip caching localhost:3000
+            if (event.request.url.includes('localhost:3000')) {
               return response;
             }
 
@@ -90,16 +104,51 @@ self.addEventListener('fetch', (event) => {
                   // Silently fail if caching is not supported for this request
                   console.warn('Service Worker: Could not cache request', event.request.url);
                 }
+              })
+              .catch(() => {
+                // Silently fail cache operations
               });
 
             return response;
           })
-          .catch(() => {
+          .catch((error) => {
             // If offline and no cache, show offline page if available
             if (event.request.destination === 'document') {
-              return caches.match('./index.html');
+              return caches.match('./index.html').then((cached) => {
+                return cached || new Response('Offline', { 
+                  status: 503,
+                  statusText: 'Service Unavailable',
+                  headers: { 'Content-Type': 'text/plain' }
+                });
+              });
             }
+            // Return a proper Response object
+            return new Response('Offline', { 
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' }
+            });
           });
+      })
+      .catch((error) => {
+        // If cache match fails, try to fetch from network
+        return fetch(event.request).catch(() => {
+          // If fetch also fails, return offline response
+          if (event.request.destination === 'document') {
+            return caches.match('./index.html').then((cached) => {
+              return cached || new Response('Offline', { 
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'text/plain' }
+              });
+            });
+          }
+          return new Response('Offline', { 
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        });
       })
   );
 });
