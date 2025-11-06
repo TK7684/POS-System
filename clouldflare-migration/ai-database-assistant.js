@@ -616,6 +616,13 @@ async function processAIMessageWithDatabase(userMessage) {
       }
     } else if (aiResponse.explanation) {
       // AI provided explanation but no query plan
+      // Only show explanation if it's not a purchase/update command
+      // Purchase commands should be handled by pattern matching, not AI
+      const isPurchaseCommand = /ซื้อ|บันทึกการซื้อ|เพิ่มสต็อก|อัปเดต.*สต็อก/i.test(userMessage);
+      if (isPurchaseCommand) {
+        // Don't show AI explanation for purchase commands - let pattern matching handle it
+        return null;
+      }
       addChatMessage(aiResponse.explanation);
       return true;
     }
