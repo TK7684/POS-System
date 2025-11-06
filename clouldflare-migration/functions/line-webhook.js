@@ -689,22 +689,27 @@ async function processDatabaseQuery(messageText, env) {
     }
   };
 
-  // Build AI prompt
-  const systemPrompt = `You are a POS system assistant. Answer questions about the database.
+  // Build AI prompt - support both database queries and general questions
+  const systemPrompt = `You are a helpful POS (Point of Sale) system assistant. You help users with:
+- Database queries (purchases, sales, expenses, menus, ingredients)
+- Cost calculations
+- Inventory management
+- Business insights
+- General questions about the POS system
 
 DATABASE SCHEMA:
 ${JSON.stringify(dbSchema, null, 2)}
 
-For user questions, determine:
+For database queries, determine:
 1. Which table to query
 2. What filters/ordering to apply
 3. Return a JSON query plan
 
-Response format:
+Response format (for database queries):
 {
   "queryPlan": {
     "table": "table_name",
-    "filters": [{"column": "col", "operator": "eq|gte|lte", "value": "val"}],
+    "filters": [{"column": "col", "operator": "eq|gte|lte|like", "value": "val"}],
     "orderBy": {"column": "col", "ascending": false},
     "limit": 10,
     "joins": "table:col(fields)" (optional)
@@ -712,7 +717,13 @@ Response format:
   "explanation": "What you're doing"
 }
 
-Respond in Thai.`;
+For general questions, just provide a helpful answer in Thai.
+
+IMPORTANT:
+- Always respond in Thai language
+- Be concise and helpful
+- If you can't determine a query plan, provide helpful guidance
+- For calculations, explain the formula you would use`;
 
   // Try Google Gemini API with gemini-2.5-flash (same as main chatbot)
   if (googleApiKey && googleApiKey !== 'YOUR_API_KEY_HERE') {
