@@ -3869,7 +3869,7 @@ async function processAIMessagePatternMatching(userMessage) {
   }
   
   // Help message
-  const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน/i];
+  const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน|what can you do|what.*you.*do|capabilities|features/i];
   if (helpPatterns.some(p => p.test(message))) {
     addChatMessage(
       `📚 คู่มือการใช้งาน AI Assistant:\n\n` +
@@ -3907,7 +3907,7 @@ async function processAIMessage(userMessage) {
   const message = userMessage.toLowerCase().trim();
   
   // Help message
-  const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน/i];
+  const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน|what can you do|what.*you.*do|capabilities|features/i];
   if (helpPatterns.some(p => p.test(message))) {
     addChatMessage(
       `📚 คู่มือการใช้งาน AI Assistant:\n\n` +

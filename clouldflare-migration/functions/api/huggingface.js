@@ -26,8 +26,8 @@ export async function onRequestPost(context) {
       });
     }
     
-    // Call Hugging Face API
-    const response = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+    // Call Hugging Face API (using new endpoint)
+    const response = await fetch(`https://router.huggingface.co/hf-inference/v1/models/${model}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${huggingFaceKey}`,
