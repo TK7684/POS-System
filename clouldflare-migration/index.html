@@ -1165,22 +1165,31 @@
         <!-- Load API Keys from Cloudflare Pages Environment -->
         <script>
             // Load API keys from Cloudflare Function
+            // Note: Cloudflare Pages Functions route without .js extension
+            // functions/api-keys.js is accessible at /api-keys (not /api-keys.js)
             (async function() {
                 try {
-                    const response = await fetch('/api-keys.js', {
+                    const response = await fetch('/api-keys', {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/javascript, text/javascript, */*'
                         }
                     });
                     
-                    if (response.ok && response.headers.get('content-type')?.includes('javascript')) {
-                        const jsCode = await response.text();
-                        // Execute the JavaScript code
-                        eval(jsCode);
+                    if (response.ok) {
+                        const contentType = response.headers.get('content-type') || '';
+                        if (contentType.includes('javascript') || contentType.includes('text')) {
+                            const jsCode = await response.text();
+                            // Execute the JavaScript code
+                            eval(jsCode);
+                            console.log('✅ API keys loaded successfully');
+                        } else {
+                            console.warn('⚠️ Unexpected content type:', contentType);
+                        }
                     } else {
-                        console.warn('⚠️ Could not load API keys from /api-keys.js:', response.status, response.statusText);
+                        console.warn('⚠️ Could not load API keys from /api-keys:', response.status, response.statusText);
                         console.warn('⚠️ Make sure GOOGLE_CLOUD_API_KEY and HUGGING_FACE_API_KEY are set in Cloudflare Pages environment variables');
+                        console.warn('⚠️ Check Cloudflare Dashboard → Workers & Pages → pos-admin-bho → Functions tab');
                     }
                 } catch (error) {
                     console.warn('⚠️ Error loading API keys:', error);
