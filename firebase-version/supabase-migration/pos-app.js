@@ -239,8 +239,36 @@ async function initializeApp() {
   }
 }
 
-// Start initialization when DOM is ready
-document.addEventListener("DOMContentLoaded", initializeApp);
+// Handle OAuth callback redirect mismatch
+// If we're on localhost:3000 but should be on Cloudflare Pages, redirect back
+function handleOAuthRedirectMismatch() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  
+  // If we have an OAuth code but we're on localhost:3000
+  // This means Supabase redirected to the wrong URL
+  if (code && window.location.hostname === 'localhost' && window.location.port === '3000') {
+    // Check if we have a stored target URL (from when we initiated OAuth)
+    const targetUrl = sessionStorage.getItem('oauth_target_url');
+    
+    if (targetUrl && targetUrl !== window.location.href) {
+      console.log('🔄 Detected OAuth redirect mismatch. Redirecting to:', targetUrl);
+      // Redirect to the correct URL with the code
+      window.location.href = targetUrl + '?code=' + code;
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Check for redirect mismatch immediately
+if (handleOAuthRedirectMismatch()) {
+  // Redirect is happening, don't continue initialization
+} else {
+  // Start initialization when DOM is ready
+  document.addEventListener("DOMContentLoaded", initializeApp);
+}
 
 // ---------- Supabase Connection Status ----------
 function checkSupabaseConnection() {
@@ -386,6 +414,11 @@ function handleAuthStateChange(user) {
       const cleanUrl = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
       logger.auth("Cleaned OAuth callback URL");
+      
+      // Clear stored OAuth target URL
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('oauth_target_url');
+      }
     }
 
     appState.currentView = "main";

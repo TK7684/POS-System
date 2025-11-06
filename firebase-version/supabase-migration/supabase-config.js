@@ -414,6 +414,11 @@ const POS_AUTH = {
     console.log("💡 Add both with and without wildcard:");
     console.log("   -", redirectUrl);
     console.log("   -", redirectUrl + "/*");
+    
+    // Store target URL in case we need to redirect back from localhost
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('oauth_target_url', redirectUrl);
+    }
 
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
