@@ -4382,24 +4382,31 @@ async function initializeNewAI() {
     // Configuration will be pulled from environment or API
     const config = {
       supabaseUrl:
-        window.SUPABASE_URL || "https://rtfreafhlelpxqwohspq.supabase.co",
-      supabaseKey: window.SUPABASE_ANON_KEY,
+        window.SUPABASE_CONFIG?.url || "https://rtfreafhlelpxqwohspq.supabase.co",
+      supabaseKey: window.SUPABASE_CONFIG?.anonKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZnJlYWZobGVscHhxd29oc3BxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NzYyNjAsImV4cCI6MjA3NzQ1MjI2MH0.WX_kwjFjv0e0RvpWwi6oSJOze49I_FbpPeWcdQZP79o",
       aiProvider: {
         type: "gemini",
         config: {
           apiKey:
-            window.GEMINI_API_KEY || "AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE",
+            window.API_KEYS?.google || window.GEMINI_API_KEY || "AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE",
         },
       },
     };
+    
+    logger.info(LogCategory.AI, '→ Initializing AI system with config', {
+      hasSupabaseUrl: !!config.supabaseUrl,
+      hasSupabaseKey: !!config.supabaseKey,
+      hasApiKey: !!config.aiProvider.config.apiKey,
+      provider: config.aiProvider.type
+    });
 
     webAppHandler = new WebAppHandler(config);
     await webAppHandler.initialize();
 
-    console.log("New AI System initialized successfully");
+    logger.info(LogCategory.AI, "✓ New AI System initialized successfully");
     return true;
   } catch (error) {
-    console.error("Failed to initialize new AI system:", error);
+    logger.error(LogCategory.AI, "✗ Failed to initialize new AI system", error);
     // Fallback to old system if needed
     return false;
   }
@@ -4407,8 +4414,16 @@ async function initializeNewAI() {
 
 // Process message with new AI system
 async function processMessageWithNewAI(message) {
+  const requestId = `MSG_${Date.now()}`;
+  logger.info(LogCategory.AI, `→ Processing message ${requestId}`, { 
+    message: message.substring(0, 100),
+    sessionId: currentSessionId,
+    userId: currentUser?.id
+  });
+  
   try {
     if (!webAppHandler) {
+      logger.warn(LogCategory.AI, 'WebAppHandler not initialized, initializing now...');
       const initialized = await initializeNewAI();
       if (!initialized) {
         throw new Error("AI system initialization failed");
@@ -4418,19 +4433,23 @@ async function processMessageWithNewAI(message) {
     // Show typing indicator
     addChatMessage("...", false, true);
 
+    logger.startTimer(requestId, LogCategory.AI);
     const result = await webAppHandler.processMessage(
       message,
       currentSessionId,
       currentUser?.id,
     );
+    logger.endTimer(requestId);
 
     // Remove typing indicator
     removeTypingIndicator();
 
     if (result.success) {
+      logger.info(LogCategory.AI, `✓ Message ${requestId} processed successfully`);
       // Display rich response
       await displayAIResponse(result.response);
     } else {
+      logger.error(LogCategory.AI, `✗ Message ${requestId} processing failed`, { error: result.error });
       addChatMessage(
         `❌ ${result.error}\n\n${result.suggestion || "กรุณาลองใหม่อีกครั้ง"}`,
         false,
@@ -4438,7 +4457,7 @@ async function processMessageWithNewAI(message) {
     }
   } catch (error) {
     removeTypingIndicator();
-    console.error("Error processing message with new AI:", error);
+    logger.error(LogCategory.AI, `✗ Error processing message ${requestId}`, error);
     addChatMessage("❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", false);
   }
 }
