@@ -591,7 +591,7 @@ Respond in a natural, helpful tone.`;
     const suggestionPrompt = `The following error occurred while processing a user request. Provide a helpful suggestion.
 
 Error: ${error.message}
-User Request: "${input}"
+User Request: "${userInput}"
 
 Provide a constructive suggestion to help the user:
 1. Fix the issue
