@@ -284,7 +284,10 @@ Common operations include:
   }
 
   async _executeReadOperation(intent) {
-    const { entity, parameters } = intent;
+    let { entity, parameters } = intent;
+
+    // Resolve table name using aliases
+    entity = this._resolveTableName(entity);
 
     // Special handlers for complex queries
     switch (entity) {
@@ -306,6 +309,31 @@ Common operations include:
           affectedRecords: data.length
         };
     }
+  }
+
+  _resolveTableName(tableName) {
+    // Check if it's already a valid table
+    const schema = this.context.databaseSchema;
+    if (schema.tables[tableName]) {
+      return tableName;
+    }
+
+    // Try to resolve from aliases
+    if (schema.aliases && schema.aliases[tableName]) {
+      log.info('AI', `Resolved table alias: ${tableName} → ${schema.aliases[tableName]}`);
+      return schema.aliases[tableName];
+    }
+
+    // Handle generic queries
+    if (tableName === 'data' || !tableName) {
+      // For generic "data" queries, default to most commonly accessed table
+      log.info('AI', `Resolving generic query "${tableName}" → menus`);
+      return 'menus';
+    }
+
+    // Return original if no match (will fail gracefully with clear error)
+    log.warn('AI', `Unknown table name: ${tableName}, available tables: ${Object.keys(schema.tables).join(', ')}`);
+    return tableName;
   }
 
   async _executeCreateOperation(intent) {
@@ -677,44 +705,55 @@ Be specific and helpful.`;
   // ==================== Helper Methods ====================
 
   async _getDatabaseSchema() {
-    // Return comprehensive schema definition
+    // Return ACTUAL database schema matching Supabase tables
     return {
       tables: {
-        users: ['id', 'email', 'display_name', 'role', 'created_at'],
-        platforms: ['id', 'name', 'commission_rate', 'is_active'],
-        categories: ['id', 'name', 'type'],
-        ingredients: ['id', 'name', 'unit', 'current_stock', 'min_stock', 'cost_per_unit', 'supplier'],
-        menus: ['id', 'menu_id', 'name', 'price', 'is_active', 'is_available'],
-        menu_recipes: ['id', 'menu_id', 'ingredient_id', 'quantity_per_serve', 'unit'],
-        sales: ['id', 'menu_id', 'platform_id', 'quantity', 'unit_price', 'total_amount', 'order_date', 'order_time'],
-        purchases: ['id', 'ingredient_id', 'quantity', 'unit', 'unit_price', 'total_amount', 'vendor', 'purchase_date'],
-        expenses: ['id', 'description', 'amount', 'expense_date', 'category', 'payment_method', 'vendor'],
-        stock_transactions: ['id', 'ingredient_id', 'transaction_type', 'quantity_change', 'created_at'],
-        labor_logs: ['id', 'employee_name', 'date', 'hours_worked', 'rate_per_hour', 'total_amount'],
-        waste: ['id', 'ingredient_id', 'quantity', 'reason', 'date']
+        // Core tables (confirmed to exist)
+        ingredients: ['id', 'name', 'description', 'unit', 'current_stock', 'min_stock', 'cost_per_unit', 'category_id', 'created_at'],
+        menus: ['id', 'menu_id', 'name', 'price', 'cost_per_unit', 'description', 'image_url', 'is_active', 'is_available', 'created_at'],
+        platforms: ['id', 'name', 'description', 'commission_rate', 'is_active', 'created_at'],
+        stock_transactions: ['id', 'ingredient_id', 'menu_id', 'platform_id', 'user_id', 'transaction_type', 'quantity', 'unit', 'unit_price', 'total_amount', 'reference_id', 'notes', 'transaction_date', 'created_at'],
+        menu_recipes: ['id', 'menu_id', 'ingredient_id', 'quantity_per_serve', 'unit', 'notes', 'created_at']
+      },
+      // Table name aliases for user queries
+      aliases: {
+        'inventory': 'ingredients',
+        'stock': 'ingredients',
+        'items': 'ingredients',
+        'products': 'menus',
+        'dishes': 'menus',
+        'food': 'menus',
+        'transactions': 'stock_transactions',
+        'sales': 'stock_transactions',
+        'purchases': 'stock_transactions',
+        'orders': 'stock_transactions',
+        'recipes': 'menu_recipes',
+        'ingredients_list': 'menu_recipes'
       }
     };
   }
 
   async _getRecentDataSnapshot() {
     try {
-      // Get quick snapshots of key data for context
-      const [menuCount, ingredientCount, todaySales] = await Promise.all([
+      // Get quick snapshots of key data for context (using actual tables)
+      const [menuCount, ingredientCount, transactionCount] = await Promise.all([
         this.db.read('menus', { columns: 'id', limit: 1000 }),
         this.db.read('ingredients', { columns: 'id', limit: 1000 }),
-        this.db.read('sales', {
-          filters: { order_date: new Date().toISOString().split('T')[0] },
-          limit: 100
+        this.db.read('stock_transactions', {
+          columns: 'id',
+          limit: 100,
+          orderBy: { column: 'created_at', ascending: false }
         })
       ]);
 
       return {
         menuCount: menuCount.length,
         ingredientCount: ingredientCount.length,
-        todaySalesCount: todaySales.length,
+        recentTransactionCount: transactionCount.length,
         lastUpdated: new Date().toISOString()
       };
     } catch (error) {
+      log.warn('AI', 'Failed to load data snapshot', { error: error.message });
       return { error: error.message };
     }
   }
