@@ -1,9 +1,8 @@
 /**
  * LINE Bot Webhook Handler for Cloudflare Pages Functions
  * Handles incoming LINE messages and processes them using AI assistant
+ * No external imports - pure JavaScript implementation
  */
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Simple logger for serverless environment
 const log = {
@@ -11,6 +10,50 @@ const log = {
   error: (msg, err) => console.error(`[ERROR] ${msg}`, err || ''),
   warn: (msg, data) => console.warn(`[WARN] ${msg}`, data || '')
 };
+
+// Simple Supabase client implementation
+class SupabaseClient {
+  constructor(url, key) {
+    this.url = url;
+    this.key = key;
+  }
+
+  from(table) {
+    return new SupabaseQuery(this.url, this.key, table);
+  }
+}
+
+class SupabaseQuery {
+  constructor(url, key, table) {
+    this.url = url;
+    this.key = key;
+    this.table = table;
+  }
+
+  async insert(data) {
+    try {
+      const response = await fetch(`${this.url}/rest/v1/${this.table}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': this.key,
+          'Authorization': `Bearer ${this.key}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Supabase insert failed: ${error}`);
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  }
+}
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -61,7 +104,7 @@ export async function onRequest(context) {
     });
 
     // Verify signature (simplified for now)
-    // TODO: Implement proper signature verification
+    // TODO: Implement proper signature verification using crypto.subtle
     
     const webhookData = JSON.parse(body);
     const events = webhookData.events || [];
@@ -136,12 +179,11 @@ async function processLineEvent(event, config) {
   });
 
   try {
-    // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
     // Store message in database
     if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      await supabase.from('line_messages').insert({
+      const supabase = new SupabaseClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      const { error } = await supabase.from('line_messages').insert({
         user_id: userId,
         group_id: groupId,
         source_type: sourceType,
@@ -149,6 +191,12 @@ async function processLineEvent(event, config) {
         reply_token: replyToken,
         created_at: new Date().toISOString()
       });
+
+      if (error) {
+        log.warn('Failed to store message in database', error);
+      } else {
+        log.info('Message stored in database');
+      }
     }
 
     // Generate AI response using Gemini
