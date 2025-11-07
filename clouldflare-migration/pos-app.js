@@ -1,6 +1,7 @@
 /**
  * POS Application Main JavaScript
- * Handles authentication, UI interactions, and Firebase operations
+ * Handles authentication, UI interactions, and database operations
+ * Uses unified AI core system for chatbot functionality
  *
  * Logging System:
  * - log(): General operation logging
@@ -10,6 +11,9 @@
  * - logError(): Error tracking
  * - logPerformance(): Performance metrics
  */
+
+// AI Core System will be loaded dynamically when needed
+let WebAppHandler = null;
 
 // Enhanced Logging System
 const LogLevel = {
@@ -179,7 +183,7 @@ async function initializeApp() {
         if (window.supabaseLoaded) {
           resolve();
         } else {
-          window.addEventListener('supabase-loaded', resolve, { once: true });
+          window.addEventListener("supabase-loaded", resolve, { once: true });
           // Timeout after 5 seconds
           setTimeout(resolve, 5000);
         }
@@ -192,7 +196,7 @@ async function initializeApp() {
         if (window.POS && window.POS.auth) {
           resolve();
         } else {
-          window.addEventListener('pos-ready', resolve, { once: true });
+          window.addEventListener("pos-ready", resolve, { once: true });
           // Timeout after 5 seconds
           setTimeout(resolve, 5000);
         }
@@ -213,7 +217,7 @@ async function initializeApp() {
     if (window.POS && window.POS.auth) {
       logger.auth("Setting up auth state listener...");
       window.POS.auth.onAuthStateChanged(handleAuthStateChange);
-      
+
       // Check current auth state immediately
       const currentUser = await window.POS.auth.getCurrentUser();
       handleAuthStateChange(currentUser);
@@ -243,56 +247,71 @@ async function initializeApp() {
 // If we're on localhost:3000 but should be on Cloudflare Pages, redirect back
 function handleOAuthRedirectMismatch() {
   const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  
+  const code = urlParams.get("code");
+
   // If we have an OAuth code but we're on localhost:3000
   // This means Supabase redirected to the wrong URL
-  if (code && window.location.hostname === 'localhost' && window.location.port === '3000') {
+  if (
+    code &&
+    window.location.hostname === "localhost" &&
+    window.location.port === "3000"
+  ) {
     // Check if we have a stored target URL (from when we initiated OAuth)
-    const targetUrl = sessionStorage.getItem('oauth_target_url');
-    
+    const targetUrl = sessionStorage.getItem("oauth_target_url");
+
     if (targetUrl && targetUrl !== window.location.href) {
-      console.log('🔄 Detected OAuth redirect mismatch. Redirecting to:', targetUrl);
-      console.log('⚠️ IMPORTANT: Make sure your Cloudflare Pages URL in Supabase includes https:// prefix!');
+      console.log(
+        "🔄 Detected OAuth redirect mismatch. Redirecting to:",
+        targetUrl,
+      );
+      console.log(
+        "⚠️ IMPORTANT: Make sure your Cloudflare Pages URL in Supabase includes https:// prefix!",
+      );
       // Redirect to the correct URL with the code
-      window.location.href = targetUrl + '?code=' + code;
+      window.location.href = targetUrl + "?code=" + code;
       return true;
     } else {
       // Try to detect Cloudflare Pages URL from referrer or other sources
       const possibleUrls = [
-        'https://pos-admin-bho.pages.dev',
-        'https://' + document.referrer?.match(/https?:\/\/([^\/]+)/)?.[1] || '',
-      ].filter(url => url && url.includes('pages.dev'));
-      
+        "https://pos-admin-bho.pages.dev",
+        "https://" + document.referrer?.match(/https?:\/\/([^\/]+)/)?.[1] || "",
+      ].filter((url) => url && url.includes("pages.dev"));
+
       if (possibleUrls.length > 0) {
-        const redirectUrl = possibleUrls[0] + '?code=' + code;
-        console.log('🔄 Attempting automatic redirect to:', redirectUrl);
+        const redirectUrl = possibleUrls[0] + "?code=" + code;
+        console.log("🔄 Attempting automatic redirect to:", redirectUrl);
         window.location.href = redirectUrl;
         return true;
       }
-      
+
       // Show error message if we can't redirect
-      console.error('❌ OAuth redirect mismatch detected!');
-      console.error('You were redirected to localhost:3000 but should be on Cloudflare Pages.');
-      console.error('');
-      console.error('⚠️ IMPORTANT: Your redirect URLs in Supabase must include https:// prefix!');
-      console.error('');
-      console.error('Please update Supabase Dashboard:');
-      console.error('1. Go to: https://supabase.com/dashboard');
-      console.error('2. Select project: rtfreafhlelpxqwohspq');
-      console.error('3. Go to: Authentication → URL Configuration');
-      console.error('4. Update your redirect URLs to include https:// prefix:');
-      console.error('   ❌ WRONG: pos-admin-bho.pages.dev');
-      console.error('   ✅ CORRECT: https://pos-admin-bho.pages.dev');
-      console.error('   ❌ WRONG: pos-admin-bho.pages.dev/*');
-      console.error('   ✅ CORRECT: https://pos-admin-bho.pages.dev/*');
-      console.error('5. Click Save and wait 1-2 minutes');
-      
+      console.error("❌ OAuth redirect mismatch detected!");
+      console.error(
+        "You were redirected to localhost:3000 but should be on Cloudflare Pages.",
+      );
+      console.error("");
+      console.error(
+        "⚠️ IMPORTANT: Your redirect URLs in Supabase must include https:// prefix!",
+      );
+      console.error("");
+      console.error("Please update Supabase Dashboard:");
+      console.error("1. Go to: https://supabase.com/dashboard");
+      console.error("2. Select project: rtfreafhlelpxqwohspq");
+      console.error("3. Go to: Authentication → URL Configuration");
+      console.error("4. Update your redirect URLs to include https:// prefix:");
+      console.error("   ❌ WRONG: pos-admin-bho.pages.dev");
+      console.error("   ✅ CORRECT: https://pos-admin-bho.pages.dev");
+      console.error("   ❌ WRONG: pos-admin-bho.pages.dev/*");
+      console.error("   ✅ CORRECT: https://pos-admin-bho.pages.dev/*");
+      console.error("5. Click Save and wait 1-2 minutes");
+
       // Show user-friendly error
-      alert('OAuth Redirect Error!\n\nYou were redirected to localhost:3000.\n\n⚠️ IMPORTANT: Your redirect URLs in Supabase must include "https://" prefix!\n\nCurrent (WRONG):\n- pos-admin-bho.pages.dev\n\nShould be (CORRECT):\n- https://pos-admin-bho.pages.dev\n- https://pos-admin-bho.pages.dev/*\n\nPlease update in Supabase Dashboard → Authentication → URL Configuration');
+      alert(
+        'OAuth Redirect Error!\n\nYou were redirected to localhost:3000.\n\n⚠️ IMPORTANT: Your redirect URLs in Supabase must include "https://" prefix!\n\nCurrent (WRONG):\n- pos-admin-bho.pages.dev\n\nShould be (CORRECT):\n- https://pos-admin-bho.pages.dev\n- https://pos-admin-bho.pages.dev/*\n\nPlease update in Supabase Dashboard → Authentication → URL Configuration',
+      );
     }
   }
-  
+
   return false;
 }
 
@@ -317,10 +336,10 @@ function checkSupabaseConnection() {
       "Supabase not initialized",
       new Error("window.supabase is undefined"),
     );
-      if (statusEl) {
-        statusEl.textContent = "Disconnected";
-        statusEl.className = "supabase-status disconnected";
-      }
+    if (statusEl) {
+      statusEl.textContent = "Disconnected";
+      statusEl.className = "supabase-status disconnected";
+    }
     appState.firebaseConnected = false;
     // Retry after a short delay
     setTimeout(() => {
@@ -427,12 +446,13 @@ function handleAuthStateChange(user) {
   if (user) {
     // User is signed in
     // Supabase user object structure differs from Firebase
-    const displayName = user.user_metadata?.display_name || 
-                        user.user_metadata?.full_name || 
-                        user.user_metadata?.name || 
-                        user.email?.split("@")[0] || 
-                        "User";
-    
+    const displayName =
+      user.user_metadata?.display_name ||
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "User";
+
     logger.auth("User signed in successfully", {
       uid: user.id, // Supabase uses 'id' instead of 'uid'
       email: user.email,
@@ -443,15 +463,18 @@ function handleAuthStateChange(user) {
     });
 
     // Clean up OAuth callback URL parameters
-    if (window.location.search.includes('code=') || window.location.search.includes('access_token=')) {
+    if (
+      window.location.search.includes("code=") ||
+      window.location.search.includes("access_token=")
+    ) {
       // Remove OAuth callback parameters from URL
       const cleanUrl = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
       logger.auth("Cleaned OAuth callback URL");
-      
+
       // Clear stored OAuth target URL
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.removeItem('oauth_target_url');
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.removeItem("oauth_target_url");
       }
     }
 
@@ -472,7 +495,7 @@ function handleAuthStateChange(user) {
 async function signInWithGoogle() {
   const googleTimer = perf.start("google_signin");
   const btn = document.getElementById("google-signin-btn");
-  
+
   if (!btn) {
     logger.error("AUTH", "Google sign-in button not found");
     showError("Google sign-in button not found. Please refresh the page.");
@@ -492,53 +515,70 @@ async function signInWithGoogle() {
     // Wait for Supabase to be ready (with retries)
     let retries = 0;
     while (!window.supabase && retries < 10) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       retries++;
     }
-    
+
     if (!window.supabase) {
-      throw new Error("Supabase not initialized. Please wait a moment and try again.");
+      throw new Error(
+        "Supabase not initialized. Please wait a moment and try again.",
+      );
     }
 
     // Check if POS auth is available
     if (!window.POS || !window.POS.auth) {
       // Wait for POS to be initialized (listen for pos-ready event)
       logger.warn("AUTH", "POS not initialized, waiting...");
-      
+
       // Wait for pos-ready event or timeout
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          window.removeEventListener('pos-ready', onReady);
-          reject(new Error("Authentication system not ready. Please refresh the page."));
+          window.removeEventListener("pos-ready", onReady);
+          reject(
+            new Error(
+              "Authentication system not ready. Please refresh the page.",
+            ),
+          );
         }, 5000);
-        
+
         const onReady = () => {
           clearTimeout(timeout);
-          window.removeEventListener('pos-ready', onReady);
+          window.removeEventListener("pos-ready", onReady);
           resolve();
         };
-        
+
         if (window.POS && window.POS.auth && window.POS.auth.signInWithGoogle) {
           clearTimeout(timeout);
           resolve();
         } else {
-          window.addEventListener('pos-ready', onReady);
+          window.addEventListener("pos-ready", onReady);
         }
       });
-      
-      if (!window.POS || !window.POS.auth || !window.POS.auth.signInWithGoogle) {
-        throw new Error("Authentication system not ready. Please refresh the page.");
+
+      if (
+        !window.POS ||
+        !window.POS.auth ||
+        !window.POS.auth.signInWithGoogle
+      ) {
+        throw new Error(
+          "Authentication system not ready. Please refresh the page.",
+        );
       }
     }
 
     logger.auth("Calling Supabase Google sign-in...");
     console.log("🔐 Google sign-in - POS.auth available:", !!window.POS?.auth);
-    console.log("🔐 Google sign-in - signInWithGoogle available:", !!window.POS?.auth?.signInWithGoogle);
-    
+    console.log(
+      "🔐 Google sign-in - signInWithGoogle available:",
+      !!window.POS?.auth?.signInWithGoogle,
+    );
+
     if (!window.POS?.auth?.signInWithGoogle) {
-      throw new Error("Google sign-in function not available. Please check Supabase configuration.");
+      throw new Error(
+        "Google sign-in function not available. Please check Supabase configuration.",
+      );
     }
-    
+
     const result = await window.POS.auth.signInWithGoogle();
 
     googleTimer();
@@ -548,13 +588,13 @@ async function signInWithGoogle() {
     });
 
     // OAuth redirects immediately, so show a message
-    btn.innerHTML = '🔄 Redirecting to Google...';
-    
+    btn.innerHTML = "🔄 Redirecting to Google...";
+
     // The auth state change listener will handle the actual sign-in when user returns
   } catch (error) {
     googleTimer();
     logger.error("AUTH", "Google sign-in failed", error);
-    
+
     // Show error message
     const errorDiv = document.getElementById("login-error");
     if (errorDiv) {
@@ -636,20 +676,20 @@ async function logout() {
 function showAuthScreen() {
   logger.ui("Showing authentication screen");
   appState.currentView = "auth";
-  
+
   const authScreen = document.getElementById("auth-screen");
   const posApp = document.getElementById("pos-app");
-  
+
   if (authScreen) {
     authScreen.classList.remove("hidden");
     authScreen.style.display = "block";
   }
-  
+
   if (posApp) {
     posApp.classList.add("hidden");
     posApp.style.display = "none";
   }
-  
+
   // Hide navigation menus on login page
   const topBar = document.getElementById("app-topbar");
   const bottomNav = document.getElementById("app-bottomnav");
@@ -659,7 +699,7 @@ function showAuthScreen() {
   if (bottomNav) {
     bottomNav.style.display = "none";
   }
-  
+
   // Ensure all menu sections are also hidden
   const menusPage = document.getElementById("menus-page");
   const expensesHistoryPage = document.getElementById("expenses-history-page");
@@ -671,39 +711,39 @@ function showAuthScreen() {
     expensesHistoryPage.classList.add("hidden");
     expensesHistoryPage.style.display = "none";
   }
-  
-  logger.ui("Auth screen displayed", { 
+
+  logger.ui("Auth screen displayed", {
     authVisible: !authScreen?.classList.contains("hidden"),
-    posHidden: posApp?.classList.contains("hidden")
+    posHidden: posApp?.classList.contains("hidden"),
   });
 }
 
 function showMainApp() {
   logger.ui("Showing main POS application");
   appState.currentView = "main";
-  
+
   const authScreen = document.getElementById("auth-screen");
   const posApp = document.getElementById("pos-app");
-  
+
   if (authScreen) {
     authScreen.classList.add("hidden");
     authScreen.style.display = "none";
   }
-  
+
   if (posApp) {
     posApp.classList.remove("hidden");
     posApp.style.display = "block";
     // Ensure menu buttons are visible
     loadInitialData();
   }
-  
+
   // Show navigation menus when logged in
   const topBar = document.getElementById("app-topbar");
   const bottomNav = document.getElementById("app-bottomnav");
-  
+
   // Check if mobile (screen width < 768px)
   const isMobile = window.innerWidth < 768;
-  
+
   if (topBar) {
     // Show top bar only on desktop
     topBar.classList.remove("hidden");
@@ -713,7 +753,7 @@ function showMainApp() {
       topBar.style.display = "none";
     }
   }
-  
+
   if (bottomNav) {
     // Show bottom nav only on mobile
     bottomNav.classList.remove("hidden");
@@ -723,21 +763,21 @@ function showMainApp() {
       bottomNav.style.display = "none";
     }
   }
-  
+
   // Update on window resize
   let resizeTimeout;
-  window.addEventListener('resize', () => {
+  window.addEventListener("resize", () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
       const isMobileNow = window.innerWidth < 768;
       if (topBar) {
         // Use CSS class instead of inline style for better control
         if (isMobileNow) {
-          topBar.classList.add('hidden');
-          topBar.style.display = 'none';
+          topBar.classList.add("hidden");
+          topBar.style.display = "none";
         } else {
-          topBar.classList.remove('hidden');
-          topBar.style.display = 'block';
+          topBar.classList.remove("hidden");
+          topBar.style.display = "block";
         }
       }
       if (bottomNav) {
@@ -745,7 +785,7 @@ function showMainApp() {
       }
     }, 100);
   });
-  
+
   // Hide any other pages
   const menusPage = document.getElementById("menus-page");
   const expensesHistoryPage = document.getElementById("expenses-history-page");
@@ -762,16 +802,16 @@ function showMainApp() {
     stockPage.classList.add("hidden");
     stockPage.style.display = "none";
   }
-  
+
   // Ensure expenses page is properly initialized
-  if (expensesHistoryPage && typeof loadExpensesHistory === 'function') {
+  if (expensesHistoryPage && typeof loadExpensesHistory === "function") {
     // Don't load data yet, just ensure the page is ready
     expensesHistoryState.page = 1;
   }
-  
-  logger.ui("Main app displayed", { 
+
+  logger.ui("Main app displayed", {
     authHidden: authScreen?.classList.contains("hidden"),
-    posVisible: !posApp?.classList.contains("hidden")
+    posVisible: !posApp?.classList.contains("hidden"),
   });
 }
 
@@ -790,10 +830,13 @@ let isLoadingData = false; // Guard to prevent multiple simultaneous calls
 async function loadInitialData() {
   // Prevent multiple simultaneous calls
   if (isLoadingData) {
-    logger.warn("DB", "loadInitialData already in progress, skipping duplicate call");
+    logger.warn(
+      "DB",
+      "loadInitialData already in progress, skipping duplicate call",
+    );
     return;
   }
-  
+
   isLoadingData = true;
   const dataLoadTimer = perf.start("initial_data_load");
   logger.db("Starting initial data load...");
@@ -917,13 +960,13 @@ async function loadIngredients() {
       const option = document.createElement("option");
       option.value = ingredient.id;
       // Show name, unit, and recent purchase info if available
-      let displayText = `${ingredient.name} (${ingredient.unit || 'ไม่มีหน่วย'})`;
+      let displayText = `${ingredient.name} (${ingredient.unit || "ไม่มีหน่วย"})`;
       if (ingredient.cost_per_unit && ingredient.cost_per_unit > 0) {
-        displayText += ` - ฿${parseFloat(ingredient.cost_per_unit).toFixed(2)}/${ingredient.unit || ''}`;
+        displayText += ` - ฿${parseFloat(ingredient.cost_per_unit).toFixed(2)}/${ingredient.unit || ""}`;
       }
       option.textContent = displayText;
-      option.setAttribute('data-unit', ingredient.unit || '');
-      option.setAttribute('data-cost', ingredient.cost_per_unit || '0');
+      option.setAttribute("data-unit", ingredient.unit || "");
+      option.setAttribute("data-cost", ingredient.cost_per_unit || "0");
       selectEl.appendChild(option);
     });
 
@@ -1017,16 +1060,21 @@ function setupRealtimeListeners() {
       const icon = type === "sale" ? "🛒" : "📦";
 
       // Show ingredient name for purchases, menu name for sales
-      const displayName = transaction.type === "sale" 
-        ? (transaction.menu_name || "Unknown Menu")
-        : (transaction.item_name || "Unknown Ingredient");
-      
+      const displayName =
+        transaction.type === "sale"
+          ? transaction.menu_name || "Unknown Menu"
+          : transaction.item_name || "Unknown Ingredient";
+
       // Show unit and quantity for purchases
-      let purchaseDetails = '';
-      if (transaction.type === "purchase" && transaction.quantity && transaction.unit) {
+      let purchaseDetails = "";
+      if (
+        transaction.type === "purchase" &&
+        transaction.quantity &&
+        transaction.unit
+      ) {
         purchaseDetails = ` ${transaction.quantity} ${transaction.unit}`;
       }
-      
+
       html += `
                 <div class="flex justify-between items-center p-2 border-b">
                     <span>${icon} ${displayName}${purchaseDetails}</span>
@@ -1122,19 +1170,19 @@ async function handlePurchaseSubmit(event) {
     if (result.success) {
       // Refresh ingredients and low stock list after successful purchase
       await loadIngredients();
-      
+
       // Manually refresh low stock list (trigger real-time update)
       if (window._refreshLowStock) {
         await window._refreshLowStock();
       }
-      
+
       // Wait a moment for transaction to be saved, then refresh transactions
       setTimeout(async () => {
         if (window._refreshTransactions) {
           await window._refreshTransactions();
         }
       }, 500);
-      
+
       showToast("บันทึกการซื้อสำเร็จ");
       closePurchaseModal();
       document.getElementById("purchase-form").reset();
@@ -1360,7 +1408,11 @@ class LineBotIntegration {
 
   async processMessage(message, source, imageUrl = null) {
     const processTimer = perf.start("process_line_message");
-    logger.info("LINE", "Processing Line message", { message, source, imageUrl });
+    logger.info("LINE", "Processing Line message", {
+      message,
+      source,
+      imageUrl,
+    });
 
     try {
       // Check for confirmation responses first
@@ -1395,13 +1447,15 @@ class LineBotIntegration {
 
   isConfirmationResponse(message) {
     const text = message.toLowerCase().trim();
-    return text === "ยืนยัน" || 
-           text === "confirm" || 
-           text === "ใช่" ||
-           text === "แก้ไข" ||
-           text === "edit" ||
-           text === "ไม่ใช่" ||
-           text === "no";
+    return (
+      text === "ยืนยัน" ||
+      text === "confirm" ||
+      text === "ใช่" ||
+      text === "แก้ไข" ||
+      text === "edit" ||
+      text === "ไม่ใช่" ||
+      text === "no"
+    );
   }
 
   async handleConfirmationResponse(message) {
@@ -1409,7 +1463,10 @@ class LineBotIntegration {
     const isConfirm = text === "ยืนยัน" || text === "confirm" || text === "ใช่";
 
     // Find the most recent pending confirmation
-    if (!this.pendingConfirmations || Object.keys(this.pendingConfirmations).length === 0) {
+    if (
+      !this.pendingConfirmations ||
+      Object.keys(this.pendingConfirmations).length === 0
+    ) {
       await this.replyMessage("ไม่พบข้อมูลที่ต้องการยืนยัน");
       return;
     }
@@ -1426,16 +1483,16 @@ class LineBotIntegration {
           await this.learnFromTransaction(pending.data);
           await this.replyMessage(
             `✅ ยืนยันและบันทึกเรียบร้อย\n` +
-            `${this.formatPurchaseSummary(pending.data)}`
+              `${this.formatPurchaseSummary(pending.data)}`,
           );
         } else if (pending.type === "sale") {
           await this.saveSale(pending.data);
           await this.replyMessage(
             `✅ ยืนยันและบันทึกการขายเรียบร้อย\n` +
-            `💰 ฿${pending.data.totalAmount}`
+              `💰 ฿${pending.data.totalAmount}`,
           );
         }
-        
+
         delete this.pendingConfirmations[latestId];
       } catch (error) {
         logger.error("LINE", "Error confirming transaction", error);
@@ -1484,9 +1541,11 @@ class LineBotIntegration {
       "จ่ายเงิน",
     ];
     const text = message.toLowerCase();
-    return expenseKeywords.some((keyword) => text.includes(keyword.toLowerCase())) ||
-           /ค่า[\s]*[ก-ฮ]+\s+\d+/.test(text) || // ค่าXXX จำนวน
-           /\d+[\s]*บาท[\s]*(ค่า|จ่าย)/.test(text); // จำนวนบาท ค่า/จ่าย
+    return (
+      expenseKeywords.some((keyword) => text.includes(keyword.toLowerCase())) ||
+      /ค่า[\s]*[ก-ฮ]+\s+\d+/.test(text) || // ค่าXXX จำนวน
+      /\d+[\s]*บาท[\s]*(ค่า|จ่าย)/.test(text)
+    ); // จำนวนบาท ค่า/จ่าย
   }
 
   isIngredientPurchase(message) {
@@ -1497,9 +1556,11 @@ class LineBotIntegration {
     ];
     const text = message.toLowerCase();
     // Check if it contains ingredient-like patterns and price
-    return (patterns.some(p => p.test(text)) && 
-            (/\d+[\s]*บาท/.test(text) || /\d+[\s]*฿/.test(text))) ||
-           /[ก-ฮ]+\s*\d+[\s]*[ก-ฮ]*\s*\d+[\s]*(บาท|฿)/i.test(text);
+    return (
+      (patterns.some((p) => p.test(text)) &&
+        (/\d+[\s]*บาท/.test(text) || /\d+[\s]*฿/.test(text))) ||
+      /[ก-ฮ]+\s*\d+[\s]*[ก-ฮ]*\s*\d+[\s]*(บาท|฿)/i.test(text)
+    );
   }
 
   isSaleMessage(message) {
@@ -1516,8 +1577,10 @@ class LineBotIntegration {
       "XL",
     ];
     const text = message.toLowerCase();
-    return saleIndicators.some(indicator => text.includes(indicator)) ||
-           /จ่าย[\s]*\d+[\s]*[+=\d\s]*\d+[\s]*บาท/.test(text); // "จ่ายสด 478+80 =558 บาท"
+    return (
+      saleIndicators.some((indicator) => text.includes(indicator)) ||
+      /จ่าย[\s]*\d+[\s]*[+=\d\s]*\d+[\s]*บาท/.test(text)
+    ); // "จ่ายสด 478+80 =558 บาท"
   }
 
   async processSlipPurchase(message) {
@@ -1675,28 +1738,36 @@ class LineBotIntegration {
 
   async replyMessage(message, replyToken = null) {
     logger.info("LINE", "Reply message prepared", { message, replyToken });
-    
+
     // If we have a reply token, send via LINE API
     if (replyToken && this.channelAccessToken) {
       try {
-        const response = await fetch('https://api.line.me/v2/bot/message/reply', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.channelAccessToken}`,
+        const response = await fetch(
+          "https://api.line.me/v2/bot/message/reply",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${this.channelAccessToken}`,
+            },
+            body: JSON.stringify({
+              replyToken: replyToken,
+              messages: [
+                {
+                  type: "text",
+                  text: message,
+                },
+              ],
+            }),
           },
-          body: JSON.stringify({
-            replyToken: replyToken,
-            messages: [{
-              type: 'text',
-              text: message,
-            }],
-          }),
-        });
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
-          logger.error("LINE", "Failed to send LINE reply", { status: response.status, error: errorText });
+          logger.error("LINE", "Failed to send LINE reply", {
+            status: response.status,
+            error: errorText,
+          });
           showToast(`Line Bot: ${message}`);
         } else {
           logger.info("LINE", "Reply sent successfully");
@@ -1714,29 +1785,37 @@ class LineBotIntegration {
   // Send push message to LINE group
   async sendPushMessage(groupId, message) {
     if (!this.channelAccessToken || !groupId) {
-      logger.warn("LINE", "Cannot send push message - missing token or group ID");
+      logger.warn(
+        "LINE",
+        "Cannot send push message - missing token or group ID",
+      );
       return;
     }
 
     try {
-      const response = await fetch('https://api.line.me/v2/bot/message/push', {
-        method: 'POST',
+      const response = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.channelAccessToken}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.channelAccessToken}`,
         },
         body: JSON.stringify({
           to: groupId,
-          messages: [{
-            type: 'text',
-            text: message,
-          }],
+          messages: [
+            {
+              type: "text",
+              text: message,
+            },
+          ],
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error("LINE", "Failed to send push message", { status: response.status, error: errorText });
+        logger.error("LINE", "Failed to send push message", {
+          status: response.status,
+          error: errorText,
+        });
       } else {
         logger.info("LINE", "Push message sent successfully");
       }
@@ -1754,7 +1833,9 @@ class LineBotIntegration {
       const expenseData = this.parseExpenseText(message);
 
       if (!expenseData) {
-        await this.replyMessage("ไม่สามารถอ่านข้อมูลค่าใช้จ่ายได้ กรุณาระบุข้อมูลให้ชัดเจน เช่น: ค่าไฟ 500 บาท");
+        await this.replyMessage(
+          "ไม่สามารถอ่านข้อมูลค่าใช้จ่ายได้ กรุณาระบุข้อมูลให้ชัดเจน เช่น: ค่าไฟ 500 บาท",
+        );
         return;
       }
 
@@ -1764,23 +1845,23 @@ class LineBotIntegration {
       if (result.action === "created") {
         await this.replyMessage(
           `✅ บันทึกค่าใช้จ่ายใหม่\n` +
-          `📋 ${expenseData.description}\n` +
-          `💰 ฿${expenseData.amount}\n` +
-          `📅 ${expenseData.date || "วันนี้"}`
+            `📋 ${expenseData.description}\n` +
+            `💰 ฿${expenseData.amount}\n` +
+            `📅 ${expenseData.date || "วันนี้"}`,
         );
       } else if (result.action === "updated") {
         await this.replyMessage(
           `🔄 อัปเดตค่าใช้จ่าย\n` +
-          `📋 ${expenseData.description}\n` +
-          `💰 ฿${expenseData.amount} (เดิม: ฿${result.oldAmount})\n` +
-          `📅 ${expenseData.date || "วันนี้"}`
+            `📋 ${expenseData.description}\n` +
+            `💰 ฿${expenseData.amount} (เดิม: ฿${result.oldAmount})\n` +
+            `📅 ${expenseData.date || "วันนี้"}`,
         );
       } else if (result.action === "duplicate") {
         await this.replyMessage(
           `ℹ️ พบค่าใช้จ่ายที่คล้ายกันอยู่แล้ว\n` +
-          `📋 ${result.existing.description}\n` +
-          `💰 ฿${result.existing.amount}\n` +
-          `📅 ${result.existing.expense_date}`
+            `📋 ${result.existing.description}\n` +
+            `💰 ฿${result.existing.amount}\n` +
+            `📅 ${result.existing.expense_date}`,
         );
       }
     } catch (error) {
@@ -1793,7 +1874,7 @@ class LineBotIntegration {
     logger.debug("LINE", "Parsing expense text", { message });
 
     const text = message.trim();
-    
+
     // Extract amount (various patterns)
     const amountPatterns = [
       /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/,
@@ -1820,14 +1901,14 @@ class LineBotIntegration {
     let category = "other";
     let subcategory = null;
     const categoryMap = {
-      "ค่าไฟ": { category: "utility", subcategory: "electric" },
-      "ค่าไฟฟ้า": { category: "utility", subcategory: "electric" },
-      "ค่าน้ำ": { category: "utility", subcategory: "water" },
-      "ค่าเช่า": { category: "rental", subcategory: null },
-      "ค่าแรง": { category: "labor", subcategory: null },
-      "ค่าโทร": { category: "utility", subcategory: null },
-      "ค่าเน็ต": { category: "utility", subcategory: null },
-      "ค่าสาธารณูปโภค": { category: "utility", subcategory: null },
+      ค่าไฟ: { category: "utility", subcategory: "electric" },
+      ค่าไฟฟ้า: { category: "utility", subcategory: "electric" },
+      ค่าน้ำ: { category: "utility", subcategory: "water" },
+      ค่าเช่า: { category: "rental", subcategory: null },
+      ค่าแรง: { category: "labor", subcategory: null },
+      ค่าโทร: { category: "utility", subcategory: null },
+      ค่าเน็ต: { category: "utility", subcategory: null },
+      ค่าสาธารณูปโภค: { category: "utility", subcategory: null },
     };
 
     for (const [keyword, cat] of Object.entries(categoryMap)) {
@@ -1841,7 +1922,9 @@ class LineBotIntegration {
     // Extract description
     let description = text;
     // Remove amount from description
-    description = description.replace(/\d+(?:,\d{3})*(?:\.\d{2})?\s*(บาท|฿)/g, "").trim();
+    description = description
+      .replace(/\d+(?:,\d{3})*(?:\.\d{2})?\s*(บาท|฿)/g, "")
+      .trim();
     // Use first 100 characters
     description = description.substring(0, 100) || category;
 
@@ -1858,9 +1941,15 @@ class LineBotIntegration {
     for (const pattern of datePatterns) {
       const match = text.match(pattern);
       if (match) {
-        if (match[0].toLowerCase().includes("วันนี้") || match[0].toLowerCase().includes("today")) {
+        if (
+          match[0].toLowerCase().includes("วันนี้") ||
+          match[0].toLowerCase().includes("today")
+        ) {
           expenseDate = today;
-        } else if (match[0].toLowerCase().includes("เมื่อวาน") || match[0].toLowerCase().includes("yesterday")) {
+        } else if (
+          match[0].toLowerCase().includes("เมื่อวาน") ||
+          match[0].toLowerCase().includes("yesterday")
+        ) {
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           expenseDate = yesterday.toISOString().split("T")[0];
@@ -1945,23 +2034,30 @@ class LineBotIntegration {
       const similarExpenses = (recentExpenses || []).filter((exp) => {
         const sameDate = exp.expense_date === expenseData.expense_date;
         const sameCategory = exp.category === expenseData.category;
-        const sameSubcategory = (exp.subcategory || null) === (expenseData.subcategory || null);
+        const sameSubcategory =
+          (exp.subcategory || null) === (expenseData.subcategory || null);
         const similarAmount = Math.abs(exp.amount - expenseData.amount) <= 10; // Within 10 baht
-        
+
         // Check description similarity
         const descSimilarity = this.calculateSimilarity(
           (exp.description || "").toLowerCase(),
-          (expenseData.description || "").toLowerCase()
+          (expenseData.description || "").toLowerCase(),
         );
 
-        return sameDate && sameCategory && sameSubcategory && similarAmount && descSimilarity > 0.5;
+        return (
+          sameDate &&
+          sameCategory &&
+          sameSubcategory &&
+          similarAmount &&
+          descSimilarity > 0.5
+        );
       });
 
       if (similarExpenses.length > 0) {
         // Found similar expense - check if should update
         const mostSimilar = similarExpenses[0];
         const amountDiff = Math.abs(mostSimilar.amount - expenseData.amount);
-        
+
         // If amount is different by more than 1%, update it
         if (amountDiff > mostSimilar.amount * 0.01) {
           const { data: updated, error: updateError } = await window.supabase
@@ -1981,7 +2077,10 @@ class LineBotIntegration {
             throw updateError;
           }
 
-          logger.info("LINE", "Expense updated", { old: mostSimilar, new: updated });
+          logger.info("LINE", "Expense updated", {
+            old: mostSimilar,
+            new: updated,
+          });
           return {
             action: "updated",
             expense: updated,
@@ -1996,8 +2095,10 @@ class LineBotIntegration {
         }
       } else {
         // No similar expense found - create new
-        const { data: { user } } = await window.supabase.auth.getUser();
-        
+        const {
+          data: { user },
+        } = await window.supabase.auth.getUser();
+
         const newExpense = {
           user_id: user?.id,
           category: expenseData.category,
@@ -2035,12 +2136,12 @@ class LineBotIntegration {
 
   calculateSimilarity(str1, str2) {
     // Simple similarity calculation using common words
-    const words1 = str1.split(/\s+/).filter(w => w.length > 2);
-    const words2 = str2.split(/\s+/).filter(w => w.length > 2);
-    
+    const words1 = str1.split(/\s+/).filter((w) => w.length > 2);
+    const words2 = str2.split(/\s+/).filter((w) => w.length > 2);
+
     if (words1.length === 0 || words2.length === 0) return 0;
-    
-    const commonWords = words1.filter(w => words2.includes(w));
+
+    const commonWords = words1.filter((w) => words2.includes(w));
     return commonWords.length / Math.max(words1.length, words2.length);
   }
 
@@ -2066,7 +2167,7 @@ class LineBotIntegration {
           matrix[i][j] = Math.min(
             matrix[i - 1][j - 1] + 1, // substitution
             matrix[i][j - 1] + 1, // insertion
-            matrix[i - 1][j] + 1 // deletion
+            matrix[i - 1][j] + 1, // deletion
           );
         }
       }
@@ -2085,10 +2186,16 @@ class LineBotIntegration {
       // Check learning data for known mappings first
       const learningKey = "line_bot_learning";
       const learning = JSON.parse(localStorage.getItem(learningKey) || "{}");
-      
-      if (learning.ingredientMappings && learning.ingredientMappings[searchName]) {
+
+      if (
+        learning.ingredientMappings &&
+        learning.ingredientMappings[searchName]
+      ) {
         const mappedName = learning.ingredientMappings[searchName];
-        logger.info("LINE", "Using learned mapping", { search: searchName, mapped: mappedName });
+        logger.info("LINE", "Using learned mapping", {
+          search: searchName,
+          mapped: mappedName,
+        });
         searchName = mappedName; // Use the mapped name
       }
 
@@ -2102,13 +2209,13 @@ class LineBotIntegration {
       if (ingredients.length === 0) return null;
 
       // Calculate similarity scores
-      const scores = ingredients.map(ing => {
+      const scores = ingredients.map((ing) => {
         const distance = this.levenshteinDistance(
           searchName.toLowerCase(),
-          ing.name.toLowerCase()
+          ing.name.toLowerCase(),
         );
         const maxLen = Math.max(searchName.length, ing.name.length);
-        const similarity = 1 - (distance / maxLen);
+        const similarity = 1 - distance / maxLen;
         return { ingredient: ing, similarity, distance };
       });
 
@@ -2139,32 +2246,37 @@ class LineBotIntegration {
 
     const text = message.trim();
     const items = [];
-    const lines = text.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+    const lines = text
+      .split(/\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
 
     // Pattern 1: "น้ำแข็ง 2 กระสอบ 110 บาท" (single line)
-    const pattern1 = /([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s+([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s*บาท/i;
-    
+    const pattern1 =
+      /([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s+([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s*บาท/i;
+
     // Pattern 2: Multi-line format
     // "น้ำแข็ง 2 กระสอบ\n110 บาท"
     if (lines.length >= 2) {
       // Check if first line is ingredient and second is price
       const line1 = lines[0];
       const line2 = lines[1];
-      
+
       const ingredientPattern = /([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s+([ก-ฮ]+)/i;
       const pricePattern = /(\d+(?:\.\d+)?)\s*บาท/i;
-      
+
       const ingMatch = line1.match(ingredientPattern);
       const priceMatch = line2.match(pricePattern);
-      
+
       if (ingMatch && priceMatch) {
         const ingredientName = ingMatch[1].trim();
         const quantity = parseFloat(ingMatch[2]);
         const unit = ingMatch[3].trim();
         const price = parseFloat(priceMatch[1]);
-        
-        const matchedIngredient = await this.findClosestIngredient(ingredientName);
-        
+
+        const matchedIngredient =
+          await this.findClosestIngredient(ingredientName);
+
         items.push({
           ingredientName: matchedIngredient?.name || ingredientName,
           ingredientId: matchedIngredient?.id || null,
@@ -2184,9 +2296,10 @@ class LineBotIntegration {
       const quantity = parseFloat(match1[2]);
       const unit = match1[3].trim();
       const price = parseFloat(match1[4]);
-      
-      const matchedIngredient = await this.findClosestIngredient(ingredientName);
-      
+
+      const matchedIngredient =
+        await this.findClosestIngredient(ingredientName);
+
       items.push({
         ingredientName: matchedIngredient?.name || ingredientName,
         ingredientId: matchedIngredient?.id || null,
@@ -2203,22 +2316,22 @@ class LineBotIntegration {
     if (items.length === 0) {
       const pattern2 = /([ก-ฮ]+)\s+(\d+(?:\.\d+)?)\s+([ก-ฮ]+)/gi;
       const matches2 = [...text.matchAll(pattern2)];
-      
+
       if (matches2.length > 0) {
         // Try to extract prices from image if available
         let prices = [];
         if (imageUrl) {
           prices = await this.extractPricesFromImage(imageUrl);
         }
-        
+
         // Also try to find prices in the message text
         const pricePattern = /(\d+(?:\.\d+)?)\s*บาท/g;
         const priceMatches = [...text.matchAll(pricePattern)];
-        const textPrices = priceMatches.map(m => parseFloat(m[1]));
-        
+        const textPrices = priceMatches.map((m) => parseFloat(m[1]));
+
         // Combine prices from image and text
         prices = prices.length > 0 ? prices : textPrices;
-        
+
         // Use for...of loop instead of forEach to properly handle await
         for (let index = 0; index < matches2.length; index++) {
           const match = matches2[index];
@@ -2226,9 +2339,10 @@ class LineBotIntegration {
           const quantity = parseFloat(match[2]);
           const unit = match[3].trim();
           const price = prices[index] || null;
-          
-          const matchedIngredient = await this.findClosestIngredient(ingredientName);
-          
+
+          const matchedIngredient =
+            await this.findClosestIngredient(ingredientName);
+
           items.push({
             ingredientName: matchedIngredient?.name || ingredientName,
             ingredientId: matchedIngredient?.id || null,
@@ -2246,7 +2360,9 @@ class LineBotIntegration {
     // Extract total price if available
     const totalPattern = /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/i;
     const totalMatch = text.match(totalPattern);
-    const totalPrice = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, "")) : null;
+    const totalPrice = totalMatch
+      ? parseFloat(totalMatch[1].replace(/,/g, ""))
+      : null;
 
     return {
       items,
@@ -2255,7 +2371,8 @@ class LineBotIntegration {
       date: this.extractDate(text),
       originalMessage: message,
       imageUrl,
-      confidence: items.length > 0 ? Math.min(...items.map(i => i.confidence)) : 0,
+      confidence:
+        items.length > 0 ? Math.min(...items.map((i) => i.confidence)) : 0,
     };
   }
 
@@ -2264,7 +2381,7 @@ class LineBotIntegration {
     // Placeholder for OCR integration
     // In production, this would call an OCR service
     logger.info("LINE", "Extracting prices from image", { imageUrl });
-    
+
     // For now, return empty array - would need actual OCR service
     // This could integrate with Google Cloud Vision API, Tesseract, etc.
     return [];
@@ -2272,36 +2389,47 @@ class LineBotIntegration {
 
   // Process ingredient purchase
   async processIngredientPurchase(message, imageUrl = null) {
-    logger.info("LINE", "Processing ingredient purchase", { message, imageUrl });
+    logger.info("LINE", "Processing ingredient purchase", {
+      message,
+      imageUrl,
+    });
 
     try {
-      const purchaseData = await this.parseIngredientPurchase(message, imageUrl);
+      const purchaseData = await this.parseIngredientPurchase(
+        message,
+        imageUrl,
+      );
 
       if (!purchaseData || purchaseData.items.length === 0) {
-        await this.replyMessage("ไม่สามารถอ่านข้อมูลการซื้อได้ กรุณาระบุข้อมูลให้ชัดเจน");
+        await this.replyMessage(
+          "ไม่สามารถอ่านข้อมูลการซื้อได้ กรุณาระบุข้อมูลให้ชัดเจน",
+        );
         return;
       }
 
       // Check if needs confirmation
-      if (purchaseData.confidence < 0.7 || purchaseData.items.some(i => i.needsConfirmation)) {
+      if (
+        purchaseData.confidence < 0.7 ||
+        purchaseData.items.some((i) => i.needsConfirmation)
+      ) {
         const confirmationId = this.requestConfirmation(purchaseData);
         await this.replyMessage(
           `❓ ต้องการยืนยันข้อมูล:\n` +
-          `${this.formatPurchaseForConfirmation(purchaseData)}\n` +
-          `พิมพ์ "ยืนยัน" หรือ "แก้ไข" เพื่อดำเนินการ`
+            `${this.formatPurchaseForConfirmation(purchaseData)}\n` +
+            `พิมพ์ "ยืนยัน" หรือ "แก้ไข" เพื่อดำเนินการ`,
         );
         return;
       }
 
       // Save purchase
       await this.saveIngredientPurchases(purchaseData);
-      
+
       // Learn from this transaction
       await this.learnFromTransaction(purchaseData);
 
       await this.replyMessage(
         `✅ บันทึกการซื้อวัตถุดิบเรียบร้อย\n` +
-        `${this.formatPurchaseSummary(purchaseData)}`
+          `${this.formatPurchaseSummary(purchaseData)}`,
       );
     } catch (error) {
       logger.error("LINE", "Error processing ingredient purchase", error);
@@ -2326,8 +2454,8 @@ class LineBotIntegration {
         const confirmationId = this.requestConfirmation(saleData, "sale");
         await this.replyMessage(
           `❓ ต้องการยืนยันข้อมูลการขาย:\n` +
-          `${this.formatSaleForConfirmation(saleData)}\n` +
-          `พิมพ์ "ยืนยัน" หรือ "แก้ไข" เพื่อดำเนินการ`
+            `${this.formatSaleForConfirmation(saleData)}\n` +
+            `พิมพ์ "ยืนยัน" หรือ "แก้ไข" เพื่อดำเนินการ`,
         );
         return;
       }
@@ -2337,8 +2465,8 @@ class LineBotIntegration {
 
       await this.replyMessage(
         `✅ บันทึกการขายเรียบร้อย\n` +
-        `💰 ฿${saleData.totalAmount}\n` +
-        `📋 ${saleData.items.length} รายการ`
+          `💰 ฿${saleData.totalAmount}\n` +
+          `📋 ${saleData.items.length} รายการ`,
       );
     } catch (error) {
       logger.error("LINE", "Error processing sale", error);
@@ -2349,14 +2477,16 @@ class LineBotIntegration {
   // Parse sale message
   parseSaleMessage(message) {
     const text = message.trim();
-    
+
     // Pattern: "จ่ายสด 478+80 =558 บาท ข้าว2 สาหร่าย1 กุ้งแช่ 12-13 ตัว 1 ชุด แซลมอนดอง xL 150 กรัม"
     const totalMatch = text.match(/(\d+(?:,\d{3})*(?:\.\d{2})?)\s*บาท/i);
-    const totalAmount = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, "")) : null;
+    const totalAmount = totalMatch
+      ? parseFloat(totalMatch[1].replace(/,/g, ""))
+      : null;
 
     // Extract menu items
     const items = [];
-    
+
     // Match menu patterns
     const menuPatterns = [
       /(ข้าว)\s*(\d+)/i,
@@ -2365,7 +2495,7 @@ class LineBotIntegration {
       /(แซลมอนดอง)\s*(xL|XL)\s*(\d+)\s*(กรัม)/i,
     ];
 
-    menuPatterns.forEach(pattern => {
+    menuPatterns.forEach((pattern) => {
       const match = text.match(pattern);
       if (match) {
         const menuName = match[1];
@@ -2387,12 +2517,12 @@ class LineBotIntegration {
   // Request confirmation for uncertain data
   requestConfirmation(data, type = "purchase") {
     const confirmationId = `confirm_${Date.now()}`;
-    
+
     // Store pending confirmation
     if (!this.pendingConfirmations) {
       this.pendingConfirmations = {};
     }
-    
+
     this.pendingConfirmations[confirmationId] = {
       data,
       type,
@@ -2400,27 +2530,36 @@ class LineBotIntegration {
     };
 
     // Auto-expire after 5 minutes
-    setTimeout(() => {
-      delete this.pendingConfirmations[confirmationId];
-    }, 5 * 60 * 1000);
+    setTimeout(
+      () => {
+        delete this.pendingConfirmations[confirmationId];
+      },
+      5 * 60 * 1000,
+    );
 
     return confirmationId;
   }
 
   // Format purchase for confirmation
   formatPurchaseForConfirmation(purchaseData) {
-    return purchaseData.items.map(item => 
-      `- ${item.ingredientName} ${item.quantity} ${item.unit} ${item.price ? `฿${item.price}` : '(ราคาไม่ระบุ)'}`
-    ).join("\n") + 
-    (purchaseData.totalPrice ? `\n💰 รวม: ฿${purchaseData.totalPrice}` : "");
+    return (
+      purchaseData.items
+        .map(
+          (item) =>
+            `- ${item.ingredientName} ${item.quantity} ${item.unit} ${item.price ? `฿${item.price}` : "(ราคาไม่ระบุ)"}`,
+        )
+        .join("\n") +
+      (purchaseData.totalPrice ? `\n💰 รวม: ฿${purchaseData.totalPrice}` : "")
+    );
   }
 
   // Format sale for confirmation
   formatSaleForConfirmation(saleData) {
-    return saleData.items.map(item => 
-      `- ${item.menuName} x${item.quantity}`
-    ).join("\n") + 
-    `\n💰 รวม: ฿${saleData.totalAmount}`;
+    return (
+      saleData.items
+        .map((item) => `- ${item.menuName} x${item.quantity}`)
+        .join("\n") + `\n💰 รวม: ฿${saleData.totalAmount}`
+    );
   }
 
   // Save ingredient purchases
@@ -2484,7 +2623,7 @@ class LineBotIntegration {
       let learning = JSON.parse(localStorage.getItem(learningKey) || "{}");
 
       // Update ingredient name mappings
-      transactionData.items.forEach(item => {
+      transactionData.items.forEach((item) => {
         if (item.ingredientId && item.originalText) {
           const originalName = item.originalText.match(/[ก-ฮ]+/)?.[0];
           if (originalName && originalName !== item.ingredientName) {
@@ -2550,10 +2689,15 @@ class LineBotIntegration {
   }
 
   formatPurchaseSummary(purchaseData) {
-    return purchaseData.items.map(item => 
-      `📦 ${item.ingredientName} ${item.quantity} ${item.unit} ฿${item.price || 0}`
-    ).join("\n") + 
-    (purchaseData.totalPrice ? `\n💰 รวม: ฿${purchaseData.totalPrice}` : "");
+    return (
+      purchaseData.items
+        .map(
+          (item) =>
+            `📦 ${item.ingredientName} ${item.quantity} ${item.unit} ฿${item.price || 0}`,
+        )
+        .join("\n") +
+      (purchaseData.totalPrice ? `\n💰 รวม: ฿${purchaseData.totalPrice}` : "")
+    );
   }
 
   // Poll for new LINE messages from Supabase and check for unrecorded expenses
@@ -2563,25 +2707,26 @@ class LineBotIntegration {
 
       // Get unprocessed messages
       const { data: messages, error } = await window.supabase
-        .from('line_messages')
-        .select('*')
-        .eq('processed', false)
-        .order('created_at', { ascending: true })
+        .from("line_messages")
+        .select("*")
+        .eq("processed", false)
+        .order("created_at", { ascending: true })
         .limit(10);
 
       if (error) {
-        logger.error('LINE', 'Error fetching LINE messages', error);
+        logger.error("LINE", "Error fetching LINE messages", error);
         return;
       }
 
       // Process each message
       for (const msg of messages || []) {
         try {
-          const messageText = msg.message_text || '';
-          
+          const messageText = msg.message_text || "";
+
           // Check if it's an expense message and not already recorded
           if (this.isExpenseMessage(messageText)) {
-            const expenseRecorded = await this.checkIfExpenseRecorded(messageText);
+            const expenseRecorded =
+              await this.checkIfExpenseRecorded(messageText);
             if (!expenseRecorded) {
               // Process and record the expense
               await this.processExpenseMessage(messageText);
@@ -2590,33 +2735,33 @@ class LineBotIntegration {
             // Process other types of messages
             await this.processMessage(
               messageText,
-              msg.source_type || 'user',
-              msg.image_url || null
+              msg.source_type || "user",
+              msg.image_url || null,
             );
           }
 
           // Mark as processed
           await window.supabase
-            .from('line_messages')
-            .update({ 
+            .from("line_messages")
+            .update({
               processed: true,
-              processed_at: new Date().toISOString()
+              processed_at: new Date().toISOString(),
             })
-            .eq('id', msg.id);
+            .eq("id", msg.id);
         } catch (processError) {
-          logger.error('LINE', 'Error processing message', processError);
+          logger.error("LINE", "Error processing message", processError);
           // Mark as processed even on error to avoid infinite loop
           await window.supabase
-            .from('line_messages')
-            .update({ 
+            .from("line_messages")
+            .update({
               processed: true,
-              processed_at: new Date().toISOString()
+              processed_at: new Date().toISOString(),
             })
-            .eq('id', msg.id);
+            .eq("id", msg.id);
         }
       }
     } catch (error) {
-      logger.error('LINE', 'Error polling LINE messages', error);
+      logger.error("LINE", "Error polling LINE messages", error);
     }
   }
 
@@ -2634,22 +2779,25 @@ class LineBotIntegration {
       thirtyDaysAgo.setDate(today.getDate() - 30);
 
       const { data: expenses, error } = await window.supabase
-        .from('expenses')
-        .select('*')
-        .gte('expense_date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('expense_date', { ascending: false })
+        .from("expenses")
+        .select("*")
+        .gte("expense_date", thirtyDaysAgo.toISOString().split("T")[0])
+        .order("expense_date", { ascending: false })
         .limit(50);
 
       if (error) {
-        logger.error('LINE', 'Error checking expenses', error);
+        logger.error("LINE", "Error checking expenses", error);
         return false;
       }
 
       // Check for duplicates
-      const duplicate = this.findDuplicateInExpenses(expenseData, expenses || []);
+      const duplicate = this.findDuplicateInExpenses(
+        expenseData,
+        expenses || [],
+      );
       return !!duplicate;
     } catch (error) {
-      logger.error('LINE', 'Error checking if expense recorded', error);
+      logger.error("LINE", "Error checking if expense recorded", error);
       return false;
     }
   }
@@ -2665,22 +2813,28 @@ class LineBotIntegration {
 
     for (const existing of existingExpenses) {
       // Check amount similarity
-      const amountDiff = Math.abs(parseFloat(existing.amount) - newExpense.amount);
+      const amountDiff = Math.abs(
+        parseFloat(existing.amount) - newExpense.amount,
+      );
       if (amountDiff > amountTolerance) {
         continue;
       }
 
       // Check description similarity
       const similarity = this.calculateSimilarity(
-        (newExpense.description || '').toLowerCase(),
-        (existing.description || '').toLowerCase()
+        (newExpense.description || "").toLowerCase(),
+        (existing.description || "").toLowerCase(),
       );
 
       if (similarity >= similarityThreshold) {
         // Check date similarity (within 3 days)
         const existingDate = new Date(existing.expense_date);
-        const newDate = newExpense.expense_date ? new Date(newExpense.expense_date) : new Date();
-        const daysDiff = Math.abs((existingDate - newDate) / (1000 * 60 * 60 * 24));
+        const newDate = newExpense.expense_date
+          ? new Date(newExpense.expense_date)
+          : new Date();
+        const daysDiff = Math.abs(
+          (existingDate - newDate) / (1000 * 60 * 60 * 24),
+        );
 
         if (daysDiff <= 3) {
           return existing;
@@ -2697,14 +2851,14 @@ class LineBotIntegration {
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
     }
-    
+
     this.pollInterval = setInterval(() => {
       this.pollLineMessages();
     }, 5000);
 
     // Also poll immediately
     this.pollLineMessages();
-    
+
     logger.info("LINE", "Started polling for messages");
   }
 
@@ -2762,21 +2916,23 @@ async function initializeLineBot() {
   try {
     // Get configuration from config/integrations.js or use defaults
     const config = window.LINE_BOT_CONFIG || {};
-    
-    window.lineBot.channelAccessToken = config.CHANNEL_ACCESS_TOKEN || 
-      process.env?.LINE_CHANNEL_ACCESS_TOKEN || 
+
+    window.lineBot.channelAccessToken =
+      config.CHANNEL_ACCESS_TOKEN ||
+      process.env?.LINE_CHANNEL_ACCESS_TOKEN ||
       "YOUR_LINE_CHANNEL_ACCESS_TOKEN";
-    
-    window.lineBot.channelSecret = config.CHANNEL_SECRET || 
-      process.env?.LINE_CHANNEL_SECRET || 
+
+    window.lineBot.channelSecret =
+      config.CHANNEL_SECRET ||
+      process.env?.LINE_CHANNEL_SECRET ||
       "YOUR_LINE_CHANNEL_SECRET";
-    
-    window.lineBot.webhookUrl = config.WEBHOOK_URL || 
-      process.env?.LINE_WEBHOOK_URL || 
-      "YOUR_WEBHOOK_URL";
-    
-    window.lineBot.groupId = (config.GROUP_IDS && config.GROUP_IDS[0]) || 
-      process.env?.LINE_GROUP_ID || 
+
+    window.lineBot.webhookUrl =
+      config.WEBHOOK_URL || process.env?.LINE_WEBHOOK_URL || "YOUR_WEBHOOK_URL";
+
+    window.lineBot.groupId =
+      (config.GROUP_IDS && config.GROUP_IDS[0]) ||
+      process.env?.LINE_GROUP_ID ||
       "YOUR_LINE_GROUP_ID";
 
     await window.lineBot.initialize();
@@ -2784,18 +2940,26 @@ async function initializeLineBot() {
     lineTimer();
     logger.info("LINE", "Line Bot initialized successfully", {
       connected: true,
-      webhookConfigured: !!window.lineBot.webhookUrl && window.lineBot.webhookUrl !== "YOUR_WEBHOOK_URL",
-      hasToken: !!window.lineBot.channelAccessToken && window.lineBot.channelAccessToken !== "YOUR_LINE_CHANNEL_ACCESS_TOKEN",
+      webhookConfigured:
+        !!window.lineBot.webhookUrl &&
+        window.lineBot.webhookUrl !== "YOUR_WEBHOOK_URL",
+      hasToken:
+        !!window.lineBot.channelAccessToken &&
+        window.lineBot.channelAccessToken !== "YOUR_LINE_CHANNEL_ACCESS_TOKEN",
     });
 
     if (window.lineBot.webhookUrl === "YOUR_WEBHOOK_URL") {
-      showToast("⚠️ Line Bot: Please configure webhook URL in config/integrations.js");
-    } else if (window.lineBot.channelAccessToken === "YOUR_LINE_CHANNEL_ACCESS_TOKEN") {
+      showToast(
+        "⚠️ Line Bot: Please configure webhook URL in config/integrations.js",
+      );
+    } else if (
+      window.lineBot.channelAccessToken === "YOUR_LINE_CHANNEL_ACCESS_TOKEN"
+    ) {
       showToast("⚠️ Line Bot: Please configure Channel Access Token");
     } else {
       showToast("💬 Line Bot initialized successfully");
     }
-    
+
     return true;
   } catch (error) {
     lineTimer();
@@ -2908,36 +3072,6 @@ function closeAIChatbot() {
   }
 }
 
-function addChatMessage(message, isUser = false) {
-  const messagesContainer = document.getElementById("chat-messages");
-  if (!messagesContainer) return;
-
-  const messageDiv = document.createElement("div");
-  messageDiv.className = `flex items-start gap-2 ${isUser ? "flex-row-reverse" : ""}`;
-  
-  if (isUser) {
-    messageDiv.innerHTML = `
-      <div class="flex-1 bg-teal-500 text-white p-3 rounded-lg shadow-sm">
-        <p class="text-sm">${message}</p>
-      </div>
-      <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white text-sm font-bold">
-        คุณ
-      </div>
-    `;
-  } else {
-    messageDiv.innerHTML = `
-      <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-bold">
-        AI
-      </div>
-      <div class="flex-1 bg-white p-3 rounded-lg shadow-sm">
-        <p class="text-sm">${message}</p>
-      </div>
-    `;
-  }
-
-  messagesContainer.appendChild(messageDiv);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
 
 // Helper function to calculate menu cost from ingredients
 async function calculateMenuCostFromDB(menuId) {
@@ -2945,30 +3079,32 @@ async function calculateMenuCostFromDB(menuId) {
     // Try using the RPC function first
     const cost = await window.POS.functions.calculateMenuCost(menuId);
     if (cost && cost > 0) return cost;
-    
+
     // Fallback: calculate manually from menu_recipes and ingredients
     const { data: recipes, error } = await window.supabase
       .from("menu_recipes")
-      .select(`
+      .select(
+        `
         quantity_per_serve,
         ingredient_id,
         ingredients:ingredient_id (
           cost_per_unit
         )
-      `)
+      `,
+      )
       .eq("menu_id", menuId);
-    
+
     if (error || !recipes || recipes.length === 0) {
       return null;
     }
-    
+
     let totalCost = 0;
     for (const recipe of recipes) {
       const quantity = parseFloat(recipe.quantity_per_serve) || 0;
       const costPerUnit = parseFloat(recipe.ingredients?.cost_per_unit) || 0;
       totalCost += quantity * costPerUnit;
     }
-    
+
     return totalCost;
   } catch (error) {
     console.error("Error calculating menu cost:", error);
@@ -2984,21 +3120,21 @@ function calculateProfitablePrice(costPrice, platformFeePercent = 55) {
   // For a 20% profit margin after platform fees:
   const desiredProfitMargin = 20; // 20% profit margin after all fees
   const totalDeductionPercent = platformFeePercent + desiredProfitMargin;
-  
+
   if (totalDeductionPercent >= 100) {
     // Can't be profitable with such high fees
     return null;
   }
-  
+
   const sellingPrice = costPrice / (1 - totalDeductionPercent / 100);
-  
+
   // Calculate breakdown
   const platformFee = sellingPrice * (platformFeePercent / 100);
   const profit = sellingPrice * (desiredProfitMargin / 100);
   const netRevenue = sellingPrice - platformFee;
   const actualProfit = netRevenue - costPrice;
   const actualProfitMargin = (actualProfit / netRevenue) * 100;
-  
+
   return {
     suggestedPrice: Math.ceil(sellingPrice),
     costPrice: costPrice,
@@ -3013,7 +3149,7 @@ function calculateProfitablePrice(costPrice, platformFeePercent = 55) {
       platformFee: platformFee,
       netAfterFee: netRevenue,
       profitAfterCost: actualProfit,
-    }
+    },
   };
 }
 
@@ -3022,7 +3158,8 @@ async function getRecentPurchases(limit = 10) {
   try {
     const { data, error } = await window.supabase
       .from("purchases")
-      .select(`
+      .select(
+        `
         id,
         quantity,
         unit,
@@ -3031,50 +3168,57 @@ async function getRecentPurchases(limit = 10) {
         purchase_date,
         purchase_time,
         ingredient_id
-      `)
+      `,
+      )
       .order("purchase_date", { ascending: false })
       .order("purchase_time", { ascending: false })
       .limit(limit);
-    
+
     if (error) {
       // Fallback: try without join if relationship doesn't exist
       console.warn("Error with join, trying without:", error);
       const { data: simpleData, error: simpleError } = await window.supabase
         .from("purchases")
-        .select("id, quantity, unit, total_amount, vendor, purchase_date, purchase_time, ingredient_id")
+        .select(
+          "id, quantity, unit, total_amount, vendor, purchase_date, purchase_time, ingredient_id",
+        )
         .order("purchase_date", { ascending: false })
         .order("purchase_time", { ascending: false })
         .limit(limit);
-      
+
       if (simpleError) {
         console.error("Error fetching recent purchases:", simpleError);
         return null;
       }
-      
+
       // Manually join with ingredients if needed
       if (simpleData && simpleData.length > 0) {
-        const ingredientIds = [...new Set(simpleData.map(p => p.ingredient_id).filter(Boolean))];
+        const ingredientIds = [
+          ...new Set(simpleData.map((p) => p.ingredient_id).filter(Boolean)),
+        ];
         if (ingredientIds.length > 0) {
           const { data: ingredients } = await window.supabase
             .from("ingredients")
             .select("id, name")
             .in("id", ingredientIds);
-          
+
           const ingredientMap = {};
-          ingredients?.forEach(ing => {
+          ingredients?.forEach((ing) => {
             ingredientMap[ing.id] = ing.name;
           });
-          
-          return simpleData.map(p => ({
+
+          return simpleData.map((p) => ({
             ...p,
-            ingredients: p.ingredient_id ? { name: ingredientMap[p.ingredient_id] || "Unknown" } : null
+            ingredients: p.ingredient_id
+              ? { name: ingredientMap[p.ingredient_id] || "Unknown" }
+              : null,
           }));
         }
       }
-      
+
       return simpleData;
     }
-    
+
     return data;
   } catch (error) {
     console.error("Error in getRecentPurchases:", error);
@@ -3086,14 +3230,12 @@ async function getRecentPurchases(limit = 10) {
 async function getBestSellerMenus(limit = 10) {
   try {
     // First try with join, if it fails, do manual join
-    let { data, error } = await window.supabase
-      .from("sales")
-      .select(`
+    let { data, error } = await window.supabase.from("sales").select(`
         menu_id,
         quantity,
         unit_price
       `);
-    
+
     if (error) {
       console.warn("Error fetching sales, trying without join:", error);
       // Fallback: fetch without join
@@ -3101,36 +3243,36 @@ async function getBestSellerMenus(limit = 10) {
         .from("sales")
         .select("menu_id, quantity, unit_price")
         .limit(1000);
-      
+
       if (simpleError) {
         console.error("Error fetching sales:", simpleError);
         return null;
       }
       data = simpleData;
     }
-    
+
     // If we have data, manually join with menus if needed
-    if (data && data.length > 0 && (!data[0].menus)) {
-      const menuIds = [...new Set(data.map(s => s.menu_id).filter(Boolean))];
+    if (data && data.length > 0 && !data[0].menus) {
+      const menuIds = [...new Set(data.map((s) => s.menu_id).filter(Boolean))];
       if (menuIds.length > 0) {
         const { data: menus } = await window.supabase
           .from("menus")
           .select("id, menu_id, name, price")
           .in("id", menuIds);
-        
+
         const menuMap = {};
-        menus?.forEach(menu => {
+        menus?.forEach((menu) => {
           menuMap[menu.id] = menu;
         });
-        
+
         // Add menu data to sales
-        data = data.map(sale => ({
+        data = data.map((sale) => ({
           ...sale,
-          menus: sale.menu_id ? menuMap[sale.menu_id] : null
+          menus: sale.menu_id ? menuMap[sale.menu_id] : null,
         }));
       }
     }
-    
+
     // Group by menu and calculate totals
     const menuStats = {};
     for (const sale of data || []) {
@@ -3142,19 +3284,20 @@ async function getBestSellerMenus(limit = 10) {
           price: sale.menus?.price || 0,
           totalQuantity: 0,
           totalRevenue: 0,
-          saleCount: 0
+          saleCount: 0,
         };
       }
       menuStats[menuId].totalQuantity += sale.quantity || 0;
-      menuStats[menuId].totalRevenue += (sale.quantity || 0) * (sale.unit_price || 0);
+      menuStats[menuId].totalRevenue +=
+        (sale.quantity || 0) * (sale.unit_price || 0);
       menuStats[menuId].saleCount += 1;
     }
-    
+
     // Convert to array and sort by total quantity
     const sortedMenus = Object.values(menuStats)
       .sort((a, b) => b.totalQuantity - a.totalQuantity)
       .slice(0, limit);
-    
+
     return sortedMenus;
   } catch (error) {
     console.error("Error in getBestSellerMenus:", error);
@@ -3172,12 +3315,12 @@ async function getMostExpensiveIngredients(limit = 10) {
       .gt("cost_per_unit", 0)
       .order("cost_per_unit", { ascending: false })
       .limit(limit);
-    
+
     if (error) {
       console.error("Error fetching expensive ingredients:", error);
       return null;
     }
-    
+
     return data;
   } catch (error) {
     console.error("Error in getMostExpensiveIngredients:", error);
@@ -3188,36 +3331,46 @@ async function getMostExpensiveIngredients(limit = 10) {
 // AI Assistant using Google Gemini or Hugging Face
 async function callAIService(userMessage, context = {}) {
   // Wait a bit for API keys to be loaded if they haven't been loaded yet
-  if (!window.GOOGLE_GEMINI_API_KEY && !window.GOOGLE_CLOUD_API_KEY && !window.HUGGING_FACE_API_KEY) {
+  if (
+    !window.GOOGLE_GEMINI_API_KEY &&
+    !window.GOOGLE_CLOUD_API_KEY &&
+    !window.HUGGING_FACE_API_KEY
+  ) {
     // Wait up to 2 seconds for API keys to be loaded by index.html
     for (let i = 0; i < 20; i++) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (window.GOOGLE_GEMINI_API_KEY || window.GOOGLE_CLOUD_API_KEY || window.HUGGING_FACE_API_KEY) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (
+        window.GOOGLE_GEMINI_API_KEY ||
+        window.GOOGLE_CLOUD_API_KEY ||
+        window.HUGGING_FACE_API_KEY
+      ) {
         break;
       }
     }
   }
-  
+
   // Get API keys - support both new (GOOGLE_GEMINI_API_KEY) and old (GOOGLE_CLOUD_API_KEY) names
-  const googleApiKey = (window.GOOGLE_GEMINI_API_KEY && 
-                       window.GOOGLE_GEMINI_API_KEY !== 'null' && 
-                       window.GOOGLE_GEMINI_API_KEY !== '' &&
-                       window.GOOGLE_GEMINI_API_KEY !== 'YOUR_API_KEY_HERE') 
-                       ? window.GOOGLE_GEMINI_API_KEY 
-                       : (window.GOOGLE_CLOUD_API_KEY && 
-                          window.GOOGLE_CLOUD_API_KEY !== 'null' && 
-                          window.GOOGLE_CLOUD_API_KEY !== '' &&
-                          window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') 
-                          ? window.GOOGLE_CLOUD_API_KEY 
-                          : null;
-  
-  const huggingFaceKey = (window.HUGGING_FACE_API_KEY && 
-                          window.HUGGING_FACE_API_KEY !== 'null' && 
-                          window.HUGGING_FACE_API_KEY !== '' &&
-                          window.HUGGING_FACE_API_KEY !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE') 
-                          ? window.HUGGING_FACE_API_KEY 
-                          : null;
-  
+  const googleApiKey =
+    window.GOOGLE_GEMINI_API_KEY &&
+    window.GOOGLE_GEMINI_API_KEY !== "null" &&
+    window.GOOGLE_GEMINI_API_KEY !== "" &&
+    window.GOOGLE_GEMINI_API_KEY !== "YOUR_API_KEY_HERE"
+      ? window.GOOGLE_GEMINI_API_KEY
+      : window.GOOGLE_CLOUD_API_KEY &&
+          window.GOOGLE_CLOUD_API_KEY !== "null" &&
+          window.GOOGLE_CLOUD_API_KEY !== "" &&
+          window.GOOGLE_CLOUD_API_KEY !== "YOUR_API_KEY_HERE"
+        ? window.GOOGLE_CLOUD_API_KEY
+        : null;
+
+  const huggingFaceKey =
+    window.HUGGING_FACE_API_KEY &&
+    window.HUGGING_FACE_API_KEY !== "null" &&
+    window.HUGGING_FACE_API_KEY !== "" &&
+    window.HUGGING_FACE_API_KEY !== "hf_YOUR_HUGGING_FACE_API_KEY_HERE"
+      ? window.HUGGING_FACE_API_KEY
+      : null;
+
   // Build context for AI
   const systemPrompt = `You are a helpful POS (Point of Sale) system assistant. You help users with:
 - Database queries (purchases, sales, expenses, menus, ingredients)
@@ -3235,93 +3388,121 @@ Respond in Thai language, be concise and helpful.`;
     try {
       // Try gemini-2.5-flash first (fastest, free tier friendly), then other models
       // For free tier, try v1 endpoint first, then v1beta
-      let response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-          }
-        })
-      });
-
-      // If v1 fails, try v1beta with gemini-2.5-flash
-      if (!response.ok && response.status === 404) {
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`, {
-          method: 'POST',
+      let response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`,
+        {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`
-              }]
-            }],
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`,
+                  },
+                ],
+              },
+            ],
             generationConfig: {
               temperature: 0.7,
               topK: 40,
               topP: 0.95,
               maxOutputTokens: 2048,
-            }
-          })
-        });
+            },
+          }),
+        },
+      );
+
+      // If v1 fails, try v1beta with gemini-2.5-flash
+      if (!response.ok && response.status === 404) {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`,
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 2048,
+              },
+            }),
+          },
+        );
       }
 
       // If still fails, try gemini-2.0-flash
       if (!response.ok && response.status === 404) {
-        response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`,
+                    },
+                  ],
+                },
+              ],
+            }),
           },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`
-              }]
-            }]
-          })
-        });
+        );
       }
 
       if (response.ok) {
         const data = await response.json();
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        if (
+          data.candidates &&
+          data.candidates[0] &&
+          data.candidates[0].content
+        ) {
           return data.candidates[0].content.parts[0].text;
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.warn('Google Gemini API error:', response.status, errorData);
+        console.warn("Google Gemini API error:", response.status, errorData);
       }
     } catch (error) {
-      console.warn('Google Gemini API error:', error);
+      console.warn("Google Gemini API error:", error);
     }
   }
 
   // Fallback to Hugging Face (via Cloudflare Function proxy to avoid CORS)
-  if (huggingFaceKey && huggingFaceKey !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE') {
+  if (
+    huggingFaceKey &&
+    huggingFaceKey !== "hf_YOUR_HUGGING_FACE_API_KEY_HERE"
+  ) {
     try {
       // Use Cloudflare Function proxy to avoid CORS issues
-      const response = await fetch('/api/huggingface', {
-        method: 'POST',
+      const response = await fetch("/api/huggingface", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'facebook/blenderbot-400M-distill',
+          model: "facebook/blenderbot-400M-distill",
           inputs: `${systemPrompt}\n\nUser: ${userMessage}`,
-        })
+        }),
       });
 
       if (response.ok) {
@@ -3329,14 +3510,14 @@ Respond in Thai language, be concise and helpful.`;
         if (data.generated_text) {
           return data.generated_text;
         } else if (data.error) {
-          console.warn('Hugging Face API error:', data.error);
+          console.warn("Hugging Face API error:", data.error);
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.warn('Hugging Face proxy error:', errorData);
+        console.warn("Hugging Face proxy error:", errorData);
       }
     } catch (error) {
-      console.warn('Hugging Face API error:', error);
+      console.warn("Hugging Face API error:", error);
     }
   }
 
@@ -3346,9 +3527,9 @@ Respond in Thai language, be concise and helpful.`;
 // Pattern matching function for common queries (extracted for reuse)
 async function processAIMessagePatternMatching(userMessage) {
   const message = userMessage.toLowerCase().trim();
-  
+
   // Pattern-based matching (fast and free)
-  
+
   // ========== RECENT PURCHASES QUERIES ==========
   // Patterns: "รายการซื้อล่าสุด", "recent purchases", "what are the recent purchase list"
   const recentPurchasesPatterns = [
@@ -3357,20 +3538,20 @@ async function processAIMessagePatternMatching(userMessage) {
     /what\s+are\s+(?:the\s+)?recent\s+purchases?/i,
     /ซื้อ(?:ล่าสุด|เมื่อเร็วๆนี้)/i,
   ];
-  
+
   for (const pattern of recentPurchasesPatterns) {
     if (pattern.test(message)) {
       addChatMessage("กำลังดึงข้อมูลรายการซื้อล่าสุด...");
-      
+
       const purchases = await getRecentPurchases(10);
-      
+
       if (!purchases || purchases.length === 0) {
         addChatMessage("ไม่พบรายการซื้อล่าสุดในระบบค่ะ");
         return;
       }
-      
+
       let response = `<div style="margin-bottom: 12px;"><strong>📦 รายการซื้อล่าสุด (${purchases.length} รายการ)</strong></div>\n\n`;
-      
+
       for (let i = 0; i < purchases.length; i++) {
         const purchase = purchases[i];
         const ingredientName = purchase.ingredients?.name || "ไม่ระบุ";
@@ -3380,7 +3561,7 @@ async function processAIMessagePatternMatching(userMessage) {
         const unit = purchase.unit || "";
         const amount = purchase.total_amount || 0;
         const vendor = purchase.vendor || "ไม่ระบุ";
-        
+
         response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #0891b2;">\n`;
         response += `<div style="font-weight: bold; margin-bottom: 4px;">${i + 1}. ${ingredientName}</div>\n`;
         response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📊 จำนวน: ${quantity} ${unit}</div>\n`;
@@ -3389,12 +3570,12 @@ async function processAIMessagePatternMatching(userMessage) {
         response += `<div style="font-size: 13px; color: #6b7280;">📅 วันที่: ${date} ${time}</div>\n`;
         response += `</div>\n`;
       }
-      
+
       addChatMessage(response);
       return true;
     }
   }
-  
+
   // ========== BEST SELLER MENUS QUERIES ==========
   // Patterns: "เมนูขายดี", "best seller", "what are the best seller menu"
   const bestSellerPatterns = [
@@ -3404,25 +3585,26 @@ async function processAIMessagePatternMatching(userMessage) {
     /ขายดี/i,
     /ยอดนิยม/i,
   ];
-  
+
   for (const pattern of bestSellerPatterns) {
     if (pattern.test(message)) {
       addChatMessage("กำลังวิเคราะห์ข้อมูลการขาย...");
-      
+
       const bestSellers = await getBestSellerMenus(10);
-      
+
       if (!bestSellers || bestSellers.length === 0) {
         addChatMessage("ไม่พบข้อมูลการขายในระบบค่ะ");
         return;
       }
-      
+
       let response = `<div style="margin-bottom: 12px;"><strong>🏆 เมนูขายดี (Top ${bestSellers.length})</strong></div>\n\n`;
-      
+
       for (let i = 0; i < bestSellers.length; i++) {
         const menu = bestSellers[i];
-        const rankIcon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-        
-        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${i < 3 ? '#10b981' : '#0891b2'};">\n`;
+        const rankIcon =
+          i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+
+        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${i < 3 ? "#10b981" : "#0891b2"};">\n`;
         response += `<div style="font-weight: bold; margin-bottom: 4px;">${rankIcon} ${menu.name} (${menu.menu_id})</div>\n`;
         response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📊 ขายทั้งหมด: ${menu.totalQuantity} จาน</div>\n`;
         response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">💰 รายได้รวม: ฿${parseFloat(menu.totalRevenue).toFixed(2)}</div>\n`;
@@ -3430,12 +3612,12 @@ async function processAIMessagePatternMatching(userMessage) {
         response += `<div style="font-size: 13px; color: #6b7280;">💵 ราคาต่อจาน: ฿${parseFloat(menu.price).toFixed(2)}</div>\n`;
         response += `</div>\n`;
       }
-      
+
       addChatMessage(response);
       return true;
     }
   }
-  
+
   // ========== MOST EXPENSIVE INGREDIENTS QUERIES ==========
   // Patterns: "วัตถุดิบแพงที่สุด", "most expensive ingredients", "what are the most expensive ingredients"
   const expensiveIngredientsPatterns = [
@@ -3444,38 +3626,38 @@ async function processAIMessagePatternMatching(userMessage) {
     /what\s+are\s+(?:the\s+)?most\s+expensive\s+ingredients?/i,
     /แพงที่สุด/i,
   ];
-  
+
   for (const pattern of expensiveIngredientsPatterns) {
     if (pattern.test(message)) {
       addChatMessage("กำลังค้นหาวัตถุดิบที่แพงที่สุด...");
-      
+
       const expensiveIngredients = await getMostExpensiveIngredients(10);
-      
+
       if (!expensiveIngredients || expensiveIngredients.length === 0) {
         addChatMessage("ไม่พบข้อมูลวัตถุดิบในระบบค่ะ");
         return true;
       }
-      
+
       let response = `<div style="margin-bottom: 12px;"><strong>💎 วัตถุดิบที่แพงที่สุด (Top ${expensiveIngredients.length})</strong></div>\n\n`;
-      
+
       for (let i = 0; i < expensiveIngredients.length; i++) {
         const ingredient = expensiveIngredients[i];
         const cost = parseFloat(ingredient.cost_per_unit) || 0;
         const stock = parseFloat(ingredient.current_stock) || 0;
         const unit = ingredient.unit || "";
-        
-        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${i < 3 ? '#ef4444' : '#f59e0b'};">\n`;
+
+        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${i < 3 ? "#ef4444" : "#f59e0b"};">\n`;
         response += `<div style="font-weight: bold; margin-bottom: 4px;">${i + 1}. ${ingredient.name}</div>\n`;
         response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">💰 ราคาต่อหน่วย: ฿${cost.toFixed(2)}/${unit}</div>\n`;
         response += `<div style="font-size: 13px; color: #6b7280;">📦 สต๊อกปัจจุบัน: ${stock} ${unit}</div>\n`;
         response += `</div>\n`;
       }
-      
+
       addChatMessage(response);
       return true;
     }
   }
-  
+
   // ========== MENU COST QUERIES ==========
   // Patterns: "ต้นทุนเมนู X", "ค่าใช้จ่ายเมนู X", "cost of menu X", "ราคาทุน X"
   // Also handle: "ต้นทุน A2", "ต้นทุน A2 คือเท่าไหร่", "what are the cost of menu A"
@@ -3486,60 +3668,65 @@ async function processAIMessagePatternMatching(userMessage) {
     /what\s+are\s+(?:the\s+)?cost\s+(?:of\s+)?(?:menu\s+)?(.+?)(?:\s*$|\?)/i,
     /cost\s+(?:of\s+)?(?:menu\s+)?(.+?)(?:\s+(?:of|is|for))?$/i,
   ];
-  
+
   for (const pattern of costQueryPatterns) {
     const match = message.match(pattern);
     if (match) {
       let menuName = match[1].trim();
       // Remove any trailing question words that might have been captured
-      menuName = menuName.replace(/\s+(?:คือ|เท่าไหร่|คือเท่าไหร่|ราคา|cost|คืออะไร).*$/i, '').trim();
-      
+      menuName = menuName
+        .replace(/\s+(?:คือ|เท่าไหร่|คือเท่าไหร่|ราคา|cost|คืออะไร).*$/i, "")
+        .trim();
+
       // Try to find menu - prioritize exact menu_id match first (e.g., "A2", "B1", "SetC1")
-      let menu = menuData.find(m => 
-        m.menu_id && m.menu_id.toLowerCase() === menuName.toLowerCase()
+      let menu = menuData.find(
+        (m) => m.menu_id && m.menu_id.toLowerCase() === menuName.toLowerCase(),
       );
-      
+
       // If no exact menu_id match, try partial menu_id match (for cases like "Set" matching "SetB1")
-      if (!menu && menuName.length <= 10 && /^[A-Za-z0-9]+$/.test(menuName)) { // Menu IDs are usually alphanumeric and short
-        menu = menuData.find(m => 
-          m.menu_id && m.menu_id.toLowerCase().startsWith(menuName.toLowerCase())
+      if (!menu && menuName.length <= 10 && /^[A-Za-z0-9]+$/.test(menuName)) {
+        // Menu IDs are usually alphanumeric and short
+        menu = menuData.find(
+          (m) =>
+            m.menu_id &&
+            m.menu_id.toLowerCase().startsWith(menuName.toLowerCase()),
         );
       }
-      
+
       // If still no match, try name matching
       if (!menu) {
-        menu = menuData.find(m => 
-          m.name && (
-            m.name.toLowerCase().includes(menuName) ||
-            menuName.includes(m.name.toLowerCase())
-          )
+        menu = menuData.find(
+          (m) =>
+            m.name &&
+            (m.name.toLowerCase().includes(menuName) ||
+              menuName.includes(m.name.toLowerCase())),
         );
       }
-      
+
       if (!menu) {
         addChatMessage(`ไม่พบเมนู "${menuName}" ในระบบค่ะ`);
         return;
       }
-      
+
       addChatMessage(`กำลังคำนวณต้นทุนเมนู "${menu.name}"...`);
-      
+
       const costPrice = await calculateMenuCostFromDB(menu.id);
-      
+
       if (costPrice === null) {
         addChatMessage(
           `⚠️ ไม่สามารถคำนวณต้นทุนได้\n` +
-          `อาจเป็นเพราะยังไม่มีข้อมูลสูตร (menu_recipes) หรือราคาวัตถุดิบไม่ครบ\n\n` +
-          `กรุณาตรวจสอบ:\n` +
-          `1. มีสูตรเมนูในระบบหรือไม่\n` +
-          `2. วัตถุดิบมีราคา (cost_per_unit) หรือไม่`
+            `อาจเป็นเพราะยังไม่มีข้อมูลสูตร (menu_recipes) หรือราคาวัตถุดิบไม่ครบ\n\n` +
+            `กรุณาตรวจสอบ:\n` +
+            `1. มีสูตรเมนูในระบบหรือไม่\n` +
+            `2. วัตถุดิบมีราคา (cost_per_unit) หรือไม่`,
         );
         return true;
       }
-      
+
       const currentPrice = menu.price || 0;
       const profit = currentPrice - costPrice;
       const profitMargin = currentPrice > 0 ? (profit / currentPrice) * 100 : 0;
-      
+
       // Calculate platform breakdowns
       const platforms = [
         { name: "ร้าน", fee: 0, icon: "🏪" },
@@ -3547,8 +3734,8 @@ async function processAIMessagePatternMatching(userMessage) {
         { name: "FoodPanda", fee: 55, icon: "🐼" },
         { name: "Line Man", fee: 60, icon: "📱" },
       ];
-      
-      const platformResults = platforms.map(platform => {
+
+      const platformResults = platforms.map((platform) => {
         if (platform.fee === 0) {
           return {
             ...platform,
@@ -3557,14 +3744,15 @@ async function processAIMessagePatternMatching(userMessage) {
             netRevenue: currentPrice,
             profit: profit,
             profitMargin: profitMargin,
-            isProfitable: profit >= 0
+            isProfitable: profit >= 0,
           };
         } else {
           const platformFeeAmount = currentPrice * (platform.fee / 100);
           const netRevenue = currentPrice - platformFeeAmount;
           const platformProfit = netRevenue - costPrice;
-          const platformProfitMargin = netRevenue > 0 ? (platformProfit / netRevenue) * 100 : 0;
-          
+          const platformProfitMargin =
+            netRevenue > 0 ? (platformProfit / netRevenue) * 100 : 0;
+
           return {
             ...platform,
             sellingPrice: currentPrice,
@@ -3572,30 +3760,30 @@ async function processAIMessagePatternMatching(userMessage) {
             netRevenue: netRevenue,
             profit: platformProfit,
             profitMargin: platformProfitMargin,
-            isProfitable: platformProfit >= 0
+            isProfitable: platformProfit >= 0,
           };
         }
       });
-      
+
       // Check if any platform is profitable
-      const anyProfitable = platformResults.some(p => p.isProfitable);
+      const anyProfitable = platformResults.some((p) => p.isProfitable);
       const hasLoss = !anyProfitable;
-      
+
       // Build response with better UX
       let response = `<div style="margin-bottom: 12px;"><strong>📊 ต้นทุนเมนู "${menu.name}" (${menu.menu_id})</strong></div>\n\n`;
-      
+
       // Summary box
-      response += `<div style="background: ${hasLoss ? '#fee2e2' : '#dcfce7'}; padding: 12px; border-radius: 8px; margin-bottom: 16px;">\n`;
-      response += `<div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">${hasLoss ? '⚠️ ขาดทุน' : '✅ มีกำไร'}</div>\n`;
+      response += `<div style="background: ${hasLoss ? "#fee2e2" : "#dcfce7"}; padding: 12px; border-radius: 8px; margin-bottom: 16px;">\n`;
+      response += `<div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">${hasLoss ? "⚠️ ขาดทุน" : "✅ มีกำไร"}</div>\n`;
       response += `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;">`;
       response += `<span>💰 ราคาต้นทุน:</span> <strong>฿${costPrice.toFixed(2)}</strong></div>\n`;
       response += `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;">`;
       response += `<span>💵 ราคาขาย:</span> <strong>฿${currentPrice.toFixed(2)}</strong></div>\n`;
       response += `<div style="display: flex; justify-content: space-between;">`;
-      response += `<span>${profit >= 0 ? '📈' : '📉'} กำไร (ร้าน):</span> `;
-      response += `<strong style="color: ${profit >= 0 ? '#059669' : '#dc2626'};">฿${profit.toFixed(2)} (${profitMargin >= 0 ? '+' : ''}${profitMargin.toFixed(1)}%)</strong></div>\n`;
+      response += `<span>${profit >= 0 ? "📈" : "📉"} กำไร (ร้าน):</span> `;
+      response += `<strong style="color: ${profit >= 0 ? "#059669" : "#dc2626"};">฿${profit.toFixed(2)} (${profitMargin >= 0 ? "+" : ""}${profitMargin.toFixed(1)}%)</strong></div>\n`;
       response += `</div>\n\n`;
-      
+
       // Warning if losing money
       if (hasLoss) {
         response += `<div style="background: #fef3c7; padding: 10px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #f59e0b;">\n`;
@@ -3603,30 +3791,30 @@ async function processAIMessagePatternMatching(userMessage) {
         response += `แนะนำให้เพิ่มราคาหรือลดต้นทุน\n`;
         response += `</div>\n\n`;
       }
-      
+
       // Platform breakdown
       response += `<div style="margin-bottom: 8px;"><strong>📱 คำนวณตาม Platform:</strong></div>\n`;
-      
+
       for (const result of platformResults) {
-        const statusIcon = result.isProfitable ? '✅' : '❌';
-        const profitColor = result.isProfitable ? '#059669' : '#dc2626';
-        
-        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${result.isProfitable ? '#10b981' : '#ef4444'};">\n`;
-        response += `<div style="font-weight: bold; margin-bottom: 6px;">${result.icon} ${result.name}${result.fee > 0 ? ` (Fee ${result.fee}%)` : ''}</div>\n`;
-        
+        const statusIcon = result.isProfitable ? "✅" : "❌";
+        const profitColor = result.isProfitable ? "#059669" : "#dc2626";
+
+        response += `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid ${result.isProfitable ? "#10b981" : "#ef4444"};">\n`;
+        response += `<div style="font-weight: bold; margin-bottom: 6px;">${result.icon} ${result.name}${result.fee > 0 ? ` (Fee ${result.fee}%)` : ""}</div>\n`;
+
         if (result.fee > 0) {
           response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">💵 ราคาขาย: ฿${result.sellingPrice.toFixed(2)}</div>\n`;
           response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">💸 Platform Fee: ฿${result.platformFee.toFixed(2)}</div>\n`;
           response += `<div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">💰 รับจริง: ฿${result.netRevenue.toFixed(2)}</div>\n`;
         }
-        
+
         response += `<div style="display: flex; justify-content: space-between; font-weight: bold;">`;
         response += `<span>${statusIcon} กำไรสุทธิ:</span> `;
-        response += `<span style="color: ${profitColor};">฿${result.profit.toFixed(2)} (${result.profitMargin >= 0 ? '+' : ''}${result.profitMargin.toFixed(1)}%)</span>`;
+        response += `<span style="color: ${profitColor};">฿${result.profit.toFixed(2)} (${result.profitMargin >= 0 ? "+" : ""}${result.profitMargin.toFixed(1)}%)</span>`;
         response += `</div>\n`;
         response += `</div>\n`;
       }
-      
+
       // Action suggestion
       if (hasLoss) {
         response += `\n<div style="background: #eff6ff; padding: 10px; border-radius: 6px; margin-top: 12px;">\n`;
@@ -3636,12 +3824,12 @@ async function processAIMessagePatternMatching(userMessage) {
         response += `• พิมพ์ "แนะนำราคา ${menu.menu_id}" เพื่อดูราคาที่แนะนำ\n`;
         response += `</div>\n`;
       }
-      
+
       addChatMessage(response);
       return true;
     }
   }
-  
+
   // ========== PRICE SUGGESTION QUERIES ==========
   // Patterns: "แนะนำราคา X", "suggest price for X", "ควรขาย X เท่าไหร่", "ราคาที่ควรขาย X"
   const priceSuggestionPatterns = [
@@ -3651,81 +3839,98 @@ async function processAIMessagePatternMatching(userMessage) {
     /suggest\s+price\s+(?:for\s+)?(.+?)(?:\s+on\s+(.+))?$/i,
     /แนะนำราคา\s*(.+)/i,
   ];
-  
+
   for (const pattern of priceSuggestionPatterns) {
     const match = message.match(pattern);
     if (match) {
       let menuName = match[1].trim();
       const platformName = match[2] ? match[2].trim().toLowerCase() : null;
-      
+
       // Remove question words
-      menuName = menuName.replace(/\s+(?:คือ|เท่าไหร่|คือเท่าไหร่).*$/i, '').trim();
-      
+      menuName = menuName
+        .replace(/\s+(?:คือ|เท่าไหร่|คือเท่าไหร่).*$/i, "")
+        .trim();
+
       // Prioritize exact menu_id match
-      let menu = menuData.find(m => 
-        m.menu_id.toLowerCase() === menuName.toLowerCase()
+      let menu = menuData.find(
+        (m) => m.menu_id.toLowerCase() === menuName.toLowerCase(),
       );
-      
+
       if (!menu) {
-        menu = menuData.find(m => 
-          m.name.toLowerCase().includes(menuName) ||
-          menuName.includes(m.name.toLowerCase())
+        menu = menuData.find(
+          (m) =>
+            m.name.toLowerCase().includes(menuName) ||
+            menuName.includes(m.name.toLowerCase()),
         );
       }
-      
+
       if (!menu) {
         addChatMessage(`ไม่พบเมนู "${menuName}" ในระบบค่ะ`);
         return true;
       }
-      
+
       addChatMessage(`กำลังคำนวณราคาที่แนะนำสำหรับ "${menu.name}"...`);
-      
+
       const costPrice = await calculateMenuCostFromDB(menu.id);
-      
+
       if (costPrice === null) {
         addChatMessage(
           `⚠️ ไม่สามารถคำนวณได้\n` +
-          `กรุณาตรวจสอบว่ามีสูตรเมนูและราคาวัตถุดิบครบถ้วน`
+            `กรุณาตรวจสอบว่ามีสูตรเมนูและราคาวัตถุดิบครบถ้วน`,
         );
         return true;
       }
-      
+
       // Determine platform fee
       let platformFeePercent = 55; // Default for delivery platforms
       let platformNameDisplay = "Platform";
-      
+
       if (platformName) {
         if (platformName.includes("grab")) {
           platformFeePercent = 55;
           platformNameDisplay = "Grab";
-        } else if (platformName.includes("foodpanda") || platformName.includes("panda")) {
+        } else if (
+          platformName.includes("foodpanda") ||
+          platformName.includes("panda")
+        ) {
           platformFeePercent = 55;
           platformNameDisplay = "FoodPanda";
-        } else if (platformName.includes("line") || platformName.includes("lineman")) {
+        } else if (
+          platformName.includes("line") ||
+          platformName.includes("lineman")
+        ) {
           platformFeePercent = 60;
           platformNameDisplay = "Line Man";
-        } else if (platformName.includes("ร้าน") || platformName.includes("store")) {
+        } else if (
+          platformName.includes("ร้าน") ||
+          platformName.includes("store")
+        ) {
           platformFeePercent = 0;
           platformNameDisplay = "ร้าน";
         }
       }
-      
-      const suggestion = calculateProfitablePrice(costPrice, platformFeePercent);
-      
+
+      const suggestion = calculateProfitablePrice(
+        costPrice,
+        platformFeePercent,
+      );
+
       if (!suggestion) {
-        addChatMessage(`❌ ไม่สามารถคำนวณราคาที่แนะนำได้ เนื่องจาก Platform Fee สูงเกินไป`);
+        addChatMessage(
+          `❌ ไม่สามารถคำนวณราคาที่แนะนำได้ เนื่องจาก Platform Fee สูงเกินไป`,
+        );
         return true;
       }
-      
+
       let response = `💰 คำแนะนำราคาสำหรับ "${menu.name}"`;
       if (platformFeePercent > 0) {
         response += ` บน ${platformNameDisplay}`;
       }
       response += `:\n\n`;
-      
+
       response += `📊 ราคาต้นทุน: ฿${suggestion.costPrice.toFixed(2)}\n`;
       response += `💡 ราคาที่แนะนำ: ฿${suggestion.suggestedPrice}\n\n`;
-      
+
       if (platformFeePercent > 0) {
         response += `📱 Breakdown (${platformNameDisplay} Fee ${platformFeePercent}%):\n`;
         response += `   💵 ราคาขาย: ฿${suggestion.suggestedPrice}\n`;
@@ -3736,7 +3941,7 @@ async function processAIMessagePatternMatching(userMessage) {
         response += `💰 กำไร: ฿${(suggestion.suggestedPrice - costPrice).toFixed(2)}\n`;
         response += `📊 มาร์จิ้น: ${(((suggestion.suggestedPrice - costPrice) / suggestion.suggestedPrice) * 100).toFixed(1)}%\n\n`;
       }
-      
+
       // Compare with current price
       const currentPrice = menu.price || 0;
       if (currentPrice > 0) {
@@ -3744,12 +3949,12 @@ async function processAIMessagePatternMatching(userMessage) {
           const currentPlatformFee = currentPrice * (platformFeePercent / 100);
           const currentNetRevenue = currentPrice - currentPlatformFee;
           const currentProfit = currentNetRevenue - costPrice;
-          
+
           response += `📊 เปรียบเทียบกับราคาปัจจุบัน (฿${currentPrice}):\n`;
           response += `   💸 Platform Fee: ฿${currentPlatformFee.toFixed(2)}\n`;
           response += `   💰 รับจริง: ฿${currentNetRevenue.toFixed(2)}\n`;
-          response += `   ${currentProfit >= 0 ? '✅' : '❌'} กำไร: ฿${currentProfit.toFixed(2)}\n`;
-          
+          response += `   ${currentProfit >= 0 ? "✅" : "❌"} กำไร: ฿${currentProfit.toFixed(2)}\n`;
+
           if (currentProfit < 0) {
             response += `\n⚠️ ราคาปัจจุบันขาดทุนเมื่อขายบน ${platformNameDisplay}!`;
           } else if (currentProfit < suggestion.profit) {
@@ -3763,55 +3968,60 @@ async function processAIMessagePatternMatching(userMessage) {
           }
         }
       }
-      
+
       addChatMessage(response);
       return true;
     }
   }
-  
+
   // ========== PROFITABILITY CHECK ==========
   const profitabilityPatterns = [
     /(?:เมนู|menu)\s*(.+?)\s*(?:มีกำไร|กำไร|profit)/i,
     /(?:เมนู|menu)\s*(.+?)\s*(?:คุ้ม|คุ้มทุน|คุ้มค่า)/i,
     /is\s+(.+?)\s+profitable/i,
   ];
-  
+
   for (const pattern of profitabilityPatterns) {
     const match = message.match(pattern);
     if (match) {
       let menuName = match[1].trim();
       // Remove question words
-      menuName = menuName.replace(/\s+(?:คือ|เท่าไหร่|คือเท่าไหร่).*$/i, '').trim();
-      
+      menuName = menuName
+        .replace(/\s+(?:คือ|เท่าไหร่|คือเท่าไหร่).*$/i, "")
+        .trim();
+
       // Prioritize exact menu_id match
-      let menu = menuData.find(m => 
-        m.menu_id.toLowerCase() === menuName.toLowerCase()
+      let menu = menuData.find(
+        (m) => m.menu_id.toLowerCase() === menuName.toLowerCase(),
       );
-      
+
       if (!menu) {
-        menu = menuData.find(m => 
-          m.name.toLowerCase().includes(menuName) ||
-          menuName.includes(m.name.toLowerCase())
+        menu = menuData.find(
+          (m) =>
+            m.name.toLowerCase().includes(menuName) ||
+            menuName.includes(m.name.toLowerCase()),
         );
       }
-      
+
       if (!menu) {
         addChatMessage(`ไม่พบเมนู "${menuName}" ในระบบค่ะ`);
         return true;
       }
-      
+
       const costPrice = await calculateMenuCostFromDB(menu.id);
       const currentPrice = menu.price || 0;
-      
+
       if (costPrice === null) {
-        addChatMessage(`ไม่สามารถคำนวณได้ กรุณาตรวจสอบข้อมูลสูตรและราคาวัตถุดิบ`);
+        addChatMessage(
+          `ไม่สามารถคำนวณได้ กรุณาตรวจสอบข้อมูลสูตรและราคาวัตถุดิบ`,
+        );
         return true;
       }
-      
+
       let response = `📊 การวิเคราะห์ความคุ้มทุนของ "${menu.name}":\n\n`;
       response += `💰 ต้นทุน: ฿${costPrice.toFixed(2)}\n`;
       response += `💵 ราคาขาย: ฿${currentPrice.toFixed(2)}\n\n`;
-      
+
       // Check for different platforms
       const platforms = [
         { name: "ร้าน", fee: 0 },
@@ -3819,31 +4029,31 @@ async function processAIMessagePatternMatching(userMessage) {
         { name: "FoodPanda", fee: 55 },
         { name: "Line Man", fee: 60 },
       ];
-      
+
       for (const platform of platforms) {
         if (platform.fee === 0) {
           const profit = currentPrice - costPrice;
           const isProfitable = profit >= 0;
-          response += `${isProfitable ? '✅' : '❌'} ${platform.name}: กำไร ฿${profit.toFixed(2)}\n`;
+          response += `${isProfitable ? "✅" : "❌"} ${platform.name}: กำไร ฿${profit.toFixed(2)}\n`;
         } else {
           const platformFee = currentPrice * (platform.fee / 100);
           const netRevenue = currentPrice - platformFee;
           const profit = netRevenue - costPrice;
           const isProfitable = profit >= 0;
-          response += `${isProfitable ? '✅' : '❌'} ${platform.name} (${platform.fee}%): กำไร ฿${profit.toFixed(2)} (รับจริง ฿${netRevenue.toFixed(2)})\n`;
+          response += `${isProfitable ? "✅" : "❌"} ${platform.name} (${platform.fee}%): กำไร ฿${profit.toFixed(2)} (รับจริง ฿${netRevenue.toFixed(2)})\n`;
         }
       }
-      
+
       addChatMessage(response);
       return true;
     }
   }
-  
+
   // Extract purchase information from natural language
   // Support multiple formats: "ซื้อ [name] [price] บาท [qty] [unit]" or "ซื้อ [name] [qty] [unit] ราคา [price]"
   const purchasePatterns = [
-    /ซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*บาท\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)/i,  // "ซื้อ กระเทียม 65 บาท 1 กก"
-    /ซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i,  // "ซื้อ กุ้ง 100 ตัว ราคา 500"
+    /ซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*บาท\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)/i, // "ซื้อ กระเทียม 65 บาท 1 กก"
+    /ซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i, // "ซื้อ กุ้ง 100 ตัว ราคา 500"
     /บันทึกการซื้อ\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i,
     /เพิ่มสต็อก\s+(.+?)\s+(\d+(?:\.\d+)?)\s*(ตัว|กก|kg|กรัม|ลิตร|ขวด|ชิ้น|ซอง)\s*(?:ราคา|ราคา|บาท)?\s*(\d+(?:\.\d+)?)?/i,
   ];
@@ -3853,7 +4063,7 @@ async function processAIMessagePatternMatching(userMessage) {
     const match = message.match(pattern);
     if (match) {
       let ingredientName, quantity, unit, price;
-      
+
       // First pattern: "ซื้อ [name] [price] บาท [qty] [unit]"
       if (i === 0) {
         ingredientName = match[1].trim();
@@ -3869,22 +4079,23 @@ async function processAIMessagePatternMatching(userMessage) {
       }
 
       // Find matching ingredient
-      const ingredient = ingredientData.find(ing => 
-        ing.name.toLowerCase().includes(ingredientName) ||
-        ingredientName.includes(ing.name.toLowerCase())
+      const ingredient = ingredientData.find(
+        (ing) =>
+          ing.name.toLowerCase().includes(ingredientName) ||
+          ingredientName.includes(ing.name.toLowerCase()),
       );
 
       if (!ingredient) {
         addChatMessage(
           `ไม่พบวัตถุดิบ "${ingredientName}" ในระบบค่ะ\n` +
-          `กรุณาเลือกจากรายการที่มีอยู่ หรือตรวจสอบการสะกดอีกครั้งค่ะ`
+            `กรุณาเลือกจากรายการที่มีอยู่ หรือตรวจสอบการสะกดอีกครั้งค่ะ`,
         );
         return true;
       }
 
       if (!price) {
         addChatMessage(
-          `กรุณาระบุราคา เช่น "ซื้อ ${ingredient.name} ${quantity} ${unit} ราคา XXX บาท"`
+          `กรุณาระบุราคา เช่น "ซื้อ ${ingredient.name} ${quantity} ${unit} ราคา XXX บาท"`,
         );
         return true;
       }
@@ -3906,10 +4117,10 @@ async function processAIMessagePatternMatching(userMessage) {
       // Ask for confirmation
       addChatMessage(
         `❓ ยืนยันการซื้อ:\n\n` +
-        `📦 วัตถุดิบ: ${ingredient.name}\n` +
-        `📊 จำนวน: ${quantity} ${unit}\n` +
-        `💰 ราคา: ฿${price.toFixed(2)}\n\n` +
-        `พิมพ์ "ยืนยัน" เพื่อบันทึก หรือ "ยกเลิก" เพื่อยกเลิก`
+          `📦 วัตถุดิบ: ${ingredient.name}\n` +
+          `📊 จำนวน: ${quantity} ${unit}\n` +
+          `💰 ราคา: ฿${price.toFixed(2)}\n\n` +
+          `พิมพ์ "ยืนยัน" เพื่อบันทึก หรือ "ยกเลิก" เพื่อยกเลิก`,
       );
       return true;
     }
@@ -3920,7 +4131,7 @@ async function processAIMessagePatternMatching(userMessage) {
   if (stockUpdatePattern.test(message)) {
     addChatMessage(
       `สำหรับการอัพเดทสต็อกโดยตรง กรุณาใช้ฟอร์ม "📦 ซื้อวัตถุดิบ" หรือ\n` +
-      `พิมพ์ "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท" ค่ะ`
+        `พิมพ์ "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท" ค่ะ`,
     );
     return true;
   }
@@ -3933,49 +4144,52 @@ async function processAIMessagePatternMatching(userMessage) {
     /ข้อมูล(?:มี|ครบ)/i,
     /สูตร(?:มี|ครบ)/i,
   ];
-  
+
   for (const pattern of diagnosticPatterns) {
     if (pattern.test(message)) {
       addChatMessage(`กำลังตรวจสอบข้อมูล...`);
-      
+
       try {
         // Check menu_recipes
         const { data: recipes, error: recipesError } = await window.supabase
           .from("menu_recipes")
           .select("id, menu_id")
           .limit(1);
-        
+
         // Check ingredients with cost
-        const { data: ingredientsWithCost, error: costError } = await window.supabase
-          .from("ingredients")
-          .select("id, name, cost_per_unit")
-          .not("cost_per_unit", "is", null)
-          .gt("cost_per_unit", 0);
-        
+        const { data: ingredientsWithCost, error: costError } =
+          await window.supabase
+            .from("ingredients")
+            .select("id, name, cost_per_unit")
+            .not("cost_per_unit", "is", null)
+            .gt("cost_per_unit", 0);
+
         // Check ingredients without cost
         const { data: ingredientsWithoutCost } = await window.supabase
           .from("ingredients")
           .select("id, name, cost_per_unit")
           .or("cost_per_unit.is.null,cost_per_unit.eq.0");
-        
+
         // Get total counts
         const { count: totalMenus } = await window.supabase
           .from("menus")
           .select("*", { count: "exact", head: true });
-        
+
         const { count: totalIngredients } = await window.supabase
           .from("ingredients")
           .select("*", { count: "exact", head: true });
-        
+
         // Count menus with recipes
         const { data: menusWithRecipes } = await window.supabase
           .from("menu_recipes")
           .select("menu_id", { count: "exact" });
-        
-        const uniqueMenusWithRecipes = new Set((menusWithRecipes || []).map(r => r.menu_id)).size;
-        
+
+        const uniqueMenusWithRecipes = new Set(
+          (menusWithRecipes || []).map((r) => r.menu_id),
+        ).size;
+
         let response = `📊 สรุปสถานะข้อมูล:\n\n`;
-        
+
         // Menu recipes status
         if (recipesError || !recipes || recipes.length === 0) {
           response += `❌ <strong>Menu Recipes:</strong> ไม่พบข้อมูลสูตรเมนู\n`;
@@ -3984,19 +4198,22 @@ async function processAIMessagePatternMatching(userMessage) {
           response += `✅ <strong>Menu Recipes:</strong> มีข้อมูลสูตร ${recipes.length}+ รายการ\n`;
           response += `   เมนูที่มีสูตร: ${uniqueMenusWithRecipes}/${totalMenus || 0} เมนู\n\n`;
         }
-        
+
         // Ingredient cost status
         const withCostCount = ingredientsWithCost?.length || 0;
         const withoutCostCount = ingredientsWithoutCost?.length || 0;
         const totalIngCount = totalIngredients || 0;
-        
+
         response += `💰 <strong>Ingredient Costs:</strong>\n`;
         response += `   ✅ มีราคา: ${withCostCount}/${totalIngCount} วัตถุดิบ\n`;
-        response += `   ${withoutCostCount > 0 ? '❌' : '✅'} ขาดราคา: ${withoutCostCount} วัตถุดิบ\n\n`;
-        
+        response += `   ${withoutCostCount > 0 ? "❌" : "✅"} ขาดราคา: ${withoutCostCount} วัตถุดิบ\n\n`;
+
         if (withoutCostCount > 0) {
           response += `⚠️ <strong>วัตถุดิบที่ขาดราคา:</strong>\n`;
-          const missingList = (ingredientsWithoutCost || []).slice(0, 10).map(i => `   • ${i.name}`).join('\n');
+          const missingList = (ingredientsWithoutCost || [])
+            .slice(0, 10)
+            .map((i) => `   • ${i.name}`)
+            .join("\n");
           response += missingList;
           if (withoutCostCount > 10) {
             response += `\n   ... และอีก ${withoutCostCount - 10} รายการ`;
@@ -4007,7 +4224,7 @@ async function processAIMessagePatternMatching(userMessage) {
           response += `   2. รัน SQL: UPDATE ingredients SET cost_per_unit = ... FROM purchases\n`;
           response += `   3. หรือใช้ script: fix-ingredient-costs.sql\n`;
         }
-        
+
         // Overall status
         if (recipesError || !recipes || recipes.length === 0) {
           response += `\n❌ <strong>สถานะ:</strong> ไม่สามารถคำนวณต้นทุนได้ (ไม่มีสูตรเมนู)`;
@@ -4016,7 +4233,7 @@ async function processAIMessagePatternMatching(userMessage) {
         } else {
           response += `\n✅ <strong>สถานะ:</strong> พร้อมคำนวณต้นทุนเมนูได้แล้ว!`;
         }
-        
+
         addChatMessage(response);
         return true;
       } catch (error) {
@@ -4025,19 +4242,20 @@ async function processAIMessagePatternMatching(userMessage) {
       }
     }
   }
-  
+
   // Handle purchase confirmation
   const confirmPatterns = [/ยืนยัน|confirm|ใช่|ok|ตกลง/i];
   const cancelPatterns = [/ยกเลิก|cancel|ไม่|no|ไม่ใช่/i];
-  
-  if (confirmPatterns.some(p => p.test(message)) && window._pendingPurchase) {
+
+  if (confirmPatterns.some((p) => p.test(message)) && window._pendingPurchase) {
     const pendingPurchase = window._pendingPurchase;
     delete window._pendingPurchase;
-    
+
     addChatMessage(`กำลังบันทึกการซื้อ...`);
-    
+
     try {
-      const result = await window.POS.functions.processPurchase(pendingPurchase);
+      const result =
+        await window.POS.functions.processPurchase(pendingPurchase);
 
       if (result.success) {
         // Refresh data
@@ -4045,7 +4263,7 @@ async function processAIMessagePatternMatching(userMessage) {
         if (window._refreshLowStock) {
           await window._refreshLowStock();
         }
-        
+
         // Wait a moment for transaction to be saved, then refresh transactions
         setTimeout(async () => {
           if (window._refreshTransactions) {
@@ -4056,10 +4274,10 @@ async function processAIMessagePatternMatching(userMessage) {
         // Only show success message if database was actually updated
         addChatMessage(
           `✅ บันทึกการซื้อสำเร็จ!\n\n` +
-          `📦 ${pendingPurchase.ingredient_name}\n` +
-          `📊 ${pendingPurchase.quantity} ${pendingPurchase.unit}\n` +
-          `💰 ฿${pendingPurchase.total_amount.toFixed(2)}\n\n` +
-          `📝 ดูรายการใน "ธุรกรรมล่าสุด" ด้านซ้าย`
+            `📦 ${pendingPurchase.ingredient_name}\n` +
+            `📊 ${pendingPurchase.quantity} ${pendingPurchase.unit}\n` +
+            `💰 ฿${pendingPurchase.total_amount.toFixed(2)}\n\n` +
+            `📝 ดูรายการใน "ธุรกรรมล่าสุด" ด้านซ้าย`,
         );
       } else {
         addChatMessage(`❌ เกิดข้อผิดพลาด: ${result.error}`);
@@ -4069,40 +4287,42 @@ async function processAIMessagePatternMatching(userMessage) {
     }
     return true;
   }
-  
-  if (cancelPatterns.some(p => p.test(message)) && window._pendingPurchase) {
+
+  if (cancelPatterns.some((p) => p.test(message)) && window._pendingPurchase) {
     delete window._pendingPurchase;
     addChatMessage(`❌ ยกเลิกการซื้อแล้วค่ะ`);
     return true;
   }
 
   // Help message
-  const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน|what can you do|what.*you.*do|capabilities|features/i];
-  if (helpPatterns.some(p => p.test(message))) {
+  const helpPatterns = [
+    /ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน|what can you do|what.*you.*do|capabilities|features/i,
+  ];
+  if (helpPatterns.some((p) => p.test(message))) {
     addChatMessage(
       `📚 คู่มือการใช้งาน AI Assistant:\n\n` +
-      `🛒 <strong>บันทึกการซื้อ:</strong>\n` +
-      `   • "ซื้อ กุ้งสด 100 ตัว ราคา 500 บาท"\n` +
-      `   • "บันทึกการซื้อ แซลม่อนสด 1kg ราคา 300 บาท"\n\n` +
-      `💰 <strong>ตรวจสอบต้นทุน:</strong>\n` +
-      `   • "ต้นทุนเมนู กุ้งแช่น้ำปลา"\n` +
-      `   • "ค่าใช้จ่ายของเมนู A1"\n` +
-      `   • "cost of menu กุ้งดอง"\n\n` +
-      `💡 <strong>แนะนำราคา:</strong>\n` +
-      `   • "แนะนำราคา กุ้งแช่น้ำปลา"\n` +
-      `   • "ควรขาย กุ้งดอง เท่าไหร่"\n` +
-      `   • "แนะนำราคา A1 บน Grab"\n` +
-      `   • "suggest price for กุ้งสดลาบ"\n\n` +
-      `📊 <strong>ตรวจสอบความคุ้มทุน:</strong>\n` +
-      `   • "เมนู กุ้งแช่น้ำปลา มีกำไรไหม"\n` +
-      `   • "is menu A1 profitable"\n\n` +
-      `📦 <strong>ตรวจสอบสต็อก:</strong>\n` +
-      `   ดูรายการ "🚨 สต๊อกใกล้หมด" ด้านซ้าย\n\n` +
-      `🔍 <strong>ตรวจสอบข้อมูล:</strong>\n` +
-      `   • "ตรวจสอบข้อมูล" - ตรวจสอบสูตรและราคาวัตถุดิบ\n` +
-      `   • "check data" - Check if data is ready for cost calculation\n\n` +
-      `💡 <strong>หน่วยที่รองรับ:</strong>\n` +
-      `   ตัว, กก, kg, กรัม, ลิตร, ขวด, ชิ้น, ซอง`
+        `🛒 <strong>บันทึกการซื้อ:</strong>\n` +
+        `   • "ซื้อ กุ้งสด 100 ตัว ราคา 500 บาท"\n` +
+        `   • "บันทึกการซื้อ แซลม่อนสด 1kg ราคา 300 บาท"\n\n` +
+        `💰 <strong>ตรวจสอบต้นทุน:</strong>\n` +
+        `   • "ต้นทุนเมนู กุ้งแช่น้ำปลา"\n` +
+        `   • "ค่าใช้จ่ายของเมนู A1"\n` +
+        `   • "cost of menu กุ้งดอง"\n\n` +
+        `💡 <strong>แนะนำราคา:</strong>\n` +
+        `   • "แนะนำราคา กุ้งแช่น้ำปลา"\n` +
+        `   • "ควรขาย กุ้งดอง เท่าไหร่"\n` +
+        `   • "แนะนำราคา A1 บน Grab"\n` +
+        `   • "suggest price for กุ้งสดลาบ"\n\n` +
+        `📊 <strong>ตรวจสอบความคุ้มทุน:</strong>\n` +
+        `   • "เมนู กุ้งแช่น้ำปลา มีกำไรไหม"\n` +
+        `   • "is menu A1 profitable"\n\n` +
+        `📦 <strong>ตรวจสอบสต็อก:</strong>\n` +
+        `   ดูรายการ "🚨 สต๊อกใกล้หมด" ด้านซ้าย\n\n` +
+        `🔍 <strong>ตรวจสอบข้อมูล:</strong>\n` +
+        `   • "ตรวจสอบข้อมูล" - ตรวจสอบสูตรและราคาวัตถุดิบ\n` +
+        `   • "check data" - Check if data is ready for cost calculation\n\n` +
+        `💡 <strong>หน่วยที่รองรับ:</strong>\n` +
+        `   ตัว, กก, kg, กรัม, ลิตร, ขวด, ชิ้น, ซอง`,
     );
     return true;
   }
@@ -4113,34 +4333,36 @@ async function processAIMessagePatternMatching(userMessage) {
 
 async function processAIMessage(userMessage) {
   const message = userMessage.toLowerCase().trim();
-  
+
   // Help message
-  const helpPatterns = [/ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน|what can you do|what.*you.*do|capabilities|features/i];
-  if (helpPatterns.some(p => p.test(message))) {
+  const helpPatterns = [
+    /ช่วยเหลือ|วิธีใช้|help|คู่มือ|commands|ฟังก์ชัน|what can you do|what.*you.*do|capabilities|features/i,
+  ];
+  if (helpPatterns.some((p) => p.test(message))) {
     addChatMessage(
       `📚 คู่มือการใช้งาน AI Assistant:\n\n` +
-      `🛒 <strong>บันทึกการซื้อ:</strong>\n` +
-      `   • "ซื้อ กุ้งสด 100 ตัว ราคา 500 บาท"\n` +
-      `   • "บันทึกการซื้อ แซลม่อนสด 1kg ราคา 300 บาท"\n\n` +
-      `💰 <strong>ตรวจสอบต้นทุน:</strong>\n` +
-      `   • "ต้นทุนเมนู กุ้งแช่น้ำปลา"\n` +
-      `   • "ค่าใช้จ่ายของเมนู A1"\n` +
-      `   • "cost of menu กุ้งดอง"\n\n` +
-      `💡 <strong>แนะนำราคา:</strong>\n` +
-      `   • "แนะนำราคา กุ้งแช่น้ำปลา"\n` +
-      `   • "ควรขาย กุ้งดอง เท่าไหร่"\n` +
-      `   • "แนะนำราคา A1 บน Grab"\n` +
-      `   • "suggest price for กุ้งสดลาบ"\n\n` +
-      `📊 <strong>ตรวจสอบความคุ้มทุน:</strong>\n` +
-      `   • "เมนู กุ้งแช่น้ำปลา มีกำไรไหม"\n` +
-      `   • "is menu A1 profitable"\n\n` +
-      `📦 <strong>ตรวจสอบสต็อก:</strong>\n` +
-      `   ดูรายการ "🚨 สต๊อกใกล้หมด" ด้านซ้าย\n\n` +
-      `🔍 <strong>ตรวจสอบข้อมูล:</strong>\n` +
-      `   • "ตรวจสอบข้อมูล" - ตรวจสอบสูตรและราคาวัตถุดิบ\n` +
-      `   • "check data" - Check if data is ready for cost calculation\n\n` +
-      `💡 <strong>หน่วยที่รองรับ:</strong>\n` +
-      `   ตัว, กก, kg, กรัม, ลิตร, ขวด, ชิ้น, ซอง`
+        `🛒 <strong>บันทึกการซื้อ:</strong>\n` +
+        `   • "ซื้อ กุ้งสด 100 ตัว ราคา 500 บาท"\n` +
+        `   • "บันทึกการซื้อ แซลม่อนสด 1kg ราคา 300 บาท"\n\n` +
+        `💰 <strong>ตรวจสอบต้นทุน:</strong>\n` +
+        `   • "ต้นทุนเมนู กุ้งแช่น้ำปลา"\n` +
+        `   • "ค่าใช้จ่ายของเมนู A1"\n` +
+        `   • "cost of menu กุ้งดอง"\n\n` +
+        `💡 <strong>แนะนำราคา:</strong>\n` +
+        `   • "แนะนำราคา กุ้งแช่น้ำปลา"\n` +
+        `   • "ควรขาย กุ้งดอง เท่าไหร่"\n` +
+        `   • "แนะนำราคา A1 บน Grab"\n` +
+        `   • "suggest price for กุ้งสดลาบ"\n\n` +
+        `📊 <strong>ตรวจสอบความคุ้มทุน:</strong>\n` +
+        `   • "เมนู กุ้งแช่น้ำปลา มีกำไรไหม"\n` +
+        `   • "is menu A1 profitable"\n\n` +
+        `📦 <strong>ตรวจสอบสต็อก:</strong>\n` +
+        `   ดูรายการ "🚨 สต๊อกใกล้หมด" ด้านซ้าย\n\n` +
+        `🔍 <strong>ตรวจสอบข้อมูล:</strong>\n` +
+        `   • "ตรวจสอบข้อมูล" - ตรวจสอบสูตรและราคาวัตถุดิบ\n` +
+        `   • "check data" - Check if data is ready for cost calculation\n\n` +
+        `💡 <strong>หน่วยที่รองรับ:</strong>\n` +
+        `   ตัว, กก, kg, กรัม, ลิตร, ขวด, ชิ้น, ซอง`,
     );
     return;
   }
@@ -4151,7 +4373,7 @@ async function processAIMessage(userMessage) {
   if (patternMatched) {
     return; // Pattern matching handled it (purchase, etc.)
   }
-  
+
   // Try intelligent database-aware AI for queries (not purchase commands)
   if (window.processAIMessageWithDatabase) {
     try {
@@ -4160,11 +4382,14 @@ async function processAIMessage(userMessage) {
         return; // AI handled it (either with query or explanation)
       }
     } catch (error) {
-      console.warn("AI database assistant error, falling back to general AI:", error);
+      console.warn(
+        "AI database assistant error, falling back to general AI:",
+        error,
+      );
       // Continue to general AI fallback
     }
   }
-  
+
   // Build context from database
   const context = {
     hasMenuData: menuData.length > 0,
@@ -4172,12 +4397,19 @@ async function processAIMessage(userMessage) {
     hasIngredientData: ingredientData.length > 0,
     ingredientCount: ingredientData.length,
   };
-  
+
   // Try AI service as last resort (only if API keys are available)
-  const hasApiKeys = (window.GOOGLE_GEMINI_API_KEY && window.GOOGLE_GEMINI_API_KEY !== 'null' && window.GOOGLE_GEMINI_API_KEY !== 'YOUR_API_KEY_HERE') ||
-                     (window.GOOGLE_CLOUD_API_KEY && window.GOOGLE_CLOUD_API_KEY !== 'null' && window.GOOGLE_CLOUD_API_KEY !== 'YOUR_API_KEY_HERE') ||
-                     (window.HUGGING_FACE_API_KEY && window.HUGGING_FACE_API_KEY !== 'null' && window.HUGGING_FACE_API_KEY !== 'hf_YOUR_HUGGING_FACE_API_KEY_HERE');
-  
+  const hasApiKeys =
+    (window.GOOGLE_GEMINI_API_KEY &&
+      window.GOOGLE_GEMINI_API_KEY !== "null" &&
+      window.GOOGLE_GEMINI_API_KEY !== "YOUR_API_KEY_HERE") ||
+    (window.GOOGLE_CLOUD_API_KEY &&
+      window.GOOGLE_CLOUD_API_KEY !== "null" &&
+      window.GOOGLE_CLOUD_API_KEY !== "YOUR_API_KEY_HERE") ||
+    (window.HUGGING_FACE_API_KEY &&
+      window.HUGGING_FACE_API_KEY !== "null" &&
+      window.HUGGING_FACE_API_KEY !== "hf_YOUR_HUGGING_FACE_API_KEY_HERE");
+
   if (hasApiKeys) {
     try {
       const aiResponse = await callAIService(userMessage, context);
@@ -4189,22 +4421,22 @@ async function processAIMessage(userMessage) {
       console.warn("AI service error:", error);
     }
   }
-  
+
   // Final fallback to helpful message
   addChatMessage(
     `ไม่เข้าใจคำสั่งของคุณค่ะ 😅\n\n` +
-    `ลองพิมพ์:\n` +
-    `• "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท"\n` +
-    `• "รายการซื้อล่าสุด"\n` +
-    `• "เมนูขายดี"\n` +
-    `• "ต้นทุนเมนู [ชื่อเมนู]"\n` +
-    `• "ช่วยเหลือ" เพื่อดูวิธีใช้\n\n` +
-    `${!hasApiKeys ? '💡 หมายเหตุ: API keys ถูกตั้งค่าแล้วใน Cloudflare แต่ยังมีปัญหา กรุณาตรวจสอบ API keys ใน Cloudflare Dashboard' : ''}`
+      `ลองพิมพ์:\n` +
+      `• "ซื้อ [ชื่อวัตถุดิบ] [จำนวน] [หน่วย] ราคา [ราคา] บาท"\n` +
+      `• "รายการซื้อล่าสุด"\n` +
+      `• "เมนูขายดี"\n` +
+      `• "ต้นทุนเมนู [ชื่อเมนู]"\n` +
+      `• "ช่วยเหลือ" เพื่อดูวิธีใช้\n\n` +
+      `${!hasApiKeys ? "💡 หมายเหตุ: API keys ถูกตั้งค่าแล้วใน Cloudflare แต่ยังมีปัญหา กรุณาตรวจสอบ API keys ใน Cloudflare Dashboard" : ""}`,
   );
 }
 
 // Set up chat form handler
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   const chatForm = document.getElementById("chat-form");
   const chatInput = document.getElementById("chat-input");
 
@@ -4212,15 +4444,15 @@ document.addEventListener("DOMContentLoaded", function() {
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const message = chatInput.value.trim();
-      
+
       if (!message) return;
 
       // Add user message
       addChatMessage(message, true);
       chatInput.value = "";
 
-      // Process message
-      await processAIMessage(message);
+      // Process message with new AI system
+      await processMessageWithNewAI(message);
     });
   }
 
@@ -4234,6 +4466,384 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 });
+
+// ---------- New AI System Integration ----------
+
+let webAppHandler = null;
+let currentSessionId = "session_" + Date.now();
+
+// Initialize new AI system
+async function initializeNewAI() {
+  try {
+    // Dynamically import WebAppHandler if not already loaded
+    if (!WebAppHandler) {
+      try {
+        const module = await import("./ai-core/handlers/webapp-handler.js");
+        WebAppHandler = module.WebAppHandler;
+      } catch (importError) {
+        console.warn("Could not load AI WebApp Handler:", importError);
+        return false;
+      }
+    }
+
+    // Configuration will be pulled from environment or API
+    const config = {
+      supabaseUrl:
+        window.SUPABASE_URL || "https://rtfreafhlelpxqwohspq.supabase.co",
+      supabaseKey: window.SUPABASE_ANON_KEY,
+      aiProvider: {
+        type: "gemini",
+        config: {
+          apiKey:
+            window.GEMINI_API_KEY || "AIzaSyBGZhBGZjZNlH7sbPcGfeUKaOQDQsBSFHE",
+        },
+      },
+    };
+
+    webAppHandler = new WebAppHandler(config);
+    await webAppHandler.initialize();
+
+    console.log("New AI System initialized successfully");
+    return true;
+  } catch (error) {
+    console.error("Failed to initialize new AI system:", error);
+    // Fallback to old system if needed
+    return false;
+  }
+}
+
+// Process message with new AI system
+async function processMessageWithNewAI(message) {
+  try {
+    if (!webAppHandler) {
+      const initialized = await initializeNewAI();
+      if (!initialized) {
+        throw new Error("AI system initialization failed");
+      }
+    }
+
+    // Show typing indicator
+    addChatMessage("...", false, true);
+
+    const result = await webAppHandler.processMessage(
+      message,
+      currentSessionId,
+      currentUser?.id,
+    );
+
+    // Remove typing indicator
+    removeTypingIndicator();
+
+    if (result.success) {
+      // Display rich response
+      await displayAIResponse(result.response);
+    } else {
+      addChatMessage(
+        `❌ ${result.error}\n\n${result.suggestion || "กรุณาลองใหม่อีกครั้ง"}`,
+        false,
+      );
+    }
+  } catch (error) {
+    removeTypingIndicator();
+    console.error("Error processing message with new AI:", error);
+    addChatMessage("❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", false);
+  }
+}
+
+// Display rich AI response with components
+async function displayAIResponse(response) {
+  // Add main message
+  addChatMessage(response.message, false);
+
+  // Handle rich components
+  if (response.components && response.components.length > 0) {
+    for (const component of response.components) {
+      await displayComponent(component);
+    }
+  }
+
+  // Handle quick actions
+  if (response.quickActions && response.quickActions.length > 0) {
+    displayQuickActions(response.quickActions);
+  }
+}
+
+// Display individual components
+async function displayComponent(component) {
+  switch (component.type) {
+    case "table":
+      displayTable(component);
+      break;
+    case "summary-cards":
+      displaySummaryCards(component.cards);
+      break;
+    case "chart":
+      displayChart(component);
+      break;
+    case "form":
+      displayForm(component);
+      break;
+    default:
+      console.log("Unknown component type:", component.type);
+  }
+}
+
+// Display table component
+function displayTable(component) {
+  const { data, columns, title, pagination } = component;
+
+  if (!data || data.length === 0) {
+    addChatMessage(`📊 ${title}: ไม่พบข้อมูล`, false);
+    return;
+  }
+
+  let tableHTML = `<div class="ai-table-container"><h4>${title}</h4><table class="ai-table">`;
+
+  // Header
+  tableHTML += "<thead><tr>";
+  columns.forEach((col) => {
+    tableHTML += `<th>${col.label}</th>`;
+  });
+  tableHTML += "</tr></thead>";
+
+  // Body (limit to first 10 for chat display)
+  const displayData = data.slice(0, 10);
+  tableHTML += "<tbody>";
+  displayData.forEach((row) => {
+    tableHTML += "<tr>";
+    columns.forEach((col) => {
+      let value = row[col.key] || "";
+      if (col.format === "currency" && value) {
+        value = `฿${parseFloat(value).toLocaleString("th-TH")}`;
+      } else if (col.format === "date" && value) {
+        value = new Date(value).toLocaleDateString("th-TH");
+      }
+      tableHTML += `<td>${value}</td>`;
+    });
+    tableHTML += "</tr>";
+  });
+  tableHTML += "</tbody></table>";
+
+  if (data.length > 10) {
+    tableHTML += `<p class="text-sm text-gray-600 mt-2">แสดง 10 จาก ${data.length} รายการ</p>`;
+  }
+
+  tableHTML += "</div>";
+
+  addChatMessage(tableHTML, false, false, true);
+}
+
+// Display summary cards
+function displaySummaryCards(cards) {
+  let cardsHTML = '<div class="ai-cards-container">';
+
+  cards.forEach((card) => {
+    let value = card.value;
+    if (card.format === "currency") {
+      value = `฿${parseFloat(value).toLocaleString("th-TH")}`;
+    }
+
+    cardsHTML += `
+      <div class="ai-card ai-card-${card.color}">
+        <div class="ai-card-icon">${card.icon}</div>
+        <div class="ai-card-content">
+          <div class="ai-card-title">${card.title}</div>
+          <div class="ai-card-value">${value}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  cardsHTML += "</div>";
+
+  addChatMessage(cardsHTML, false, false, true);
+}
+
+// Display quick actions
+function displayQuickActions(actions) {
+  let actionsHTML = '<div class="ai-quick-actions">';
+
+  actions.forEach((action) => {
+    actionsHTML += `<button class="ai-quick-action" onclick="handleQuickAction('${action.action}')">${action.label}</button>`;
+  });
+
+  actionsHTML += "</div>";
+
+  addChatMessage(actionsHTML, false, false, true);
+}
+
+// Handle quick action clicks
+window.handleQuickAction = async function (action) {
+  const actionMessages = {
+    summary_today: "สรุปยอดวันนี้",
+    check_inventory: "ตรวจสอบสต็อกวัตถุดิบ",
+    show_expenses: "แสดงค่าใช้จ่ายล่าสุด",
+    popular_menus: "เมนูขายดีที่สุด",
+    analyze_sales: "วิเคราะห์ยอดขาย 7 วันล่าสุด",
+    add_another: "เพิ่มรายการอีก",
+  };
+
+  const message = actionMessages[action] || action;
+  const chatInput = document.getElementById("chat-input");
+
+  if (chatInput) {
+    chatInput.value = message;
+    // Auto-submit the action
+    const chatForm = document.getElementById("chat-form");
+    if (chatForm) {
+      chatForm.dispatchEvent(new Event("submit"));
+    }
+  }
+};
+
+// Remove typing indicator
+function removeTypingIndicator() {
+  const messages = document.querySelectorAll(".chat-message");
+  messages.forEach((msg) => {
+    if (msg.textContent === "...") {
+      msg.remove();
+    }
+  });
+}
+
+// Enhanced add chat message function
+function addChatMessage(message, isUser, isTyping = false, isHTML = false) {
+  const messagesContainer = document.getElementById("chat-messages");
+  if (!messagesContainer) return;
+
+  const messageDiv = document.createElement("div");
+  messageDiv.className = `flex items-start gap-2 ${isUser ? "justify-end" : ""} ${isTyping ? "typing-indicator" : ""}`;
+
+  if (!isUser) {
+    messageDiv.innerHTML = `
+      <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-bold">
+        AI
+      </div>
+      <div class="flex-1 ${isHTML ? "" : "bg-white p-3 rounded-lg shadow-sm"}">
+        ${isHTML ? message : `<div class="text-gray-800">${message}</div>`}
+      </div>
+    `;
+  } else {
+    messageDiv.innerHTML = `
+      <div class="flex-1 max-w-[70%]">
+        <div class="bg-blue-500 text-white p-3 rounded-lg shadow-sm">
+          <div class="text-gray-800">${message}</div>
+        </div>
+      </div>
+      <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
+        คุณ
+      </div>
+    `;
+  }
+
+  messagesContainer.appendChild(messageDiv);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Add CSS for AI components
+const aiStyles = `
+<style>
+.ai-table-container {
+  margin: 10px 0;
+  overflow-x: auto;
+}
+
+.ai-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ai-table th, .ai-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ai-table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.ai-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.ai-card {
+  padding: 15px;
+  border-radius: 8px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-card-green { background-color: #10b981; }
+.ai-card-blue { background-color: #3b82f6; }
+.ai-card-red { background-color: #ef4444; }
+.ai-card-purple { background-color: #8b5cf6; }
+.ai-card-yellow { background-color: #f59e0b; }
+
+.ai-card-icon {
+  font-size: 24px;
+}
+
+.ai-card-content {
+  flex: 1;
+}
+
+.ai-card-title {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.ai-card-value {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.ai-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.ai-quick-action {
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-quick-action:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.typing-indicator {
+  opacity: 0.6;
+}
+
+.chat-message {
+  margin-bottom: 10px;
+}
+</style>
+`;
+
+// Inject styles into head
+if (!document.querySelector("#ai-styles")) {
+  const styleElement = document.createElement("div");
+  styleElement.id = "ai-styles";
+  styleElement.innerHTML = aiStyles;
+  document.head.appendChild(styleElement.firstElementChild);
+}
 
 // ---------- Auto-initialization on load ----------
 document.addEventListener("DOMContentLoaded", function () {
@@ -4277,9 +4887,9 @@ document.addEventListener("keydown", function (event) {
 
 // ---------- Calendar Monthly Summary ----------
 async function getMonthlyRevenue(year, month) {
-  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const daysInMonth = new Date(year, month, 0).getDate();
-  const endDate = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}`;
+  const endDate = `${year}-${String(month).padStart(2, "0")}-${daysInMonth}`;
   const { data, error } = await window.supabase
     .from("sales")
     .select("total_amount, order_date")
@@ -4298,25 +4908,38 @@ async function getMonthlyRevenue(year, month) {
 
 async function refreshMonthlySummary() {
   const monthInput = document.getElementById("summary-month");
-  const value = monthInput.value || new Date().toISOString().slice(0,7);
+  const value = monthInput.value || new Date().toISOString().slice(0, 7);
   const [yearStr, monthStr] = value.split("-");
-  const year = Number(yearStr), month = Number(monthStr);
+  const year = Number(yearStr),
+    month = Number(monthStr);
 
   // Revenue
   const revenue = await getMonthlyRevenue(year, month);
 
   // Expenses + Labor
-  const ops = await window.POS.functions.getMonthlyOperationalCosts(year, month);
-  const expensesTotal = ops.success ? (ops.summary.utilities.electric + ops.summary.utilities.water + ops.summary.utilities.other + ops.summary.rental + ops.summary.other_expenses) : 0;
+  const ops = await window.POS.functions.getMonthlyOperationalCosts(
+    year,
+    month,
+  );
+  const expensesTotal = ops.success
+    ? ops.summary.utilities.electric +
+      ops.summary.utilities.water +
+      ops.summary.utilities.other +
+      ops.summary.rental +
+      ops.summary.other_expenses
+    : 0;
   const laborTotal = ops.success ? ops.summary.labor.total_pay : 0;
 
   // Approx profit (revenue - expenses - labor)
   const profit = revenue.sum - expensesTotal - laborTotal;
 
   // Update UI
-  document.getElementById("sum-revenue").textContent = `฿${revenue.sum.toFixed(2)}`;
-  document.getElementById("sum-expenses").textContent = `฿${expensesTotal.toFixed(2)}`;
-  document.getElementById("sum-labor").textContent = `฿${laborTotal.toFixed(2)}`;
+  document.getElementById("sum-revenue").textContent =
+    `฿${revenue.sum.toFixed(2)}`;
+  document.getElementById("sum-expenses").textContent =
+    `฿${expensesTotal.toFixed(2)}`;
+  document.getElementById("sum-labor").textContent =
+    `฿${laborTotal.toFixed(2)}`;
   document.getElementById("sum-profit").textContent = `฿${profit.toFixed(2)}`;
 
   // Breakdown
@@ -4335,8 +4958,16 @@ async function refreshMonthlySummary() {
 
   // Revenue by day
   const byDayEl = document.getElementById("revenue-by-day");
-  const days = Object.entries(revenue.byDay).sort((a,b) => a[0].localeCompare(b[0]));
-  byDayEl.innerHTML = days.map(([d, amt]) => `<div class="flex justify-between"><span>${d}</span><span>฿${amt.toFixed(2)}</span></div>`).join("") || "-";
+  const days = Object.entries(revenue.byDay).sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  );
+  byDayEl.innerHTML =
+    days
+      .map(
+        ([d, amt]) =>
+          `<div class="flex justify-between"><span>${d}</span><span>฿${amt.toFixed(2)}</span></div>`,
+      )
+      .join("") || "-";
 }
 
 function openCalendarModal() {
@@ -4344,7 +4975,7 @@ function openCalendarModal() {
   if (!modal) return;
   modal.classList.remove("hidden");
   const monthInput = document.getElementById("summary-month");
-  if (monthInput) monthInput.value = new Date().toISOString().slice(0,7);
+  if (monthInput) monthInput.value = new Date().toISOString().slice(0, 7);
   refreshMonthlySummary();
 }
 function closeCalendarModal() {
@@ -5263,7 +5894,7 @@ async function loadDemoData() {
 async function populateIngredientDropdown() {
   const selectEl = document.getElementById("purchase-ingredient");
   if (!selectEl) return;
-  
+
   selectEl.innerHTML = '<option value="">เลือกวัตถุดิบ...</option>';
 
   // Get recent purchases to show in dropdown
@@ -5271,67 +5902,73 @@ async function populateIngredientDropdown() {
   try {
     const recentPurchases = await getRecentPurchases(50);
     if (recentPurchases) {
-      recentPurchases.forEach(p => {
-        if (p.ingredient_id && (!purchaseMap[p.ingredient_id] || 
-            new Date(p.purchase_date) > new Date(purchaseMap[p.ingredient_id].purchase_date))) {
+      recentPurchases.forEach((p) => {
+        if (
+          p.ingredient_id &&
+          (!purchaseMap[p.ingredient_id] ||
+            new Date(p.purchase_date) >
+              new Date(purchaseMap[p.ingredient_id].purchase_date))
+        ) {
           purchaseMap[p.ingredient_id] = {
             total_amount: p.total_amount,
             quantity: p.quantity,
             unit: p.unit,
-            purchase_date: p.purchase_date
+            purchase_date: p.purchase_date,
           };
         }
       });
     }
   } catch (err) {
-    console.warn('Could not load recent purchases for dropdown:', err);
+    console.warn("Could not load recent purchases for dropdown:", err);
   }
 
   ingredientData.forEach((ingredient) => {
     const option = document.createElement("option");
     option.value = ingredient.id;
-    
+
     // Show name, unit, cost per unit, and recent purchase info
-    let displayText = `${ingredient.name} (${ingredient.unit || 'ไม่มีหน่วย'})`;
-    
+    let displayText = `${ingredient.name} (${ingredient.unit || "ไม่มีหน่วย"})`;
+
     // Add cost per unit if available
     if (ingredient.cost_per_unit && ingredient.cost_per_unit > 0) {
-      displayText += ` - ฿${parseFloat(ingredient.cost_per_unit).toFixed(2)}/${ingredient.unit || ''}`;
+      displayText += ` - ฿${parseFloat(ingredient.cost_per_unit).toFixed(2)}/${ingredient.unit || ""}`;
     }
-    
+
     // Add recent purchase info if available
     const recentPurchase = purchaseMap[ingredient.id];
     if (recentPurchase) {
       displayText += ` | ล่าสุด: ${recentPurchase.quantity} ${recentPurchase.unit} ฿${parseFloat(recentPurchase.total_amount).toFixed(2)}`;
     }
-    
+
     option.textContent = displayText;
-    option.setAttribute('data-unit', ingredient.unit || '');
-    option.setAttribute('data-cost', ingredient.cost_per_unit || '0');
+    option.setAttribute("data-unit", ingredient.unit || "");
+    option.setAttribute("data-cost", ingredient.cost_per_unit || "0");
     selectEl.appendChild(option);
   });
-  
+
   // Add change event to auto-fill unit and show recent purchase info
   // Remove old listeners first to avoid duplicates
   const newSelectEl = selectEl.cloneNode(true);
   selectEl.parentNode.replaceChild(newSelectEl, selectEl);
-  
-  newSelectEl.addEventListener('change', function() {
+
+  newSelectEl.addEventListener("change", function () {
     const selectedOption = this.options[this.selectedIndex];
     if (selectedOption && selectedOption.value) {
-      const unit = selectedOption.getAttribute('data-unit');
-      const costPerUnit = parseFloat(selectedOption.getAttribute('data-cost') || '0');
-      
+      const unit = selectedOption.getAttribute("data-unit");
+      const costPerUnit = parseFloat(
+        selectedOption.getAttribute("data-cost") || "0",
+      );
+
       // Auto-fill unit if empty
       const unitInput = document.getElementById("purchase-unit");
       if (unitInput && !unitInput.value && unit) {
         unitInput.value = unit;
       }
-      
+
       // Show cost per unit hint
       const priceInput = document.getElementById("purchase-price");
       const qtyInput = document.getElementById("purchase-qty");
-      
+
       if (costPerUnit > 0 && priceInput && qtyInput) {
         // Update placeholder when quantity changes
         const updatePriceHint = () => {
@@ -5340,14 +5977,14 @@ async function populateIngredientDropdown() {
             const estimatedPrice = qty * costPerUnit;
             priceInput.placeholder = `ประมาณ ฿${estimatedPrice.toFixed(2)} (${costPerUnit.toFixed(2)}/${unit})`;
           } else {
-            priceInput.placeholder = '';
+            priceInput.placeholder = "";
           }
         };
-        
+
         // Remove old listeners and add new one
         const newQtyInput = qtyInput.cloneNode(true);
         qtyInput.parentNode.replaceChild(newQtyInput, qtyInput);
-        newQtyInput.addEventListener('input', updatePriceHint);
+        newQtyInput.addEventListener("input", updatePriceHint);
         updatePriceHint(); // Initial update
       }
     }
@@ -5373,7 +6010,8 @@ let stockSearchDebounce;
 async function loadStockPage(page = 1) {
   const tableEl = document.getElementById("stock-table");
   const infoEl = document.getElementById("stock-page-info");
-  if (tableEl) tableEl.innerHTML = '<div class="spinner" style="margin:20px auto"></div>';
+  if (tableEl)
+    tableEl.innerHTML = '<div class="spinner" style="margin:20px auto"></div>';
 
   const result = await window.POS.functions.listIngredientsPaginated({
     search: stockState.search,
@@ -5382,7 +6020,8 @@ async function loadStockPage(page = 1) {
   });
 
   if (!result.success) {
-    if (tableEl) tableEl.innerHTML = `<div class="text-red-600 text-sm">โหลดข้อมูลล้มเหลว: ${result.error}</div>`;
+    if (tableEl)
+      tableEl.innerHTML = `<div class="text-red-600 text-sm">โหลดข้อมูลล้มเหลว: ${result.error}</div>`;
     return;
   }
 
@@ -5399,24 +6038,26 @@ function renderStockTable() {
   const tableEl = document.getElementById("stock-table");
   if (!tableEl) return;
 
-  const rows = stockState.items.map(item => {
-    const low = Number(item.current_stock) <= Number(item.min_stock);
-    return `
-      <tr class="border-b ${low ? 'bg-red-50' : ''}">
+  const rows = stockState.items
+    .map((item) => {
+      const low = Number(item.current_stock) <= Number(item.min_stock);
+      return `
+      <tr class="border-b ${low ? "bg-red-50" : ""}">
         <td class="p-2 whitespace-nowrap">${item.name}</td>
-        <td class="p-2 text-right">${(item.current_stock ?? 0).toFixed(2)} ${item.unit || ''}</td>
+        <td class="p-2 text-right">${(item.current_stock ?? 0).toFixed(2)} ${item.unit || ""}</td>
         <td class="p-2 text-right">${(item.min_stock ?? 0).toFixed(2)}</td>
-        <td class="p-2 text-right">${item.cost_per_unit != null ? item.cost_per_unit.toFixed(2) : '-'}</td>
+        <td class="p-2 text-right">${item.cost_per_unit != null ? item.cost_per_unit.toFixed(2) : "-"}</td>
         <td class="p-2 text-right">
           <div class="flex gap-2 justify-end">
-            <button class="btn ghost text-sm" onclick="openAdjustModal('${item.id}','${item.name.replace(/'/g, "&#39;")}', '${item.unit || ''}')">ปรับ</button>
-            <button class="btn ghost text-sm" onclick="openWasteModal('${item.id}','${item.name.replace(/'/g, "&#39;")}', '${item.unit || ''}')">ทิ้ง</button>
+            <button class="btn ghost text-sm" onclick="openAdjustModal('${item.id}','${item.name.replace(/'/g, "&#39;")}', '${item.unit || ""}')">ปรับ</button>
+            <button class="btn ghost text-sm" onclick="openWasteModal('${item.id}','${item.name.replace(/'/g, "&#39;")}', '${item.unit || ""}')">ทิ้ง</button>
             <button class="btn ghost text-sm" onclick="openQuickPurchase('${item.id}')">ซื้อ</button>
-            <button class="btn brand text-sm" onclick="openIngredientModal('${item.id}','${item.name.replace(/'/g, "&#39;")}', '${item.unit || ''}', '${item.min_stock ?? ''}', '${item.current_stock ?? ''}', '${item.cost_per_unit ?? ''}')">แก้ไข</button>
+            <button class="btn brand text-sm" onclick="openIngredientModal('${item.id}','${item.name.replace(/'/g, "&#39;")}', '${item.unit || ""}', '${item.min_stock ?? ""}', '${item.current_stock ?? ""}', '${item.cost_per_unit ?? ""}')">แก้ไข</button>
           </div>
         </td>
       </tr>`;
-  }).join("");
+    })
+    .join("");
 
   tableEl.innerHTML = `
     <table class="min-w-full text-sm">
@@ -5437,8 +6078,12 @@ function renderStockPagination() {
   const infoEl = document.getElementById("stock-page-info");
   const prevEl = document.getElementById("stock-prev");
   const nextEl = document.getElementById("stock-next");
-  const totalPages = Math.max(1, Math.ceil(stockState.total / stockState.pageSize));
-  if (infoEl) infoEl.textContent = `หน้า ${stockState.page} / ${totalPages} · ทั้งหมด ${stockState.total} รายการ`;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(stockState.total / stockState.pageSize),
+  );
+  if (infoEl)
+    infoEl.textContent = `หน้า ${stockState.page} / ${totalPages} · ทั้งหมด ${stockState.total} รายการ`;
   if (prevEl) prevEl.disabled = stockState.page <= 1;
   if (nextEl) nextEl.disabled = stockState.page >= totalPages;
 }
@@ -5460,10 +6105,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }, 250);
     });
   }
-  if (refreshEl) refreshEl.addEventListener("click", () => loadStockPage(stockState.page));
+  if (refreshEl)
+    refreshEl.addEventListener("click", () => loadStockPage(stockState.page));
   if (addEl) addEl.addEventListener("click", () => openIngredientModal());
-  if (prevEl) prevEl.addEventListener("click", () => loadStockPage(Math.max(1, stockState.page - 1)));
-  if (nextEl) nextEl.addEventListener("click", () => loadStockPage(stockState.page + 1));
+  if (prevEl)
+    prevEl.addEventListener("click", () =>
+      loadStockPage(Math.max(1, stockState.page - 1)),
+    );
+  if (nextEl)
+    nextEl.addEventListener("click", () => loadStockPage(stockState.page + 1));
 
   // Initial load
   loadStockPage(1);
@@ -5472,9 +6122,10 @@ document.addEventListener("DOMContentLoaded", function () {
 // Modals and actions
 function openAdjustModal(id, name, unit) {
   document.getElementById("adjust-ingredient-id").value = id;
-  document.getElementById("adjust-ingredient-name").textContent = `${name} (${unit || ''})`;
-  document.getElementById("adjust-qty").value = '';
-  document.getElementById("adjust-reason").value = '';
+  document.getElementById("adjust-ingredient-name").textContent =
+    `${name} (${unit || ""})`;
+  document.getElementById("adjust-qty").value = "";
+  document.getElementById("adjust-reason").value = "";
   document.getElementById("adjust-modal").classList.remove("hidden");
 }
 function closeAdjustModal() {
@@ -5483,23 +6134,33 @@ function closeAdjustModal() {
 
 function openWasteModal(id, name, unit) {
   document.getElementById("waste-ingredient-id").value = id;
-  document.getElementById("waste-ingredient-name").textContent = `${name} (${unit || ''})`;
-  document.getElementById("waste-qty").value = '';
-  document.getElementById("waste-reason").value = '';
+  document.getElementById("waste-ingredient-name").textContent =
+    `${name} (${unit || ""})`;
+  document.getElementById("waste-qty").value = "";
+  document.getElementById("waste-reason").value = "";
   document.getElementById("waste-modal").classList.remove("hidden");
 }
 function closeWasteModal() {
   document.getElementById("waste-modal").classList.add("hidden");
 }
 
-function openIngredientModal(id = '', name = '', unit = '', min = '', stock = '', cost = '') {
-  document.getElementById("ingredient-id").value = id || '';
-  document.getElementById("ingredient-name").value = name || '';
-  document.getElementById("ingredient-unit").value = unit || '';
-  document.getElementById("ingredient-min").value = min || '';
-  document.getElementById("ingredient-stock").value = stock || '';
-  document.getElementById("ingredient-cost").value = cost || '';
-  document.getElementById("ingredient-modal-title").textContent = id ? 'แก้วัตถุดิบ' : 'เพิ่มวัตถุดิบ';
+function openIngredientModal(
+  id = "",
+  name = "",
+  unit = "",
+  min = "",
+  stock = "",
+  cost = "",
+) {
+  document.getElementById("ingredient-id").value = id || "";
+  document.getElementById("ingredient-name").value = name || "";
+  document.getElementById("ingredient-unit").value = unit || "";
+  document.getElementById("ingredient-min").value = min || "";
+  document.getElementById("ingredient-stock").value = stock || "";
+  document.getElementById("ingredient-cost").value = cost || "";
+  document.getElementById("ingredient-modal-title").textContent = id
+    ? "แก้วัตถุดิบ"
+    : "เพิ่มวัตถุดิบ";
   document.getElementById("ingredient-modal").classList.remove("hidden");
 }
 function closeIngredientModal() {
@@ -5519,10 +6180,17 @@ document.addEventListener("DOMContentLoaded", function () {
     adjustForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const id = document.getElementById("adjust-ingredient-id").value;
-      const qty = parseFloat(document.getElementById("adjust-qty").value || '0');
+      const qty = parseFloat(
+        document.getElementById("adjust-qty").value || "0",
+      );
       const reason = document.getElementById("adjust-reason").value || null;
-      const unit = (stockState.items.find(i => i.id === id)?.unit) || null;
-      const res = await window.POS.functions.createStockAdjustment({ ingredient_id: id, quantity_change: qty, unit, reason });
+      const unit = stockState.items.find((i) => i.id === id)?.unit || null;
+      const res = await window.POS.functions.createStockAdjustment({
+        ingredient_id: id,
+        quantity_change: qty,
+        unit,
+        reason,
+      });
       if (res.success) {
         showToast("ปรับสต๊อกเรียบร้อย");
         closeAdjustModal();
@@ -5539,10 +6207,15 @@ document.addEventListener("DOMContentLoaded", function () {
     wasteForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const id = document.getElementById("waste-ingredient-id").value;
-      const qty = parseFloat(document.getElementById("waste-qty").value || '0');
+      const qty = parseFloat(document.getElementById("waste-qty").value || "0");
       const reason = document.getElementById("waste-reason").value || null;
-      const unit = (stockState.items.find(i => i.id === id)?.unit) || null;
-      const res = await window.POS.functions.createWaste({ ingredient_id: id, quantity: qty, unit, reason });
+      const unit = stockState.items.find((i) => i.id === id)?.unit || null;
+      const res = await window.POS.functions.createWaste({
+        ingredient_id: id,
+        quantity: qty,
+        unit,
+        reason,
+      });
       if (res.success) {
         showToast("บันทึกของเสียแล้ว");
         closeWasteModal();
@@ -5562,21 +6235,31 @@ document.addEventListener("DOMContentLoaded", function () {
         id: document.getElementById("ingredient-id").value || undefined,
         name: document.getElementById("ingredient-name").value,
         unit: document.getElementById("ingredient-unit").value,
-        min_stock: parseFloat(document.getElementById("ingredient-min").value || '0'),
-        current_stock: document.getElementById("ingredient-stock").value === '' ? undefined : parseFloat(document.getElementById("ingredient-stock").value),
-        cost_per_unit: document.getElementById("ingredient-cost").value === '' ? undefined : parseFloat(document.getElementById("ingredient-cost").value),
+        min_stock: parseFloat(
+          document.getElementById("ingredient-min").value || "0",
+        ),
+        current_stock:
+          document.getElementById("ingredient-stock").value === ""
+            ? undefined
+            : parseFloat(document.getElementById("ingredient-stock").value),
+        cost_per_unit:
+          document.getElementById("ingredient-cost").value === ""
+            ? undefined
+            : parseFloat(document.getElementById("ingredient-cost").value),
       };
       const res = await window.POS.functions.upsertIngredient(payload);
       if (res.success && res.data) {
         // Verify the update was actually saved
-        console.log('Ingredient saved:', res.data);
+        console.log("Ingredient saved:", res.data);
         showToast("บันทึกวัตถุดิบเรียบร้อย");
         closeIngredientModal();
         // Reload from database to ensure we have the latest data
         await loadStockPage(stockState.page);
         if (window._refreshLowStock) await window._refreshLowStock();
       } else {
-        showError("บันทึกวัตถุดิบล้มเหลว: " + (res.error || 'ไม่สามารถบันทึกได้'));
+        showError(
+          "บันทึกวัตถุดิบล้มเหลว: " + (res.error || "ไม่สามารถบันทึกได้"),
+        );
       }
     });
   }
@@ -5585,8 +6268,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const expensesForm = document.getElementById("expenses-form");
   if (expensesForm) {
     const categorySelect = document.getElementById("expense-category");
-    const subcategoryContainer = document.getElementById("expense-subcategory-container");
-    
+    const subcategoryContainer = document.getElementById(
+      "expense-subcategory-container",
+    );
+
     // Show subcategory for utilities
     if (categorySelect) {
       categorySelect.addEventListener("change", (e) => {
@@ -5602,7 +6287,8 @@ document.addEventListener("DOMContentLoaded", function () {
       e.preventDefault();
       const payload = {
         category: document.getElementById("expense-category").value,
-        subcategory: document.getElementById("expense-subcategory").value || null,
+        subcategory:
+          document.getElementById("expense-subcategory").value || null,
         description: document.getElementById("expense-description").value,
         amount: parseFloat(document.getElementById("expense-amount").value),
         date: document.getElementById("expense-date").value,
@@ -5635,7 +6321,7 @@ document.addEventListener("DOMContentLoaded", function () {
         totalDisplay.textContent = `฿${total.toFixed(2)}`;
       }
     };
-    
+
     if (hoursInput) hoursInput.addEventListener("input", updateLaborTotal);
     if (rateInput) rateInput.addEventListener("input", updateLaborTotal);
 
@@ -5665,9 +6351,12 @@ function openExpensesModal() {
   const modal = document.getElementById("expenses-modal");
   if (modal) {
     modal.classList.remove("hidden");
-    document.getElementById("expense-date").value = new Date().toISOString().split('T')[0];
+    document.getElementById("expense-date").value = new Date()
+      .toISOString()
+      .split("T")[0];
     document.getElementById("expense-category").value = "";
-    document.getElementById("expense-subcategory-container").style.display = "none";
+    document.getElementById("expense-subcategory-container").style.display =
+      "none";
   }
 }
 function closeExpensesModal() {
@@ -5684,7 +6373,7 @@ function openMenusPage() {
   const posApp = document.getElementById("pos-app");
   const menusPage = document.getElementById("menus-page");
   const stockPage = document.getElementById("stock-management-page");
-  
+
   if (posApp) posApp.classList.add("hidden");
   if (menusPage) {
     menusPage.classList.remove("hidden");
@@ -5700,7 +6389,7 @@ function openMenusPage() {
 function closeMenusPage() {
   const menusPage = document.getElementById("menus-page");
   const posApp = document.getElementById("pos-app");
-  
+
   if (menusPage) {
     menusPage.classList.add("hidden");
     menusPage.style.display = "none";
@@ -5715,7 +6404,7 @@ function openStockPage() {
   const posApp = document.getElementById("pos-app");
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
-  
+
   if (posApp) posApp.classList.add("hidden");
   if (stockPage) {
     stockPage.classList.remove("hidden");
@@ -5734,7 +6423,7 @@ function openStockPage() {
 function closeStockPage() {
   const stockPage = document.getElementById("stock-management-page");
   const posApp = document.getElementById("pos-app");
-  
+
   if (stockPage) {
     stockPage.classList.add("hidden");
     stockPage.style.display = "none";
@@ -5759,7 +6448,8 @@ async function loadMenus() {
 
   // Update state from filters
   menusState.search = document.getElementById("menu-search")?.value || "";
-  menusState.status = document.getElementById("menu-filter-status")?.value || "all";
+  menusState.status =
+    document.getElementById("menu-filter-status")?.value || "all";
 
   // Show loading
   tableBody.innerHTML = `
@@ -5771,7 +6461,8 @@ async function loadMenus() {
   `;
 
   try {
-    const isActive = menusState.status === "all" ? null : menusState.status === "active";
+    const isActive =
+      menusState.status === "all" ? null : menusState.status === "active";
     const result = await window.POS.functions.getMenusWithAvailability({
       search: menusState.search,
       isActive: isActive,
@@ -5785,18 +6476,29 @@ async function loadMenus() {
 
     // Calculate summary stats
     const totalMenus = menus.length;
-    const availableMenus = menus.filter(m => m.available_dishes !== null && m.available_dishes > 0).length;
-    const outOfStockMenus = menus.filter(m => m.available_dishes !== null && m.available_dishes === 0).length;
-    const menusWithProfit = menus.filter(m => m.profit !== null && !isNaN(m.profit));
-    const avgProfit = menusWithProfit.length > 0 
-      ? menusWithProfit.reduce((sum, m) => sum + (m.profit || 0), 0) / menusWithProfit.length 
-      : 0;
+    const availableMenus = menus.filter(
+      (m) => m.available_dishes !== null && m.available_dishes > 0,
+    ).length;
+    const outOfStockMenus = menus.filter(
+      (m) => m.available_dishes !== null && m.available_dishes === 0,
+    ).length;
+    const menusWithProfit = menus.filter(
+      (m) => m.profit !== null && !isNaN(m.profit),
+    );
+    const avgProfit =
+      menusWithProfit.length > 0
+        ? menusWithProfit.reduce((sum, m) => sum + (m.profit || 0), 0) /
+          menusWithProfit.length
+        : 0;
 
     // Update summary
     document.getElementById("menu-total-count").textContent = totalMenus;
-    document.getElementById("menu-available-count").textContent = availableMenus;
-    document.getElementById("menu-out-of-stock-count").textContent = outOfStockMenus;
-    document.getElementById("menu-avg-profit").textContent = `฿${avgProfit.toFixed(2)}`;
+    document.getElementById("menu-available-count").textContent =
+      availableMenus;
+    document.getElementById("menu-out-of-stock-count").textContent =
+      outOfStockMenus;
+    document.getElementById("menu-avg-profit").textContent =
+      `฿${avgProfit.toFixed(2)}`;
 
     // Render table
     if (menus.length === 0) {
@@ -5808,48 +6510,55 @@ async function loadMenus() {
         </tr>
       `;
     } else {
-      tableBody.innerHTML = menus.map(menu => {
-        const price = parseFloat(menu.price) || 0;
-        const cost = menu.calculated_cost || 0;
-        const profit = menu.profit || 0;
-        const profitMargin = menu.profit_margin || 0;
-        const availableDishes = menu.available_dishes;
+      tableBody.innerHTML = menus
+        .map((menu) => {
+          const price = parseFloat(menu.price) || 0;
+          const cost = menu.calculated_cost || 0;
+          const profit = menu.profit || 0;
+          const profitMargin = menu.profit_margin || 0;
+          const availableDishes = menu.available_dishes;
 
-        // Format available dishes
-        let availableDisplay = "-";
-        let availableClass = "";
-        if (availableDishes !== null) {
-          if (availableDishes === 0) {
-            availableDisplay = '<span class="text-red-600 font-bold">0</span>';
-            availableClass = "text-red-600";
-          } else if (availableDishes < 5) {
-            availableDisplay = `<span class="text-yellow-600 font-bold">${availableDishes}</span>`;
-            availableClass = "text-yellow-600";
-          } else {
-            availableDisplay = `<span class="text-green-600 font-bold">${availableDishes}</span>`;
-            availableClass = "text-green-600";
+          // Format available dishes
+          let availableDisplay = "-";
+          let availableClass = "";
+          if (availableDishes !== null) {
+            if (availableDishes === 0) {
+              availableDisplay =
+                '<span class="text-red-600 font-bold">0</span>';
+              availableClass = "text-red-600";
+            } else if (availableDishes < 5) {
+              availableDisplay = `<span class="text-yellow-600 font-bold">${availableDishes}</span>`;
+              availableClass = "text-yellow-600";
+            } else {
+              availableDisplay = `<span class="text-green-600 font-bold">${availableDishes}</span>`;
+              availableClass = "text-green-600";
+            }
           }
-        }
 
-        // Profit color
-        const profitClass = profit >= 0 ? "text-green-600" : "text-red-600";
-        const profitMarginClass = profitMargin >= 30 ? "text-green-600" : 
-                                   profitMargin >= 15 ? "text-yellow-600" : "text-red-600";
+          // Profit color
+          const profitClass = profit >= 0 ? "text-green-600" : "text-red-600";
+          const profitMarginClass =
+            profitMargin >= 30
+              ? "text-green-600"
+              : profitMargin >= 15
+                ? "text-yellow-600"
+                : "text-red-600";
 
-        // Status badge
-        const statusBadge = menu.is_active && menu.is_available
-          ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">พร้อมขาย</span>'
-          : !menu.is_active
-          ? '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">ไม่ใช้งาน</span>'
-          : '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">ไม่พร้อมขาย</span>';
+          // Status badge
+          const statusBadge =
+            menu.is_active && menu.is_available
+              ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">พร้อมขาย</span>'
+              : !menu.is_active
+                ? '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">ไม่ใช้งาน</span>'
+                : '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">ไม่พร้อมขาย</span>';
 
-        return `
+          return `
           <tr class="border-b hover:bg-gray-50">
             <td class="p-2 text-sm font-mono">${menu.menu_id || "-"}</td>
             <td class="p-2 text-sm">
               <div class="font-medium">${menu.name || "-"}</div>
               ${menu.description ? `<div class="text-xs text-gray-500">${menu.description}</div>` : ""}
-              ${menu.recipe_count > 0 ? `<div class="text-xs text-gray-400">มี ${menu.recipe_count} วัตถุดิบ</div>` : "<div class=\"text-xs text-gray-400\">ไม่มีสูตร</div>"}
+              ${menu.recipe_count > 0 ? `<div class="text-xs text-gray-400">มี ${menu.recipe_count} วัตถุดิบ</div>` : '<div class="text-xs text-gray-400">ไม่มีสูตร</div>'}
             </td>
             <td class="p-2 text-sm text-right font-semibold">฿${price.toFixed(2)}</td>
             <td class="p-2 text-sm text-right text-gray-600">฿${cost.toFixed(2)}</td>
@@ -5859,7 +6568,8 @@ async function loadMenus() {
             <td class="p-2 text-sm text-center">${statusBadge}</td>
           </tr>
         `;
-      }).join("");
+        })
+        .join("");
     }
   } catch (error) {
     console.error("Error loading menus:", error);
@@ -5887,12 +6597,12 @@ let expensesHistoryState = {
 function openExpensesHistory() {
   const posApp = document.getElementById("pos-app");
   const expensesPage = document.getElementById("expenses-history-page");
-  
+
   if (posApp) {
     posApp.classList.add("hidden");
     posApp.style.display = "none";
   }
-  
+
   if (expensesPage) {
     expensesPage.classList.remove("hidden");
     expensesPage.style.display = "block";
@@ -5907,12 +6617,12 @@ function openExpensesHistory() {
 function closeExpensesHistory() {
   const expensesPage = document.getElementById("expenses-history-page");
   const posApp = document.getElementById("pos-app");
-  
+
   if (expensesPage) {
     expensesPage.classList.add("hidden");
     expensesPage.style.display = "none";
   }
-  
+
   if (posApp) {
     posApp.classList.remove("hidden");
     posApp.style.display = "block";
@@ -5946,8 +6656,10 @@ async function loadExpensesHistory() {
   if (!tableBody) return;
 
   // Update state from filters
-  expensesHistoryState.search = document.getElementById("expense-search")?.value || "";
-  expensesHistoryState.category = document.getElementById("expense-filter-category")?.value || "";
+  expensesHistoryState.search =
+    document.getElementById("expense-search")?.value || "";
+  expensesHistoryState.category =
+    document.getElementById("expense-filter-category")?.value || "";
   const startDateInput = document.getElementById("expense-filter-start")?.value;
   const endDateInput = document.getElementById("expense-filter-end")?.value;
   expensesHistoryState.startDate = startDateInput || null;
@@ -5978,14 +6690,19 @@ async function loadExpensesHistory() {
 
     expensesHistoryState.total = result.total || 0;
     const expenses = result.expenses || [];
-    const totalAmount = result.totalAmount !== undefined ? result.totalAmount : 
-                        expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    const totalAmount =
+      result.totalAmount !== undefined
+        ? result.totalAmount
+        : expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
     // Update summary
-    document.getElementById("expense-total-count").textContent = expensesHistoryState.total;
-    document.getElementById("expense-total-amount").textContent = `฿${totalAmount.toFixed(2)}`;
+    document.getElementById("expense-total-count").textContent =
+      expensesHistoryState.total;
+    document.getElementById("expense-total-amount").textContent =
+      `฿${totalAmount.toFixed(2)}`;
     document.getElementById("expense-page-count").textContent = expenses.length;
-    document.getElementById("expense-current-page").textContent = expensesHistoryState.page;
+    document.getElementById("expense-current-page").textContent =
+      expensesHistoryState.page;
 
     // Render table
     if (expenses.length === 0) {
@@ -5997,48 +6714,62 @@ async function loadExpensesHistory() {
         </tr>
       `;
     } else {
-      tableBody.innerHTML = expenses.map(expense => {
-        const categoryLabels = {
-          utility: "⚡ ค่าสาธารณูปโภค",
-          rental: "🏠 ค่าเช่า",
-          labor: "👷 ค่าแรง",
-          other: "📋 อื่นๆ",
-        };
-        const categoryLabel = categoryLabels[expense.category] || expense.category;
-        const subcategoryLabel = expense.subcategory === "electric" ? "ค่าไฟฟ้า" : 
-                                 expense.subcategory === "water" ? "ค่าน้ำ" : 
-                                 expense.subcategory || "";
-        
-        const paymentMethodLabels = {
-          cash: "เงินสด",
-          transfer: "โอนเงิน",
-          credit_card: "บัตรเครดิต",
-        };
-        const paymentLabel = paymentMethodLabels[expense.payment_method] || expense.payment_method;
+      tableBody.innerHTML = expenses
+        .map((expense) => {
+          const categoryLabels = {
+            utility: "⚡ ค่าสาธารณูปโภค",
+            rental: "🏠 ค่าเช่า",
+            labor: "👷 ค่าแรง",
+            other: "📋 อื่นๆ",
+          };
+          const categoryLabel =
+            categoryLabels[expense.category] || expense.category;
+          const subcategoryLabel =
+            expense.subcategory === "electric"
+              ? "ค่าไฟฟ้า"
+              : expense.subcategory === "water"
+                ? "ค่าน้ำ"
+                : expense.subcategory || "";
 
-        const expenseDate = new Date(expense.expense_date);
-        const formattedDate = expenseDate.toLocaleDateString("th-TH", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
+          const paymentMethodLabels = {
+            cash: "เงินสด",
+            transfer: "โอนเงิน",
+            credit_card: "บัตรเครดิต",
+          };
+          const paymentLabel =
+            paymentMethodLabels[expense.payment_method] ||
+            expense.payment_method;
 
-        const updatedDate = expense.updated_at ? new Date(expense.updated_at) : null;
-        const formattedUpdated = updatedDate ? updatedDate.toLocaleDateString("th-TH", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }) : "-";
+          const expenseDate = new Date(expense.expense_date);
+          const formattedDate = expenseDate.toLocaleDateString("th-TH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
 
-        const statusBadge = expense.status === "approved" 
-          ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">อนุมัติ</span>'
-          : expense.status === "pending"
-          ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">รอตรวจสอบ</span>'
-          : '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">' + (expense.status || "อื่นๆ") + "</span>";
+          const updatedDate = expense.updated_at
+            ? new Date(expense.updated_at)
+            : null;
+          const formattedUpdated = updatedDate
+            ? updatedDate.toLocaleDateString("th-TH", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-";
 
-        return `
+          const statusBadge =
+            expense.status === "approved"
+              ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">อนุมัติ</span>'
+              : expense.status === "pending"
+                ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">รอตรวจสอบ</span>'
+                : '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">' +
+                  (expense.status || "อื่นๆ") +
+                  "</span>";
+
+          return `
           <tr class="border-b hover:bg-gray-50">
             <td class="p-2 text-sm">${formattedDate}</td>
             <td class="p-2 text-sm">
@@ -6060,7 +6791,8 @@ async function loadExpensesHistory() {
             <td class="p-2 text-sm">${statusBadge}</td>
           </tr>
         `;
-      }).join("");
+        })
+        .join("");
     }
 
     // Update pagination
@@ -6078,7 +6810,10 @@ async function loadExpensesHistory() {
 }
 
 function updateExpensesPagination() {
-  const totalPages = Math.max(1, Math.ceil(expensesHistoryState.total / expensesHistoryState.pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(expensesHistoryState.total / expensesHistoryState.pageSize),
+  );
   const pageInfo = document.getElementById("expenses-page-info");
   const prevBtn = document.getElementById("expenses-prev");
   const nextBtn = document.getElementById("expenses-next");
@@ -6095,7 +6830,7 @@ function updateExpensesPagination() {
       prevBtn.classList.remove("opacity-50", "cursor-not-allowed");
     }
   }
-  
+
   if (nextBtn) {
     nextBtn.disabled = expensesHistoryState.page >= totalPages;
     if (expensesHistoryState.page >= totalPages) {
@@ -6114,7 +6849,10 @@ function expensesPrevPage() {
 }
 
 function expensesNextPage() {
-  const totalPages = Math.max(1, Math.ceil(expensesHistoryState.total / expensesHistoryState.pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(expensesHistoryState.total / expensesHistoryState.pageSize),
+  );
   if (expensesHistoryState.page < totalPages) {
     expensesHistoryState.page++;
     loadExpensesHistory();
@@ -6126,7 +6864,9 @@ function openLaborModal() {
   const modal = document.getElementById("labor-modal");
   if (modal) {
     modal.classList.remove("hidden");
-    document.getElementById("labor-date").value = new Date().toISOString().split('T')[0];
+    document.getElementById("labor-date").value = new Date()
+      .toISOString()
+      .split("T")[0];
     document.getElementById("labor-total").textContent = "฿0.00";
   }
 }
@@ -6147,7 +6887,7 @@ async function showBackfillPanel() {
         <h3 class="text-xl font-bold">📥 Backfill & Import</h3>
         <button onclick="this.closest('.fixed').remove()" class="btn ghost">✕</button>
       </div>
-      
+
       <!-- Tab Navigation -->
       <div class="flex border-b mb-4">
         <button
@@ -6165,7 +6905,7 @@ async function showBackfillPanel() {
           📝 Paste CSV Text
         </button>
       </div>
-      
+
       <div class="space-y-4">
         <!-- File Upload Tab -->
         <div id="backfill-tab-content-file">
@@ -6228,24 +6968,44 @@ async function showBackfillPanel() {
 
 function switchBackfillTab(tab) {
   // Hide all tab contents
-  document.getElementById('backfill-tab-content-file')?.classList.add('hidden');
-  document.getElementById('backfill-tab-content-text')?.classList.add('hidden');
-  
+  document.getElementById("backfill-tab-content-file")?.classList.add("hidden");
+  document.getElementById("backfill-tab-content-text")?.classList.add("hidden");
+
   // Remove active styling from all tabs
-  document.getElementById('backfill-tab-file')?.classList.remove('border-teal-500', 'text-teal-600', 'font-semibold');
-  document.getElementById('backfill-tab-file')?.classList.add('border-transparent', 'text-gray-600');
-  document.getElementById('backfill-tab-text')?.classList.remove('border-teal-500', 'text-teal-600', 'font-semibold');
-  document.getElementById('backfill-tab-text')?.classList.add('border-transparent', 'text-gray-600');
-  
+  document
+    .getElementById("backfill-tab-file")
+    ?.classList.remove("border-teal-500", "text-teal-600", "font-semibold");
+  document
+    .getElementById("backfill-tab-file")
+    ?.classList.add("border-transparent", "text-gray-600");
+  document
+    .getElementById("backfill-tab-text")
+    ?.classList.remove("border-teal-500", "text-teal-600", "font-semibold");
+  document
+    .getElementById("backfill-tab-text")
+    ?.classList.add("border-transparent", "text-gray-600");
+
   // Show selected tab content
-  if (tab === 'file') {
-    document.getElementById('backfill-tab-content-file')?.classList.remove('hidden');
-    document.getElementById('backfill-tab-file')?.classList.remove('border-transparent', 'text-gray-600');
-    document.getElementById('backfill-tab-file')?.classList.add('border-teal-500', 'text-teal-600', 'font-semibold');
-  } else if (tab === 'text') {
-    document.getElementById('backfill-tab-content-text')?.classList.remove('hidden');
-    document.getElementById('backfill-tab-text')?.classList.remove('border-transparent', 'text-gray-600');
-    document.getElementById('backfill-tab-text')?.classList.add('border-teal-500', 'text-teal-600', 'font-semibold');
+  if (tab === "file") {
+    document
+      .getElementById("backfill-tab-content-file")
+      ?.classList.remove("hidden");
+    document
+      .getElementById("backfill-tab-file")
+      ?.classList.remove("border-transparent", "text-gray-600");
+    document
+      .getElementById("backfill-tab-file")
+      ?.classList.add("border-teal-500", "text-teal-600", "font-semibold");
+  } else if (tab === "text") {
+    document
+      .getElementById("backfill-tab-content-text")
+      ?.classList.remove("hidden");
+    document
+      .getElementById("backfill-tab-text")
+      ?.classList.remove("border-transparent", "text-gray-600");
+    document
+      .getElementById("backfill-tab-text")
+      ?.classList.add("border-teal-500", "text-teal-600", "font-semibold");
   }
 }
 
@@ -6271,7 +7031,7 @@ async function handleCSVFileUpload(event) {
 async function importFromPastedData() {
   const textarea = document.getElementById("sheets-data");
   const data = textarea.value.trim();
-  
+
   if (!data) {
     alert("Please paste the CSV data first");
     return;
@@ -6288,7 +7048,9 @@ async function importFromPastedData() {
 async function importFromCSVText(csvText, outputDiv) {
   try {
     if (!window.backfillExpenses || !window.backfillExpenses.fromCSV) {
-      throw new Error("Backfill functions not loaded. Please refresh the page.");
+      throw new Error(
+        "Backfill functions not loaded. Please refresh the page.",
+      );
     }
 
     outputDiv.innerHTML = `<div class="text-blue-600">🔄 Parsing CSV and detecting columns...</div>`;
@@ -6297,17 +7059,22 @@ async function importFromCSVText(csvText, outputDiv) {
 
     // Display results in a nice format
     let html = `<div class="space-y-3">`;
-    
+
     // Column mapping info
     if (results.columnMapping) {
       html += `<div class="bg-blue-50 p-3 rounded">`;
       html += `<div class="font-semibold mb-2">📋 Detected Column Mapping:</div>`;
       html += `<div class="text-xs space-y-1">`;
-      if (results.columnMapping.date !== null) html += `<div>📅 Date: Column ${results.columnMapping.date + 1}</div>`;
-      if (results.columnMapping.description !== null) html += `<div>📝 Description: Column ${results.columnMapping.description + 1}</div>`;
-      if (results.columnMapping.itemName !== null) html += `<div>📦 Item Name: Column ${results.columnMapping.itemName + 1}</div>`;
-      if (results.columnMapping.amount !== null) html += `<div>💰 Amount: Column ${results.columnMapping.amount + 1}</div>`;
-      if (results.columnMapping.category !== null) html += `<div>🏷️ Category: Column ${results.columnMapping.category + 1}</div>`;
+      if (results.columnMapping.date !== null)
+        html += `<div>📅 Date: Column ${results.columnMapping.date + 1}</div>`;
+      if (results.columnMapping.description !== null)
+        html += `<div>📝 Description: Column ${results.columnMapping.description + 1}</div>`;
+      if (results.columnMapping.itemName !== null)
+        html += `<div>📦 Item Name: Column ${results.columnMapping.itemName + 1}</div>`;
+      if (results.columnMapping.amount !== null)
+        html += `<div>💰 Amount: Column ${results.columnMapping.amount + 1}</div>`;
+      if (results.columnMapping.category !== null)
+        html += `<div>🏷️ Category: Column ${results.columnMapping.category + 1}</div>`;
       html += `</div></div>`;
     }
 
@@ -6317,12 +7084,12 @@ async function importFromCSVText(csvText, outputDiv) {
     html += `<div class="text-2xl font-bold text-green-600">${results.imported}</div>`;
     html += `<div class="text-xs text-gray-600">✅ Imported</div>`;
     html += `</div>`;
-    
+
     html += `<div class="bg-yellow-50 p-3 rounded text-center">`;
     html += `<div class="text-2xl font-bold text-yellow-600">${results.skipped}</div>`;
     html += `<div class="text-xs text-gray-600">↩️ Skipped</div>`;
     html += `</div>`;
-    
+
     html += `<div class="bg-red-50 p-3 rounded text-center">`;
     html += `<div class="text-2xl font-bold text-red-600">${results.errors}</div>`;
     html += `<div class="text-xs text-gray-600">❌ Errors</div>`;
@@ -6339,14 +7106,15 @@ async function importFromCSVText(csvText, outputDiv) {
     outputDiv.innerHTML = html;
 
     // Show alert
-    alert(`Import complete!\n✅ Imported: ${results.imported}\n↩️ Skipped: ${results.skipped}\n❌ Errors: ${results.errors}${results.duplicates > 0 ? `\n🔄 Duplicates: ${results.duplicates}` : ''}`);
+    alert(
+      `Import complete!\n✅ Imported: ${results.imported}\n↩️ Skipped: ${results.skipped}\n❌ Errors: ${results.errors}${results.duplicates > 0 ? `\n🔄 Duplicates: ${results.duplicates}` : ""}`,
+    );
   } catch (error) {
     console.error("Import error:", error);
     outputDiv.innerHTML = `<div class="text-red-600">❌ Error: ${error.message}</div>`;
     alert("Error importing expenses: " + error.message);
   }
 }
-
 
 async function processOldMessages() {
   const resultsDiv = document.getElementById("backfill-results");
@@ -6355,9 +7123,12 @@ async function processOldMessages() {
   outputDiv.innerHTML = `<div class="text-blue-600">🔄 Processing old LINE messages...</div>`;
 
   try {
-    if (window.backfillExpenses && window.backfillExpenses.processOldLineMessages) {
+    if (
+      window.backfillExpenses &&
+      window.backfillExpenses.processOldLineMessages
+    ) {
       const results = await window.backfillExpenses.processOldLineMessages();
-      
+
       // Display results nicely
       let html = `<div class="space-y-3">`;
       html += `<div class="grid grid-cols-3 gap-3">`;
@@ -6365,31 +7136,35 @@ async function processOldMessages() {
       html += `<div class="text-2xl font-bold text-blue-600">${results.processed}</div>`;
       html += `<div class="text-xs text-gray-600">📱 Processed</div>`;
       html += `</div>`;
-      
+
       html += `<div class="bg-green-50 p-3 rounded text-center">`;
       html += `<div class="text-2xl font-bold text-green-600">${results.expensesFound}</div>`;
       html += `<div class="text-xs text-gray-600">💰 Expenses</div>`;
       html += `</div>`;
-      
+
       html += `<div class="bg-purple-50 p-3 rounded text-center">`;
       html += `<div class="text-2xl font-bold text-purple-600">${results.purchasesFound || 0}</div>`;
       html += `<div class="text-xs text-gray-600">📦 Purchases</div>`;
       html += `</div>`;
       html += `</div>`;
-      
+
       if (results.errors > 0) {
         html += `<div class="bg-red-50 p-3 rounded text-center">`;
         html += `<div class="text-lg font-bold text-red-600">${results.errors}</div>`;
         html += `<div class="text-xs text-gray-600">❌ Errors</div>`;
         html += `</div>`;
       }
-      
+
       html += `</div>`;
       outputDiv.innerHTML = html;
-      
-      alert(`Processing complete!\n✅ Processed: ${results.processed}\n💰 Expenses found: ${results.expensesFound}\n📦 Purchases found: ${results.purchasesFound || 0}\n❌ Errors: ${results.errors}`);
+
+      alert(
+        `Processing complete!\n✅ Processed: ${results.processed}\n💰 Expenses found: ${results.expensesFound}\n📦 Purchases found: ${results.purchasesFound || 0}\n❌ Errors: ${results.errors}`,
+      );
     } else {
-      throw new Error("Backfill functions not loaded. Please refresh the page.");
+      throw new Error(
+        "Backfill functions not loaded. Please refresh the page.",
+      );
     }
   } catch (error) {
     console.error("Processing error:", error);
@@ -6397,5 +7172,3 @@ async function processOldMessages() {
     alert("Error processing messages: " + error.message);
   }
 }
-
-
