@@ -1,12 +1,16 @@
 // Supabase Configuration for POS System
 // Project: https://rtfreafhlelpxqwohspq.supabase.co
 // Browser-compatible version (no ES6 modules)
+// Enhanced with comprehensive logging for debugging and optimization
 
 // Configuration
 const SUPABASE_CONFIG = {
   url: "https://rtfreafhlelpxqwohspq.supabase.co",
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZnJlYWZobGVscHhxd29oc3BxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NzYyNjAsImV4cCI6MjA3NzQ1MjI2MH0.WX_kwjFjv0e0RvpWwi6oSJOze49I_FbpPeWcdQZP79o",
 };
+
+// Get reference to global logger if available
+const dbLogger = typeof logger !== 'undefined' ? logger : console;
 
 // Initialize Supabase client - wait for createClient to be available
 let supabase;

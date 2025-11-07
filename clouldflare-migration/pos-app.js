@@ -15,136 +15,29 @@
 // AI Core System will be loaded dynamically when needed
 let WebAppHandler = null;
 
-// Enhanced Logging System
-const LogLevel = {
-  DEBUG: 0,
-  INFO: 1,
-  WARN: 2,
-  ERROR: 3,
-};
+// Use Global Enhanced Logging System from logger.js
+// The logger variable is globally available from logger.js
+// Provides comprehensive logging with performance tracking, categories, and debugging tools
 
-class Logger {
-  constructor() {
-    this.currentLevel = LogLevel.DEBUG;
-    this.logs = [];
-    this.maxLogs = 1000; // Keep last 1000 logs
-  }
-
-  log(level, category, message, data = null) {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      level: Object.keys(LogLevel)[level],
-      category,
-      message,
-      data: data ? JSON.stringify(data, null, 2) : null,
-    };
-
-    this.logs.push(logEntry);
-    if (this.logs.length > this.maxLogs) {
-      this.logs.shift();
-    }
-
-    const formattedMessage = `[${timestamp}] [${logEntry.level}] [${category}] ${message}`;
-
-    switch (level) {
-      case LogLevel.DEBUG:
-        console.debug(formattedMessage, data || "");
-        break;
-      case LogLevel.INFO:
-        console.info(formattedMessage, data || "");
-        break;
-      case LogLevel.WARN:
-        console.warn(formattedMessage, data || "");
-        break;
-      case LogLevel.ERROR:
-        console.error(formattedMessage, data || "");
-        break;
-    }
-
-    // Store logs in localStorage for debugging
-    try {
-      localStorage.setItem("pos_logs", JSON.stringify(this.logs.slice(-100)));
-    } catch (e) {
-      console.warn("Failed to save logs to localStorage:", e);
-    }
-  }
-
-  debug(category, message, data) {
-    this.log(LogLevel.DEBUG, category, message, data);
-  }
-  info(category, message, data) {
-    this.log(LogLevel.INFO, category, message, data);
-  }
-  warn(category, message, data) {
-    this.log(LogLevel.WARN, category, message, data);
-  }
-  error(category, message, data) {
-    this.log(LogLevel.ERROR, category, message, data);
-  }
-
-  // Specialized logging methods
-  auth(message, data) {
-    this.info("AUTH", message, data);
-  }
-  db(message, data) {
-    this.info("DB", message, data);
-  }
-  ui(message, data) {
-    this.debug("UI", message, data);
-  }
-  performance(message, data) {
-    this.info("PERF", message, data);
-  }
-  error(category, message, error) {
-    this.log(LogLevel.ERROR, category, message, {
-      error: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-  }
-
-  getLogs(category = null, level = null) {
-    let filtered = this.logs;
-    if (category) {
-      filtered = filtered.filter((log) => log.category === category);
-    }
-    if (level !== null) {
-      filtered = filtered.filter((log) => LogLevel[log.level] === level);
-    }
-    return filtered;
-  }
-
-  exportLogs() {
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      logs: this.logs,
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `pos-logs-${new Date().toISOString().split("T")[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+// Add compatibility methods for existing code
+if (typeof logger !== 'undefined') {
+  // Specialized logging shortcuts for this app
+  logger.auth = (message, data) => logger.info(LogCategory.AUTH, message, data);
+  logger.db = (message, data) => logger.info(LogCategory.DATABASE, message, data);
+  logger.ui = (message, data) => logger.debug(LogCategory.UI, message, data);
+  logger.performance = (message, data) => logger.info(LogCategory.PERFORMANCE, message, data);
+  
+  logger.info(LogCategory.GENERAL, '🚀 POS Application Logger initialized');
+} else {
+  console.error('Logger not found! Make sure logger.js is loaded before pos-app.js');
 }
 
-const logger = new Logger();
-
-// Performance monitoring
+// Performance monitoring using enhanced logger
 const perf = {
   start: (operation) => {
-    const start = performance.now();
+    logger.startTimer(operation);
     return () => {
-      const duration = performance.now() - start;
-      logger.performance(operation, { duration: `${duration.toFixed(2)}ms` });
-      return duration;
+      return logger.endTimer(operation);
     };
   },
 };

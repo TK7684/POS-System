@@ -2,26 +2,48 @@
  * Unified AI Assistant Handler
  * Complete database access with no restrictions
  * Supports natural language to database operations
+ * Enhanced with comprehensive logging for debugging and optimization
  */
 
 import { DatabaseManager } from '../database/database-manager.js';
 import { AIProvider } from '../ai-providers/ai-provider.js';
 
+// Simple logging utility for server-side
+const log = {
+  info: (category, message, data) => console.log(`[INFO] [${category}] ${message}`, data || ''),
+  error: (category, message, error) => console.error(`[ERROR] [${category}] ${message}`, error || ''),
+  debug: (category, message, data) => console.log(`[DEBUG] [${category}] ${message}`, data || ''),
+  warn: (category, message, data) => console.warn(`[WARN] [${category}] ${message}`, data || '')
+};
+
 export class AIAssistant {
   constructor(config) {
+    log.info('AI', 'Initializing AI Assistant', { provider: config.aiProvider.type });
     this.db = new DatabaseManager(config.supabaseUrl, config.supabaseKey);
     this.aiProvider = new AIProvider(config.aiProvider.type, config.aiProvider.config);
     this.context = {};
     this.initialized = false;
+    this.requestCount = 0;
   }
 
   async initialize() {
+    const startTime = Date.now();
     try {
+      log.info('AI', '→ Initializing AI provider...');
       await this.aiProvider.initialize();
+      
+      log.info('AI', '→ Loading database schema...');
       this.context.databaseSchema = await this._getDatabaseSchema();
+      
+      log.info('AI', '→ Loading recent data snapshot...');
       this.context.recentData = await this._getRecentDataSnapshot();
+      
       this.initialized = true;
+      const duration = Date.now() - startTime;
+      log.info('AI', `✓ AI Assistant initialized successfully in ${duration}ms`);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      log.error('AI', `✗ AI Assistant initialization failed after ${duration}ms`, error);
       throw new Error(`AI Assistant initialization failed: ${error.message}`);
     }
   }
@@ -30,7 +52,17 @@ export class AIAssistant {
    * Main processing endpoint - handles any request
    */
   async processRequest(userInput, context = {}) {
+    this.requestCount++;
+    const requestId = `REQ_${this.requestCount}_${Date.now()}`;
+    const startTime = Date.now();
+    
+    log.info('AI', `→ Processing request ${requestId}`, { 
+      userInput: userInput.substring(0, 100) + (userInput.length > 100 ? '...' : ''),
+      contextKeys: Object.keys(context)
+    });
+
     if (!this.initialized) {
+      log.warn('AI', 'AI Assistant not initialized, initializing now...');
       await this.initialize();
     }
 
@@ -38,18 +70,40 @@ export class AIAssistant {
       ...this.context,
       ...context,
       userInput,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      requestId
     };
 
     try {
       // Analyze intent
+      log.debug('AI', `→ Analyzing intent for ${requestId}...`);
+      const intentStartTime = Date.now();
       const intent = await this._analyzeIntent(userInput);
+      const intentDuration = Date.now() - intentStartTime;
+      log.info('AI', `✓ Intent analyzed in ${intentDuration}ms`, { intent: intent.type });
 
       // Execute the appropriate operation
+      log.debug('AI', `→ Executing operation for ${requestId}...`, { operation: intent.type });
+      const opStartTime = Date.now();
       const result = await this._executeOperation(intent, requestContext);
+      const opDuration = Date.now() - opStartTime;
+      log.info('AI', `✓ Operation completed in ${opDuration}ms`);
 
       // Generate natural language response
+      log.debug('AI', `→ Generating response for ${requestId}...`);
+      const responseStartTime = Date.now();
       const response = await this._generateResponse(result, intent, requestContext);
+      const responseDuration = Date.now() - responseStartTime;
+      log.info('AI', `✓ Response generated in ${responseDuration}ms`);
+
+      const totalDuration = Date.now() - startTime;
+      log.info('AI', `✓ Request ${requestId} completed successfully in ${totalDuration}ms`, {
+        intentDuration,
+        opDuration,
+        responseDuration,
+        totalDuration,
+        operationType: intent.type
+      });
 
       return {
         success: true,
@@ -59,10 +113,19 @@ export class AIAssistant {
         metadata: {
           timestamp: new Date().toISOString(),
           operationType: intent.type,
-          affectedRecords: result?.affectedRecords || 0
+          affectedRecords: result?.affectedRecords || 0,
+          performanceMs: {
+            intent: intentDuration,
+            operation: opDuration,
+            response: responseDuration,
+            total: totalDuration
+          }
         }
       };
     } catch (error) {
+      const totalDuration = Date.now() - startTime;
+      log.error('AI', `✗ Request ${requestId} failed after ${totalDuration}ms`, error);
+      
       return {
         success: false,
         error: error.message,
