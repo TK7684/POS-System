@@ -137,7 +137,24 @@ export class AIAssistant {
   // ==================== Intent Analysis ====================
 
   async _analyzeIntent(userInput) {
+    // Handle conversational messages (greetings, help, etc.)
+    const conversationalPatterns = /^(hi|hello|hey|สวัสดี|what can you do|help|คุณทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง)/i;
+    if (conversationalPatterns.test(userInput.trim())) {
+      return {
+        type: 'conversation',
+        entity: null,
+        parameters: {},
+        confidence: 1.0,
+        explanation: 'User wants to chat or learn about capabilities'
+      };
+    }
+
     const intentPrompt = `Analyze the user's request and determine their intent. You have FULL DATABASE ACCESS - no restrictions.
+
+IMPORTANT: 
+- Use ONLY table names from the schema below
+- If the user is greeting or asking about capabilities, return type "conversation"
+- The "entity" MUST be one of these exact table names: ${Object.keys(this.context.databaseSchema.tables).join(', ')}
 
 Database Schema:
 ${JSON.stringify(this.context.databaseSchema, null, 2)}
@@ -146,8 +163,8 @@ User Request: "${userInput}"
 
 Respond with JSON in this format:
 {
-  "type": "read|create|update|delete|analyze|export|import|custom",
-  "entity": "table_name_or_entity",
+  "type": "read|create|update|delete|analyze|export|import|custom|conversation",
+  "entity": "exact_table_name_from_schema_or_null",
   "parameters": {
     "filters": {},
     "data": {},
@@ -158,7 +175,7 @@ Respond with JSON in this format:
 }
 
 Common operations include:
-- Reading data from any table
+- Reading data from tables (use exact table names: menus, ingredients, sales, purchases, etc.)
 - Creating new records (sales, purchases, expenses, menu items, etc.)
 - Updating existing records
 - Deleting records
@@ -166,7 +183,8 @@ Common operations include:
 - Calculating costs and profits
 - Managing inventory
 - Importing/exporting data
-- Custom queries and calculations`;
+- Custom queries and calculations
+- Conversation (greetings, help requests)`;
 
     const response = await this.aiProvider.generateCompletion(intentPrompt, {
       temperature: 0.1,
@@ -191,6 +209,9 @@ Common operations include:
 
   async _executeOperation(intent, context) {
     switch (intent.type) {
+      case 'conversation':
+        return await this._executeConversationOperation(intent, context);
+
       case 'read':
         return await this._executeReadOperation(intent);
 
@@ -218,6 +239,48 @@ Common operations include:
       default:
         throw new Error(`Unsupported operation type: ${intent.type}`);
     }
+  }
+
+  async _executeConversationOperation(intent, context) {
+    // Handle greetings, help requests, and general conversation
+    const capabilities = `สวัสดีครับ! ผม เป็น POS AI Assistant ที่พร้อมช่วยคุณจัดการร้านอาหาร
+
+🎯 ความสามารถของผม:
+
+📊 **การวิเคราะห์และรายงาน**
+- ดูยอดขาย, กำไร, รายได้ประจำวัน/เดือน
+- วิเคราะห์เมนูขายดี
+- ติดตามต้นทุนและกำไรขั้นต้น
+
+📦 **การจัดการสต็อก**
+- เช็คสต็อกวัตถุดิบ
+- แจ้งเตือนสต็อกต่ำ
+- บันทึกการสั่งซื้อ
+
+🍜 **การจัดการเมนู**
+- เพิ่ม/แก้ไข/ลบเมนู
+- คำนวณต้นทุนเมนู
+- จัดการสูตรอาหาร
+
+💰 **การจัดการการเงิน**
+- บันทึกรายได้/รายจ่าย
+- ติดตามค่าใช้จ่าย
+- คำนวณกำไร-ขาดทุน
+
+💬 **ตัวอย่างคำสั่ง:**
+- "แสดงเมนูทั้งหมด"
+- "เช็คสต็อกวัตถุดิบ"
+- "ยอดขายวันนี้เท่าไหร่"
+- "เมนูไหนขายดีที่สุด"
+- "วัตถุดิบอะไรต้องสั่งเพิ่ม"
+
+ลองถามผมได้เลยครับ! 😊`;
+
+    return {
+      message: capabilities,
+      type: 'conversation',
+      affectedRecords: 0
+    };
   }
 
   async _executeReadOperation(intent) {
@@ -564,6 +627,11 @@ Common operations include:
   // ==================== Response Generation ====================
 
   async _generateResponse(result, intent, context) {
+    // For conversation type, return the message directly
+    if (intent.type === 'conversation') {
+      return result.message || result;
+    }
+
     const responsePrompt = `Generate a natural language response for the user based on this operation result.
 
 User Request: "${context.userInput}"
