@@ -33,14 +33,49 @@ export class AIProvider {
     try {
       switch (this.providerType) {
         case 'gemini':
-          return await this._generateGeminiCompletion(prompt, {
-            maxTokens,
-            temperature,
-            topP,
-            topK,
-            systemPrompt,
-            context
-          });
+          try {
+            return await this._generateGeminiCompletion(prompt, {
+              maxTokens,
+              temperature,
+              topP,
+              topK,
+              systemPrompt,
+              context
+            });
+          } catch (geminiError) {
+            console.warn('[AI] Gemini failed, falling back to HuggingFace:', geminiError.message);
+            // Try HuggingFace as fallback if we have the API key
+            if (this.config.huggingfaceApiKey || window.API_KEYS?.huggingface) {
+              try {
+                // Temporarily save original config
+                const originalConfig = { ...this.config };
+                // Use HuggingFace config for fallback
+                this.config = {
+                  apiKey: this.config.huggingfaceApiKey || window.API_KEYS?.huggingface,
+                  model: 'mistralai/Mistral-7B-Instruct-v0.2'
+                };
+                
+                const result = await this._generateHuggingFaceCompletion(prompt, {
+                  maxTokens,
+                  temperature,
+                  topP,
+                  systemPrompt,
+                  context
+                });
+                
+                // Restore original config
+                this.config = originalConfig;
+                console.log('[AI] ✓ Successfully used HuggingFace fallback');
+                return result;
+              } catch (hfError) {
+                console.error('[AI] HuggingFace fallback also failed:', hfError);
+                throw geminiError; // Throw original Gemini error
+              }
+            } else {
+              console.warn('[AI] No HuggingFace API key available for fallback');
+              throw geminiError; // No fallback available, throw original error
+            }
+          }
 
         case 'openai':
           return await this._generateOpenAICompletion(prompt, {
@@ -171,7 +206,7 @@ Respond with only the category name.`;
       ]
     };
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${this.config.apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${this.config.apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
