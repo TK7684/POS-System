@@ -43,13 +43,13 @@ export class AIProvider {
               context
             });
           } catch (geminiError) {
-            console.warn('[AI] Gemini failed, falling back to HuggingFace:', geminiError.message);
-            // Try HuggingFace as fallback if we have the API key
+            console.warn('[AI] Gemini failed, trying fallback options:', geminiError.message);
+            
+            // Fallback 1: Try HuggingFace
             if (this.config.huggingfaceApiKey || window.API_KEYS?.huggingface) {
               try {
-                // Temporarily save original config
+                console.log('[AI] → Trying HuggingFace fallback...');
                 const originalConfig = { ...this.config };
-                // Use HuggingFace config for fallback
                 this.config = {
                   apiKey: this.config.huggingfaceApiKey || window.API_KEYS?.huggingface,
                   model: 'mistralai/Mistral-7B-Instruct-v0.2'
@@ -63,17 +63,43 @@ export class AIProvider {
                   context
                 });
                 
-                // Restore original config
                 this.config = originalConfig;
                 console.log('[AI] ✓ Successfully used HuggingFace fallback');
                 return result;
               } catch (hfError) {
-                console.error('[AI] HuggingFace fallback also failed:', hfError);
-                throw geminiError; // Throw original Gemini error
+                console.warn('[AI] HuggingFace fallback failed:', hfError.message);
+                
+                // Fallback 2: Try AssemblyAI
+                if (this.config.assemblyaiApiKey || window.ASSEMBLYAI_API_KEY) {
+                  try {
+                    console.log('[AI] → Trying AssemblyAI fallback...');
+                    const originalConfig = { ...this.config };
+                    this.config = {
+                      apiKey: this.config.assemblyaiApiKey || window.ASSEMBLYAI_API_KEY || '4d33cfaaa6904787a5a47a6f9e2780a6'
+                    };
+                    
+                    const result = await this._generateAssemblyAICompletion(prompt, {
+                      maxTokens,
+                      temperature,
+                      systemPrompt,
+                      context
+                    });
+                    
+                    this.config = originalConfig;
+                    console.log('[AI] ✓ Successfully used AssemblyAI fallback');
+                    return result;
+                  } catch (assemblyError) {
+                    console.error('[AI] All fallbacks failed. Gemini:', geminiError.message, 'HF:', hfError.message, 'Assembly:', assemblyError.message);
+                    throw new Error(`All AI providers failed. Gemini: ${geminiError.message}`);
+                  }
+                } else {
+                  console.error('[AI] No AssemblyAI key available. Both Gemini and HuggingFace failed.');
+                  throw geminiError;
+                }
               }
             } else {
               console.warn('[AI] No HuggingFace API key available for fallback');
-              throw geminiError; // No fallback available, throw original error
+              throw geminiError;
             }
           }
 
@@ -308,6 +334,40 @@ Respond with only the category name.`;
     }
 
     throw new Error('No response from HuggingFace API');
+  }
+
+  /**
+   * AssemblyAI LeMUR (LLM) for backup/fallback
+   */
+  async _generateAssemblyAICompletion(prompt, options) {
+    const { maxTokens, temperature, systemPrompt } = options;
+
+    let fullPrompt = prompt;
+    if (systemPrompt) {
+      fullPrompt = `${systemPrompt}\n\n${prompt}`;
+    }
+
+    // Using AssemblyAI's LeMUR (their LLM API)
+    const response = await fetch('https://api.assemblyai.com/lemur/v3/generate/task', {
+      method: 'POST',
+      headers: {
+        'Authorization': this.config.apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: fullPrompt,
+        max_output_size: maxTokens,
+        temperature: temperature
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`AssemblyAI API error: ${error}`);
+    }
+
+    const data = await response.json();
+    return data.response || '';
   }
 
   // ==================== Advanced Capabilities ====================
