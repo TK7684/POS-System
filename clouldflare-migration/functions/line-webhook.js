@@ -94,10 +94,12 @@ class SupabaseQuery {
     this.url = url;
     this.key = key;
     this.table = table;
+    this.client = new SupabaseClient(url, key);
+    this.filters = {};
   }
 
   async select(columns = '*') {
-    return await this.client.query('GET', this.table, { select: columns });
+    return await this.client.query('GET', this.table, { select: columns, filters: this.filters });
   }
 
   async insert(data) {
@@ -105,21 +107,16 @@ class SupabaseQuery {
   }
 
   async update(data) {
-    return await this.client.query('PATCH', this.table, { data });
+    return await this.client.query('PATCH', this.table, { data, filters: this.filters });
   }
 
   async delete() {
-    return await this.client.query('DELETE', this.table);
+    return await this.client.query('DELETE', this.table, { filters: this.filters });
   }
 
   eq(column, value) {
-    this.filters = this.filters || {};
     this.filters[column] = value;
     return this;
-  }
-
-  get client() {
-    return new SupabaseClient(this.url, this.key);
   }
 }
 
