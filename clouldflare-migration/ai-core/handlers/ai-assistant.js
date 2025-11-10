@@ -1012,7 +1012,11 @@ Respond with JSON ONLY in this format:
       return this._formatReadResponse(result, intent, context);
     }
 
-    const responsePrompt = `Generate a natural language response for the user based on this operation result.
+    const responsePrompt = `${SYSTEM_PROMPT_TH}
+
+---
+
+## Current Operation Result
 
 User Request: "${context.userInput}"
 Operation: ${intent.type} on ${intent.entity}
@@ -1020,14 +1024,21 @@ Operation: ${intent.type} on ${intent.entity}
 Result Data:
 ${JSON.stringify(result, null, 2)}
 
-Generate a helpful, conversational response that:
-1. Clearly states what was done
-2. Shows key results in an easy-to-understand format
-3. Provides insights or recommendations if relevant
-4. Uses Thai when appropriate for business terms
-5. Is concise but comprehensive
+---
 
-Respond in a natural, helpful tone.`;
+## Task: Generate Response
+
+สร้างคำตอบที่เป็นธรรมชาติและเป็นประโยชน์สำหรับผู้ใช้:
+
+1. ระบุชัดเจนว่าทำอะไรไปแล้ว
+2. แสดงผลลัพธ์สำคัญในรูปแบบที่เข้าใจง่าย
+3. ให้ข้อมูลเชิงลึกหรือคำแนะนำถ้ามีความเกี่ยวข้อง
+4. ใช้ภาษาไทย 100% สำหรับข้อความธุรกิจ
+5. กระชับแต่ครอบคลุม
+
+ตอบกลับด้วยโทนที่เป็นมิตรและเป็นประโยชน์
+
+⚠️ สำคัญ: ต้องตอบเป็นภาษาไทยเสมอ และตอบเฉพาะเมื่อการบันทึกข้อมูลสำเร็จแล้วเท่านั้น`;
 
     return await this.aiProvider.generateCompletion(responsePrompt, {
       temperature: 0.3,
