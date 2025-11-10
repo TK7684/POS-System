@@ -6781,22 +6781,48 @@ async function openMenuEditModal(menuId) {
 // Load menu recipes
 async function loadMenuRecipes(menuId) {
   try {
-    const { data: recipes, error } = await window.supabase
+    logger.info("DB", "Loading menu recipes", { menuId });
+    
+    // Load recipes without join first
+    const { data: recipes, error: recipesError } = await window.supabase
       .from("menu_recipes")
-      .select(`
-        *,
-        ingredients:ingredient_id (
-          id,
-          name,
-          unit,
-          cost_per_unit
-        )
-      `)
+      .select("*")
       .eq("menu_id", menuId);
     
-    if (error) throw error;
+    if (recipesError) {
+      logger.error("DB", "Error loading menu_recipes", recipesError);
+      throw recipesError;
+    }
     
-    currentMenuRecipes = recipes || [];
+    logger.debug("DB", "Menu recipes loaded", { count: recipes?.length || 0 });
+    
+    // Get unique ingredient IDs
+    const ingredientIds = [...new Set((recipes || []).map(r => r.ingredient_id).filter(Boolean))];
+    
+    // Load ingredients separately
+    let ingredientMap = {};
+    if (ingredientIds.length > 0) {
+      logger.debug("DB", "Loading ingredients for recipes", { count: ingredientIds.length });
+      const { data: ingredients, error: ingredientsError } = await window.supabase
+        .from("ingredients")
+        .select("id, name, unit, cost_per_unit")
+        .in("id", ingredientIds);
+      
+      if (ingredientsError) {
+        logger.error("DB", "Error loading ingredients", ingredientsError);
+      } else {
+        ingredientMap = Object.fromEntries((ingredients || []).map(i => [i.id, i]));
+        logger.debug("DB", "Ingredients loaded", { count: ingredients?.length || 0 });
+      }
+    }
+    
+    // Combine data
+    currentMenuRecipes = (recipes || []).map(recipe => ({
+      ...recipe,
+      ingredients: recipe.ingredient_id ? ingredientMap[recipe.ingredient_id] : null
+    }));
+    
+    logger.info("DB", "Menu recipes processed", { count: currentMenuRecipes.length });
     renderMenuRecipes();
     
   } catch (error) {
@@ -7565,19 +7591,66 @@ async function loadCOGSDashboard() {
     
     logger.info("DB", "Loading COGS data", { startDate, endDate });
     
-    // Load sales in date range
-    const { data: sales, error: salesError } = await window.supabase
+    // Load sales in date range (query without joins first)
+    logger.info("DB", "Loading stock_transactions for COGS", { startDate, endDate });
+    const { data: transactions, error: transError } = await window.supabase
       .from("stock_transactions")
-      .select(`
-        *,
-        menus:menu_id (id, name, price, cost_price),
-        ingredients:ingredient_id (id, name, cost_per_unit)
-      `)
+      .select("*")
       .eq("transaction_type", "sale")
       .gte("created_at", `${startDate}T00:00:00.000Z`)
       .lte("created_at", `${endDate}T23:59:59.999Z`);
     
-    if (salesError) throw salesError;
+    if (transError) {
+      logger.error("DB", "Error loading transactions", transError);
+      throw transError;
+    }
+    
+    logger.debug("DB", "Transactions loaded", { count: transactions?.length || 0 });
+    
+    // Get unique menu IDs and ingredient IDs
+    const menuIds = [...new Set((transactions || []).map(t => t.menu_id).filter(Boolean))];
+    const ingredientIds = [...new Set((transactions || []).map(t => t.ingredient_id).filter(Boolean))];
+    
+    // Load menus separately
+    let menuMap = {};
+    if (menuIds.length > 0) {
+      logger.debug("DB", "Loading menus", { count: menuIds.length });
+      const { data: menus, error: menusError } = await window.supabase
+        .from("menus")
+        .select("id, name, price, cost_price")
+        .in("id", menuIds);
+      
+      if (menusError) {
+        logger.error("DB", "Error loading menus", menusError);
+      } else {
+        menuMap = Object.fromEntries((menus || []).map(m => [m.id, m]));
+        logger.debug("DB", "Menus loaded", { count: menus?.length || 0 });
+      }
+    }
+    
+    // Load ingredients separately
+    let ingredientMap = {};
+    if (ingredientIds.length > 0) {
+      logger.debug("DB", "Loading ingredients", { count: ingredientIds.length });
+      const { data: ingredients, error: ingredientsError } = await window.supabase
+        .from("ingredients")
+        .select("id, name, cost_per_unit")
+        .in("id", ingredientIds);
+      
+      if (ingredientsError) {
+        logger.error("DB", "Error loading ingredients", ingredientsError);
+      } else {
+        ingredientMap = Object.fromEntries((ingredients || []).map(i => [i.id, i]));
+        logger.debug("DB", "Ingredients loaded", { count: ingredients?.length || 0 });
+      }
+    }
+    
+    // Combine data
+    const sales = (transactions || []).map(t => ({
+      ...t,
+      menus: t.menu_id ? menuMap[t.menu_id] : null,
+      ingredients: t.ingredient_id ? ingredientMap[t.ingredient_id] : null
+    }));
     
     // Calculate COGS
     const menuSales = {};
