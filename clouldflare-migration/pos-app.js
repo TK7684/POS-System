@@ -4575,10 +4575,15 @@ function displaySummaryCards(cards) {
 
 // Display quick actions
 function displayQuickActions(actions) {
-  let actionsHTML = '<div class="ai-quick-actions">';
+  if (!actions || actions.length === 0) return;
+  
+  let actionsHTML = '<div class="ai-quick-actions" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">';
 
   actions.forEach((action) => {
-    actionsHTML += `<button class="ai-quick-action" onclick="handleQuickAction('${action.action}')">${action.label}</button>`;
+    // Escape quotes in action and label
+    const safeAction = (action.action || '').replace(/'/g, "&#39;");
+    const safeLabel = (action.label || '').replace(/'/g, "&#39;");
+    actionsHTML += `<button class="ai-quick-action" onclick="handleQuickAction('${safeAction}')" style="padding: 8px 16px; background: #0891b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#0e7490'" onmouseout="this.style.background='#0891b2'">${safeLabel}</button>`;
   });
 
   actionsHTML += "</div>";
@@ -4588,6 +4593,8 @@ function displayQuickActions(actions) {
 
 // Handle quick action clicks
 window.handleQuickAction = async function (action) {
+  logger.info("UI", "Quick action clicked", { action });
+  
   const actionMessages = {
     summary_today: "สรุปยอดวันนี้",
     check_inventory: "ตรวจสอบสต็อกวัตถุดิบ",
@@ -4605,7 +4612,19 @@ window.handleQuickAction = async function (action) {
     // Auto-submit the action
     const chatForm = document.getElementById("chat-form");
     if (chatForm) {
-      chatForm.dispatchEvent(new Event("submit"));
+      // Trigger submit event
+      const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+      chatForm.dispatchEvent(submitEvent);
+    } else {
+      // Fallback: manually call processMessageWithNewAI
+      if (typeof processMessageWithNewAI === 'function') {
+        await processMessageWithNewAI(message);
+      }
+    }
+  } else {
+    // If no input field, directly process the message
+    if (typeof processMessageWithNewAI === 'function') {
+      await processMessageWithNewAI(message);
     }
   }
 };
@@ -7119,11 +7138,22 @@ async function loadDashboardStats() {
     
     // Load today's sales
     const today = new Date().toISOString().split('T')[0];
-    const { data: todaySales } = await window.supabase
+    const { data: todaySales, error: salesError } = await window.supabase
       .from('stock_transactions')
       .select('total_amount')
       .eq('transaction_type', 'sale')
       .gte('transaction_date', today);
+    
+    if (salesError) {
+      logger.warn("UI", "Failed to load today's sales", { error: salesError.message });
+      // Fallback: try without date filter
+      const { data: allSales } = await window.supabase
+        .from('stock_transactions')
+        .select('total_amount')
+        .eq('transaction_type', 'sale')
+        .limit(100);
+      todaySales = allSales || [];
+    }
     
     const todayTotal = todaySales?.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
     document.getElementById('dashboard-today-sales').textContent = `฿${todayTotal.toLocaleString()}`;

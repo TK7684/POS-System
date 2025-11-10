@@ -690,7 +690,10 @@ Respond in a natural, helpful tone.`;
 
   _formatReadResponse(result, intent, context) {
     const { data, count } = result;
-    const entity = intent.entity;
+    let entity = intent.entity;
+
+    // Resolve entity name (might be an alias)
+    entity = this._resolveTableName(entity);
 
     // Don't show more than 10 items by default
     const displayLimit = 10;
@@ -704,15 +707,37 @@ Respond in a natural, helpful tone.`;
       return `❌ ไม่พบข้อมูลที่ค้นหา\n\n💡 ลองค้นหาด้วยคำอื่น หรือตรวจสอบว่ามีข้อมูลในระบบหรือไม่`;
     }
 
+    // Detect entity type from data structure if entity name is unclear
+    if (!entity || entity === 'data') {
+      // Try to detect from first item
+      if (displayData.length > 0) {
+        const firstItem = displayData[0];
+        if (firstItem.name && (firstItem.price !== undefined || firstItem.cost_per_unit !== undefined)) {
+          entity = 'menus';
+        } else if (firstItem.name && (firstItem.current_stock !== undefined || firstItem.unit)) {
+          entity = 'ingredients';
+        } else if (firstItem.transaction_type || firstItem.total_amount) {
+          entity = 'stock_transactions';
+        }
+      }
+    }
+
     // Format based on entity type
     switch (entity) {
       case 'ingredients':
+      case 'inventory':
+      case 'stock':
         response += this._formatIngredients(displayData);
         break;
       case 'menus':
+      case 'products':
+      case 'dishes':
         response += this._formatMenus(displayData);
         break;
       case 'stock_transactions':
+      case 'transactions':
+      case 'sales':
+      case 'purchases':
         response += this._formatTransactions(displayData);
         break;
       case 'platforms':
@@ -796,18 +821,53 @@ Respond in a natural, helpful tone.`;
   }
 
   _formatGeneric(items) {
-    // For unknown entities, show first few fields
+    // For unknown entities, show first few fields in a clean format
     let output = '';
     items.forEach((item, i) => {
-      const keys = Object.keys(item).filter(k => !k.includes('id') && !k.includes('created'));
+      // Filter out technical/internal fields
+      const keys = Object.keys(item).filter(k => 
+        !k.includes('id') && 
+        !k.includes('created') && 
+        !k.includes('updated') &&
+        !k.includes('_at') &&
+        item[k] !== null &&
+        item[k] !== undefined &&
+        item[k] !== ''
+      );
+      
+      if (keys.length === 0) return; // Skip empty items
+      
       const mainField = keys[0];
       const value = item[mainField];
       
-      output += `${i + 1}. ${mainField}: **${value}**\n`;
+      // Format main field
+      output += `${i + 1}. **${value}**\n`;
       
-      // Show up to 3 more fields
-      keys.slice(1, 4).forEach(key => {
-        output += `   └ ${key}: ${item[key]}\n`;
+      // Show up to 3 more important fields (skip null/empty)
+      const importantFields = keys.slice(1, 4).filter(key => {
+        const val = item[key];
+        return val !== null && val !== undefined && val !== '';
+      });
+      
+      importantFields.forEach(key => {
+        let displayValue = item[key];
+        // Format numbers
+        if (typeof displayValue === 'number') {
+          if (key.includes('price') || key.includes('cost') || key.includes('amount')) {
+            displayValue = `฿${displayValue.toFixed(2)}`;
+          } else {
+            displayValue = displayValue.toLocaleString();
+          }
+        }
+        // Format dates
+        if (key.includes('date') && typeof displayValue === 'string') {
+          try {
+            displayValue = new Date(displayValue).toLocaleDateString('th-TH');
+          } catch (e) {
+            // Keep original if parsing fails
+          }
+        }
+        output += `   └ ${key}: ${displayValue}\n`;
       });
       output += '\n';
     });
