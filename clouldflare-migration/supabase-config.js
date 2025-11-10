@@ -630,16 +630,24 @@ const POS_FUNCTIONS = {
     }
   },
 
-  // Upsert ingredient (create or update basic fields)
-  upsertIngredient: async ({ id, name, unit, min_stock, current_stock, cost_per_unit }) => {
+  // Upsert ingredient (create or update all fields)
+  upsertIngredient: async ({ 
+    id, name, unit, min_stock, current_stock, cost_per_unit,
+    supplier, storage_location, reorder_point, max_stock, description
+  }) => {
     try {
       const row = {
         id: id || undefined,
         name: name?.trim(),
-        unit: unit?.trim() || null,  // Ensure unit is saved even if empty string
+        unit: unit?.trim() || null,
         min_stock: min_stock != null ? Number(min_stock) : undefined,
         current_stock: current_stock != null ? Number(current_stock) : undefined,
         cost_per_unit: cost_per_unit != null ? Number(cost_per_unit) : undefined,
+        supplier: supplier?.trim() || null,
+        storage_location: storage_location?.trim() || null,
+        reorder_point: reorder_point != null ? Number(reorder_point) : undefined,
+        max_stock: max_stock != null ? Number(max_stock) : undefined,
+        description: description?.trim() || null,
         updated_at: new Date().toISOString(),
       };
       

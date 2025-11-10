@@ -6187,7 +6187,7 @@ function closeWasteModal() {
   document.getElementById("waste-modal").classList.add("hidden");
 }
 
-function openIngredientModal(
+async function openIngredientModal(
   id = "",
   name = "",
   unit = "",
@@ -6202,8 +6202,42 @@ function openIngredientModal(
   document.getElementById("ingredient-stock").value = stock || "";
   document.getElementById("ingredient-cost").value = cost || "";
   document.getElementById("ingredient-modal-title").textContent = id
-    ? "แก้วัตถุดิบ"
-    : "เพิ่มวัตถุดิบ";
+    ? "✏️ แก้ไขวัตถุดิบ"
+    : "➕ เพิ่มวัตถุดิบ";
+  
+  // Load full ingredient data if editing
+  if (id) {
+    try {
+      const { data: ingredient, error } = await window.supabase
+        .from("ingredients")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (!error && ingredient) {
+        document.getElementById("ingredient-name").value = ingredient.name || "";
+        document.getElementById("ingredient-unit").value = ingredient.unit || "";
+        document.getElementById("ingredient-min").value = ingredient.min_stock || "";
+        document.getElementById("ingredient-stock").value = ingredient.current_stock || "";
+        document.getElementById("ingredient-cost").value = ingredient.cost_per_unit || "";
+        document.getElementById("ingredient-supplier").value = ingredient.supplier || "";
+        document.getElementById("ingredient-location").value = ingredient.storage_location || "";
+        document.getElementById("ingredient-reorder").value = ingredient.reorder_point || "";
+        document.getElementById("ingredient-max").value = ingredient.max_stock || "";
+        document.getElementById("ingredient-description").value = ingredient.description || "";
+      }
+    } catch (error) {
+      logger.error("DB", "Error loading ingredient", error);
+    }
+  } else {
+    // Reset all fields for new ingredient
+    document.getElementById("ingredient-supplier").value = "";
+    document.getElementById("ingredient-location").value = "";
+    document.getElementById("ingredient-reorder").value = "";
+    document.getElementById("ingredient-max").value = "";
+    document.getElementById("ingredient-description").value = "";
+  }
+  
   document.getElementById("ingredient-modal").classList.remove("hidden");
 }
 function closeIngredientModal() {
@@ -6276,8 +6310,8 @@ document.addEventListener("DOMContentLoaded", function () {
       e.preventDefault();
       const payload = {
         id: document.getElementById("ingredient-id").value || undefined,
-        name: document.getElementById("ingredient-name").value,
-        unit: document.getElementById("ingredient-unit").value,
+        name: document.getElementById("ingredient-name").value.trim(),
+        unit: document.getElementById("ingredient-unit").value.trim() || null,
         min_stock: parseFloat(
           document.getElementById("ingredient-min").value || "0",
         ),
@@ -6289,6 +6323,13 @@ document.addEventListener("DOMContentLoaded", function () {
           document.getElementById("ingredient-cost").value === ""
             ? undefined
             : parseFloat(document.getElementById("ingredient-cost").value),
+        supplier: document.getElementById("ingredient-supplier").value.trim() || null,
+        storage_location: document.getElementById("ingredient-location").value.trim() || null,
+        reorder_point: document.getElementById("ingredient-reorder").value ? 
+          parseFloat(document.getElementById("ingredient-reorder").value) : null,
+        max_stock: document.getElementById("ingredient-max").value ? 
+          parseFloat(document.getElementById("ingredient-max").value) : null,
+        description: document.getElementById("ingredient-description").value.trim() || null,
       };
       const res = await window.POS.functions.upsertIngredient(payload);
       if (res.success && res.data) {
