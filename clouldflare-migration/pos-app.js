@@ -6337,16 +6337,19 @@ function closeMenusPage() {
 }
 
 function openStockPage() {
+  logger.info("UI", "Opening stock page");
+  
   const posApp = document.getElementById("pos-app");
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
   const costStockPage = document.getElementById("cost-stock-page");
+  const homepageDashboard = document.getElementById("homepage-dashboard");
 
-  // Hide all other pages
-  if (posApp) {
-    posApp.classList.add("hidden");
-    posApp.style.display = "none";
+  // Hide homepage content but keep pos-app visible (pages are inside it)
+  if (homepageDashboard) {
+    homepageDashboard.style.display = "none";
   }
+  // Hide other pages
   if (menusPage) {
     menusPage.classList.add("hidden");
     menusPage.style.display = "none";
@@ -6360,12 +6363,19 @@ function openStockPage() {
   if (stockPage) {
     stockPage.classList.remove("hidden");
     stockPage.style.display = "block";
+    // Ensure pos-app is visible
+    if (posApp) {
+      posApp.style.display = "block";
+      posApp.classList.remove("hidden");
+    }
     // Load stock data if not already loaded
     if (stockState.items.length === 0) {
       loadStockPage(1);
     }
+    logger.info("UI", "Stock page opened successfully");
   } else {
     logger.error("UI", "Stock page element not found");
+    console.error("Stock page element not found!");
   }
 }
 
@@ -7229,16 +7239,19 @@ async function loadDashboardStats() {
 // ==================== Cost & Stock Page ====================
 
 function openCostStockPage() {
+  logger.info("UI", "Opening cost & stock page");
+  
   const posApp = document.getElementById("pos-app");
   const costStockPage = document.getElementById("cost-stock-page");
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
+  const homepageDashboard = document.getElementById("homepage-dashboard");
 
-  // Hide all other pages
-  if (posApp) {
-    posApp.classList.add("hidden");
-    posApp.style.display = "none";
+  // Hide homepage content but keep pos-app visible (pages are inside it)
+  if (homepageDashboard) {
+    homepageDashboard.style.display = "none";
   }
+  // Hide other pages
   if (stockPage) {
     stockPage.classList.add("hidden");
     stockPage.style.display = "none";
@@ -7252,9 +7265,16 @@ function openCostStockPage() {
   if (costStockPage) {
     costStockPage.classList.remove("hidden");
     costStockPage.style.display = "block";
+    // Ensure pos-app is visible
+    if (posApp) {
+      posApp.style.display = "block";
+      posApp.classList.remove("hidden");
+    }
     loadCostStockData();
+    logger.info("UI", "Cost & stock page opened successfully");
   } else {
     logger.error("UI", "Cost stock page element not found");
+    console.error("Cost stock page element not found!");
   }
 }
 
@@ -7264,10 +7284,13 @@ function closeCostStockPage() {
 
 // Go to homepage - hide all pages and show main app
 function goToHomepage() {
+  logger.info("UI", "Going to homepage");
+  
   const posApp = document.getElementById("pos-app");
   const costStockPage = document.getElementById("cost-stock-page");
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
+  const homepageDashboard = document.getElementById("homepage-dashboard");
 
   // Hide all pages
   if (costStockPage) {
@@ -7287,10 +7310,16 @@ function goToHomepage() {
   if (posApp) {
     posApp.classList.remove("hidden");
     posApp.style.display = "block";
+    // Show homepage dashboard
+    if (homepageDashboard) {
+      homepageDashboard.style.display = "grid";
+    }
     // Reload dashboard stats
     loadDashboardStats();
+    logger.info("UI", "Homepage displayed successfully");
   } else {
     logger.error("UI", "Main app element not found");
+    console.error("Main app element not found!");
   }
 }
 
