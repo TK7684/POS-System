@@ -7136,26 +7136,51 @@ async function loadDashboardStats() {
   try {
     logger.info("UI", "Loading dashboard stats...");
     
-    // Load today's sales
+    // Load today's sales - use created_at instead of transaction_date
     const today = new Date().toISOString().split('T')[0];
-    const { data: todaySales, error: salesError } = await window.supabase
+    const todayStart = `${today}T00:00:00.000Z`;
+    const todayEnd = `${today}T23:59:59.999Z`;
+    
+    // Try to get sales from stock_transactions (if it has the fields) or from a sales view
+    let todaySales = [];
+    let todayTotal = 0;
+    
+    // First, try to get from stock_transactions with created_at
+    const { data: transactions, error: transError } = await window.supabase
       .from('stock_transactions')
-      .select('total_amount')
+      .select('*')
       .eq('transaction_type', 'sale')
-      .gte('transaction_date', today);
+      .gte('created_at', todayStart)
+      .lte('created_at', todayEnd)
+      .limit(100);
     
-    if (salesError) {
-      logger.warn("UI", "Failed to load today's sales", { error: salesError.message });
-      // Fallback: try without date filter
-      const { data: allSales } = await window.supabase
-        .from('stock_transactions')
+    if (!transError && transactions && transactions.length > 0) {
+      // If transactions have total_amount, use it
+      if (transactions[0].total_amount !== undefined) {
+        todaySales = transactions;
+        todayTotal = transactions.reduce((sum, s) => sum + (s.total_amount || 0), 0);
+      } else {
+        // Otherwise, count transactions
+        todaySales = transactions;
+        todayTotal = transactions.length;
+      }
+    } else {
+      // Fallback: try to get from a sales table if it exists
+      const { data: sales, error: salesError } = await window.supabase
+        .from('sales')
         .select('total_amount')
-        .eq('transaction_type', 'sale')
+        .gte('order_date', today)
         .limit(100);
-      todaySales = allSales || [];
+      
+      if (!salesError && sales) {
+        todaySales = sales;
+        todayTotal = sales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
+      } else {
+        // Last fallback: just show count
+        todaySales = transactions || [];
+        todayTotal = 0;
+      }
     }
-    
-    const todayTotal = todaySales?.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
     document.getElementById('dashboard-today-sales').textContent = `฿${todayTotal.toLocaleString()}`;
     document.getElementById('dashboard-today-count').textContent = `${todaySales?.length || 0} รายการ`;
 
