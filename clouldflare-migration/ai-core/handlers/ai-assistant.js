@@ -149,51 +149,99 @@ export class AIAssistant {
       };
     }
 
-    const intentPrompt = `Analyze the user's request and determine their intent. You have FULL DATABASE ACCESS - no restrictions.
+    // Special handling for recipe/ingredient addition commands
+    const recipePatterns = [
+      /เพิ่มวัตถุดิบ(?:ลงใน|ให้|ใน)?\s*(?:เมนู\s*)?([^\s]+)/i,
+      /(?:เพิ่ม|ใส่|บันทึก)\s*(?:วัตถุดิบ|ส่วนผสม|สูตร)\s*(?:ลงใน|ให้|ใน)?\s*(?:เมนู\s*)?([^\s]+)/i,
+      /(?:เมนู\s*)?([^\s]+)\s+(?:ใช้|มี|ใส่)\s*(?:วัตถุดิบ|ส่วนผสม)/i
+    ];
 
-IMPORTANT: 
-- Use ONLY table names from the schema below
-- If the user is greeting or asking about capabilities, return type "conversation"
-- The "entity" MUST be one of these exact table names: ${Object.keys(this.context.databaseSchema.tables).join(', ')}
+    for (const pattern of recipePatterns) {
+      const match = userInput.match(pattern);
+      if (match) {
+        const menuName = match[1];
+        // Check if the input contains ingredient list with quantities
+        const hasIngredientList = /(\d+)\s*(?:กรัม|กก|มล|ช้อน|หัว|ต้น|กำ|ขวด|ชิ้น|ซอง|ถ้วย)/i.test(userInput);
+        
+        if (hasIngredientList) {
+          log.info('AI', `Detected recipe addition command for menu: ${menuName}`);
+          return {
+            type: 'custom',
+            entity: 'menu_recipes',
+            parameters: {
+              operation: 'add_recipe_ingredients',
+              menuName: menuName,
+              rawInput: userInput,
+              filters: {},
+              data: {},
+              operations: []
+            },
+            confidence: 0.95,
+            explanation: `User wants to add ingredients to menu ${menuName}`
+          };
+        }
+      }
+    }
+
+    const intentPrompt = `คุณคือ AI Assistant สำหรับระบบฐานข้อมูลร้านอาหารที่เก็บบน Supabase
+
+🎯 วัตถุประสงค์:
+- อ่าน/ค้นหา/สรุปข้อมูล
+- เขียน/เพิ่ม/แก้ไข/อัปเดต/ลบข้อมูล (CRUD) อย่างปลอดภัย
+- วิเคราะห์ตัวเลขธุรกิจ (COGS, กำไรขั้นต้น, สต็อกคงเหลือ)
+- จัดการสูตรอาหารและเมนู
+
+📋 กติกาการตอบ:
+- ตอบเป็นภาษาไทยเสมอ 100%
+- ให้ผลลัพธ์พร้อมทำจริง: ระบุตาราง, ฟิลด์, ตัวอย่างข้อมูล
+- ถ้างาน "ทำลายข้อมูล" ให้เสนอ Preview ก่อน
+- ถ้าข้อมูลไม่พอ ให้ถามเฉพาะสิ่งจำเป็น สั้น ชัดเจน
+
+🔍 คำสั่งที่ต้องเข้าใจทันที:
+- "เพิ่มวัตถุดิบลงในเมนู X [รายการวัตถุดิบพร้อมปริมาณ]" → type: "custom", operation: "add_recipe_ingredients"
+- "อัปเดตสูตรเมนู Y" → type: "update", entity: "menu_recipes"
+- "ค้นยอดขายเมนู X" → type: "read", entity: "sales"
+- "คำนวณ COGS เมนู Y" → type: "analyze", entity: "menu_cost"
 
 Database Schema:
 ${JSON.stringify(this.context.databaseSchema, null, 2)}
 
 User Request: "${userInput}"
 
-Respond with JSON in this format:
+⚠️ สำคัญมาก:
+1. ถ้าผู้ใช้ต้องการ "เพิ่มวัตถุดิบลงในเมนู" พร้อมรายการวัตถุดิบและปริมาณ → ใช้ type: "custom", operation: "add_recipe_ingredients"
+2. ถ้าผู้ใช้ต้องการ "อ่าน/ดู/แสดง" → ใช้ type: "read"
+3. ถ้าผู้ใช้ต้องการ "แก้ไข/อัปเดต" → ใช้ type: "update"
+4. ถ้าผู้ใช้ต้องการ "สร้าง/เพิ่ม" → ใช้ type: "create"
+5. entity ต้องเป็นชื่อตารางที่ถูกต้องจาก schema
+
+Respond with JSON ONLY in this format:
 {
   "type": "read|create|update|delete|analyze|export|import|custom|conversation",
   "entity": "exact_table_name_from_schema_or_null",
   "parameters": {
     "filters": {},
     "data": {},
-    "operations": []
+    "operations": [],
+    "operation": "add_recipe_ingredients|bulk_price_update|stock_reconciliation|etc",
+    "menuName": "menu_name_if_applicable",
+    "rawInput": "original_user_input_if_needed"
   },
   "confidence": 0.9,
-  "explanation": "Brief explanation of what the user wants"
-}
-
-Common operations include:
-- Reading data from tables (use exact table names: menus, ingredients, sales, purchases, etc.)
-- Creating new records (sales, purchases, expenses, menu items, etc.)
-- Updating existing records
-- Deleting records
-- Running analytics and reports
-- Calculating costs and profits
-- Managing inventory
-- Importing/exporting data
-- Custom queries and calculations
-- Conversation (greetings, help requests)`;
+  "explanation": "Brief explanation in Thai"
+}`;
 
     const response = await this.aiProvider.generateCompletion(intentPrompt, {
       temperature: 0.1,
-      maxTokens: 512
+      maxTokens: 1024
     });
 
     try {
-      return JSON.parse(response);
+      const parsed = JSON.parse(response);
+      log.info('AI', `Intent analyzed: ${parsed.type} for ${parsed.entity}`, { confidence: parsed.confidence });
+      return parsed;
     } catch (error) {
+      log.warn('AI', 'Failed to parse AI intent response, using fallback', error);
       // Fallback intent analysis
       return {
         type: this._detectIntentType(userInput),
@@ -441,6 +489,9 @@ Common operations include:
     const { parameters } = intent;
 
     switch (parameters.operation) {
+      case 'add_recipe_ingredients':
+        return await this._addRecipeIngredients(parameters, context);
+
       case 'bulk_price_update':
         return await this._bulkPriceUpdate(parameters);
 
@@ -457,6 +508,225 @@ Common operations include:
         // Use AI to generate custom SQL or operation sequence
         return await this._executeAIGeneratedOperation(intent, context);
     }
+  }
+
+  /**
+   * Add ingredients to a menu recipe
+   * Handles commands like "เพิ่มวัตถุดิบลงในเมนู O พริกสวน 100 กรัม..."
+   */
+  async _addRecipeIngredients(parameters, context) {
+    const { menuName, rawInput } = parameters;
+    
+    log.info('AI', `Adding recipe ingredients to menu: ${menuName}`, { rawInput });
+
+    // Step 1: Find the menu by name
+    const menus = await this.db.read('menus', {
+      filters: {
+        name: { ilike: `%${menuName}%` }
+      }
+    });
+
+    if (!menus || menus.length === 0) {
+      throw new Error(`ไม่พบเมนู "${menuName}" ในระบบ กรุณาตรวจสอบชื่อเมนู`);
+    }
+
+    if (menus.length > 1) {
+      log.warn('AI', `Multiple menus found for "${menuName}"`, menus.map(m => m.name));
+    }
+
+    const menu = menus[0];
+    log.info('AI', `Found menu: ${menu.name} (ID: ${menu.id})`);
+
+    // Step 2: Parse ingredient list from raw input
+    const ingredients = this._parseIngredientList(rawInput);
+    log.info('AI', `Parsed ${ingredients.length} ingredients from input`);
+
+    if (ingredients.length === 0) {
+      throw new Error('ไม่พบรายการวัตถุดิบในคำสั่ง กรุณาระบุวัตถุดิบพร้อมปริมาณ เช่น "พริกสวน 100 กรัม"');
+    }
+
+    // Step 3: Match ingredients to database
+    const allIngredients = await this.db.read('ingredients', {
+      filters: { is_active: true }
+    });
+
+    const recipeItems = [];
+    const notFound = [];
+
+    for (const ing of ingredients) {
+      // Try to find ingredient by name (fuzzy match)
+      const matched = this._findIngredientByName(ing.name, allIngredients);
+      
+      if (!matched) {
+        notFound.push(ing.name);
+        continue;
+      }
+
+      recipeItems.push({
+        menu_id: menu.id,
+        ingredient_id: matched.id,
+        quantity_per_serve: ing.quantity,
+        unit: ing.unit || matched.unit,
+        cost_per_unit: matched.cost_per_unit || 0
+      });
+    }
+
+    if (notFound.length > 0) {
+      log.warn('AI', `Some ingredients not found: ${notFound.join(', ')}`);
+    }
+
+    if (recipeItems.length === 0) {
+      throw new Error(`ไม่พบวัตถุดิบที่ตรงกับรายการที่ระบุ กรุณาตรวจสอบชื่อวัตถุดิบ`);
+    }
+
+    // Step 4: Delete existing recipes for this menu (optional - could also merge)
+    log.info('AI', `Deleting existing recipes for menu ${menu.id}`);
+    await this.db.delete('menu_recipes', {
+      menu_id: menu.id
+    });
+
+    // Step 5: Insert new recipe items
+    log.info('AI', `Inserting ${recipeItems.length} recipe items`);
+    const created = await this.db.create('menu_recipes', recipeItems);
+
+    // Step 6: Calculate new menu cost
+    const menuCost = await this._calculateMenuCost(menu.id);
+
+    return {
+      menu: {
+        id: menu.id,
+        name: menu.name
+      },
+      ingredientsAdded: recipeItems.length,
+      ingredientsNotFound: notFound,
+      recipeItems: created,
+      newCost: menuCost,
+      message: `เพิ่มวัตถุดิบ ${recipeItems.length} รายการให้เมนู "${menu.name}" เรียบร้อย\nต้นทุนต่อเสิร์ฟ: ฿${menuCost.toFixed(2)}`
+    };
+  }
+
+  /**
+   * Parse ingredient list from natural language input
+   * Example: "พริกสวน 100 กรัม ผักชี ราก+ต้น 75 กรัม กระเทียมไทย 50 กรัม"
+   */
+  _parseIngredientList(input) {
+    const ingredients = [];
+    
+    // Pattern to match: ingredient_name quantity unit
+    // Handles Thai units: กรัม, กก, มล, ช้อน, หัว, ต้น, กำ, ขวด, ชิ้น, ซอง, ถ้วย
+    const pattern = /([^\d]+?)\s+(\d+(?:\.\d+)?)\s*(กรัม|กก|ก\.ก\.|มล|มล\.|ช้อน|หัว|ต้น|กำ|ขวด|ชิ้น|ซอง|ถ้วย|kilo|gram|ml|piece|unit)/gi;
+    
+    let match;
+    while ((match = pattern.exec(input)) !== null) {
+      const name = match[1].trim();
+      const quantity = parseFloat(match[2]);
+      const unit = match[3].toLowerCase();
+      
+      // Normalize units
+      const normalizedUnit = this._normalizeUnit(unit);
+      
+      ingredients.push({
+        name: name.trim(),
+        quantity: quantity,
+        unit: normalizedUnit
+      });
+    }
+
+    return ingredients;
+  }
+
+  /**
+   * Normalize unit names to standard format
+   */
+  _normalizeUnit(unit) {
+    const unitMap = {
+      'กก': 'kg',
+      'ก.ก.': 'kg',
+      'kilo': 'kg',
+      'กรัม': 'g',
+      'gram': 'g',
+      'มล': 'ml',
+      'มล.': 'ml',
+      'ml': 'ml',
+      'ช้อน': 'spoon',
+      'หัว': 'head',
+      'ต้น': 'stalk',
+      'กำ': 'bunch',
+      'ขวด': 'bottle',
+      'ชิ้น': 'piece',
+      'ซอง': 'pack',
+      'ถ้วย': 'cup'
+    };
+
+    return unitMap[unit.toLowerCase()] || unit.toLowerCase();
+  }
+
+  /**
+   * Find ingredient by name using fuzzy matching
+   */
+  _findIngredientByName(searchName, ingredients) {
+    const normalizedSearch = searchName.toLowerCase().trim();
+    
+    // Exact match first
+    let match = ingredients.find(ing => 
+      ing.name.toLowerCase() === normalizedSearch
+    );
+    
+    if (match) return match;
+
+    // Partial match
+    match = ingredients.find(ing => 
+      ing.name.toLowerCase().includes(normalizedSearch) ||
+      normalizedSearch.includes(ing.name.toLowerCase())
+    );
+    
+    if (match) return match;
+
+    // Handle variations (e.g., "ผักชี ราก+ต้น" vs "ผักชี")
+    const baseName = normalizedSearch.split(/\s+/)[0];
+    match = ingredients.find(ing => 
+      ing.name.toLowerCase().startsWith(baseName) ||
+      baseName.startsWith(ing.name.toLowerCase().split(/\s+/)[0])
+    );
+    
+    return match;
+  }
+
+  /**
+   * Calculate menu cost from recipes
+   */
+  async _calculateMenuCost(menuId) {
+    const recipes = await this.db.read('menu_recipes', {
+      filters: { menu_id: menuId }
+    });
+
+    if (!recipes || recipes.length === 0) {
+      return 0;
+    }
+
+    // Get ingredient costs
+    const ingredientIds = recipes.map(r => r.ingredient_id).filter(Boolean);
+    const ingredients = await this.db.read('ingredients', {
+      filters: { id: { in: ingredientIds } }
+    });
+
+    const ingredientMap = Object.fromEntries(
+      ingredients.map(ing => [ing.id, ing])
+    );
+
+    let totalCost = 0;
+    for (const recipe of recipes) {
+      const ingredient = ingredientMap[recipe.ingredient_id];
+      if (!ingredient) continue;
+
+      const quantity = parseFloat(recipe.quantity_per_serve) || 0;
+      const costPerUnit = parseFloat(ingredient.cost_per_unit) || 0;
+      
+      // Convert units if needed (simplified - assumes same unit for now)
+      totalCost += quantity * costPerUnit;
+    }
+
+    return totalCost;
   }
 
   // ==================== Specialized Operations ====================
@@ -658,6 +928,43 @@ Common operations include:
     // For conversation type, return the message directly
     if (intent.type === 'conversation') {
       return result.message || result;
+    }
+
+    // For custom operations with recipe addition
+    if (intent.type === 'custom' && intent.parameters?.operation === 'add_recipe_ingredients') {
+      if (result.message) {
+        return result.message;
+      }
+      
+      let response = `✅ **เพิ่มวัตถุดิบให้เมนู "${result.menu.name}" เรียบร้อย**\n\n`;
+      response += `📋 **เพิ่ม ${result.ingredientsAdded} รายการ:**\n`;
+      
+      if (result.recipeItems && result.recipeItems.length > 0) {
+        // Get ingredient names for display
+        const ingredientIds = result.recipeItems.map(r => r.ingredient_id).filter(Boolean);
+        const ingredients = await this.db.read('ingredients', {
+          filters: { id: { in: ingredientIds } }
+        });
+        const ingredientMap = Object.fromEntries(ingredients.map(ing => [ing.id, ing]));
+        
+        result.recipeItems.forEach((item, i) => {
+          const ing = ingredientMap[item.ingredient_id];
+          if (ing) {
+            response += `${i + 1}. ${ing.name}: ${item.quantity_per_serve} ${item.unit}\n`;
+          }
+        });
+      }
+      
+      if (result.newCost !== undefined) {
+        response += `\n💰 **ต้นทุนต่อเสิร์ฟ: ฿${result.newCost.toFixed(2)}**\n`;
+      }
+      
+      if (result.ingredientsNotFound && result.ingredientsNotFound.length > 0) {
+        response += `\n⚠️ **ไม่พบวัตถุดิบ:** ${result.ingredientsNotFound.join(', ')}\n`;
+        response += `กรุณาตรวจสอบชื่อวัตถุดิบและเพิ่มในระบบก่อน`;
+      }
+      
+      return response;
     }
 
     // For read operations with data, format nicely first
