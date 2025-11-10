@@ -7922,19 +7922,63 @@ async function loadReports() {
 
 async function loadSalesReport(startDate, endDate) {
   try {
-    // Load sales data
-    const { data: sales, error } = await window.supabase
+    logger.info("DB", "Loading sales report", { startDate, endDate });
+    
+    // Load sales data without joins
+    const { data: transactions, error: transError } = await window.supabase
       .from("stock_transactions")
-      .select(`
-        *,
-        menus:menu_id (id, name, price),
-        platforms:platform_id (id, name)
-      `)
+      .select("*")
       .eq("transaction_type", "sale")
       .gte("created_at", `${startDate}T00:00:00.000Z`)
       .lte("created_at", `${endDate}T23:59:59.999Z`);
     
-    if (error) throw error;
+    if (transError) {
+      logger.error("DB", "Error loading transactions", transError);
+      throw transError;
+    }
+    
+    logger.debug("DB", "Transactions loaded", { count: transactions?.length || 0 });
+    
+    // Get unique menu IDs and platform IDs
+    const menuIds = [...new Set((transactions || []).map(t => t.menu_id).filter(Boolean))];
+    const platformIds = [...new Set((transactions || []).map(t => t.platform_id).filter(Boolean))];
+    
+    // Load menus separately
+    let menuMap = {};
+    if (menuIds.length > 0) {
+      logger.debug("DB", "Loading menus", { count: menuIds.length });
+      const { data: menus, error: menusError } = await window.supabase
+        .from("menus")
+        .select("id, name, price")
+        .in("id", menuIds);
+      
+      if (!menusError && menus) {
+        menuMap = Object.fromEntries(menus.map(m => [m.id, m]));
+        logger.debug("DB", "Menus loaded", { count: menus.length });
+      }
+    }
+    
+    // Load platforms separately
+    let platformMap = {};
+    if (platformIds.length > 0) {
+      logger.debug("DB", "Loading platforms", { count: platformIds.length });
+      const { data: platforms, error: platformsError } = await window.supabase
+        .from("platforms")
+        .select("id, name")
+        .in("id", platformIds);
+      
+      if (!platformsError && platforms) {
+        platformMap = Object.fromEntries(platforms.map(p => [p.id, p]));
+        logger.debug("DB", "Platforms loaded", { count: platforms.length });
+      }
+    }
+    
+    // Combine data
+    const sales = (transactions || []).map(t => ({
+      ...t,
+      menus: t.menu_id ? menuMap[t.menu_id] : null,
+      platforms: t.platform_id ? platformMap[t.platform_id] : null
+    }));
     
     // Calculate totals
     const totalSales = (sales || []).reduce((sum, s) => sum + (s.total_amount || 0), 0);
@@ -8101,19 +8145,27 @@ async function loadCostsReport(startDate, endDate) {
 
 async function loadInventoryReport(startDate, endDate) {
   try {
+    logger.info("DB", "Loading inventory report", { startDate, endDate });
+    
     // Load ingredients
+    logger.debug("DB", "Loading ingredients");
     const { data: ingredients, error } = await window.supabase
       .from("ingredients")
       .select("*")
       .eq("is_active", true);
     
-    if (error) throw error;
+    if (error) {
+      logger.error("DB", "Error loading ingredients", error);
+      throw error;
+    }
     
+    logger.debug("DB", "Ingredients loaded", { count: ingredients?.length || 0 });
     const inventoryValue = (ingredients || []).reduce((sum, ing) => {
       return sum + ((parseFloat(ing.current_stock) || 0) * (parseFloat(ing.cost_per_unit) || 0));
     }, 0);
     
     // Calculate turnover (simplified: sales / avg inventory)
+    logger.debug("DB", "Loading sales for turnover calculation");
     const { data: sales, error: salesError } = await window.supabase
       .from("stock_transactions")
       .select("total_amount")
@@ -8121,7 +8173,12 @@ async function loadInventoryReport(startDate, endDate) {
       .gte("created_at", `${startDate}T00:00:00.000Z`)
       .lte("created_at", `${endDate}T23:59:59.999Z`);
     
-    if (salesError) throw salesError;
+    if (salesError) {
+      logger.error("DB", "Error loading sales", salesError);
+      throw salesError;
+    }
+    
+    logger.debug("DB", "Sales loaded", { count: sales?.length || 0 });
     
     const totalSales = (sales || []).reduce((sum, s) => sum + (s.total_amount || 0), 0);
     const turnover = inventoryValue > 0 ? (totalSales / inventoryValue) : 0;
@@ -8158,7 +8215,10 @@ async function loadInventoryReport(startDate, endDate) {
 
 async function loadKPIReport(startDate, endDate) {
   try {
+    logger.info("DB", "Loading KPI report", { startDate, endDate });
+    
     // Load sales
+    logger.debug("DB", "Loading sales for KPI");
     const { data: sales, error: salesError } = await window.supabase
       .from("stock_transactions")
       .select("*")
@@ -8166,31 +8226,46 @@ async function loadKPIReport(startDate, endDate) {
       .gte("created_at", `${startDate}T00:00:00.000Z`)
       .lte("created_at", `${endDate}T23:59:59.999Z`);
     
-    if (salesError) throw salesError;
+    if (salesError) {
+      logger.error("DB", "Error loading sales", salesError);
+      throw salesError;
+    }
     
+    logger.debug("DB", "Sales loaded", { count: sales?.length || 0 });
     const totalSales = (sales || []).reduce((sum, s) => sum + (s.total_amount || 0), 0);
     const orderCount = new Set(sales?.map(s => s.reference_id).filter(Boolean)).size;
     const avgOrderValue = orderCount > 0 ? totalSales / orderCount : 0;
     
     // Load costs
+    logger.debug("DB", "Loading expenses for KPI");
     const { data: expenses, error: expError } = await window.supabase
       .from("expenses")
       .select("amount")
       .gte("expense_date", startDate)
       .lte("expense_date", endDate);
     
-    if (expError) throw expError;
+    if (expError) {
+      logger.error("DB", "Error loading expenses", expError);
+      throw expError;
+    }
     
+    logger.debug("DB", "Expenses loaded", { count: expenses?.length || 0 });
     const totalExpenses = (expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
     
     // Calculate COGS (simplified)
+    logger.debug("DB", "Loading purchases for COGS");
     const { data: purchases, error: purError } = await window.supabase
       .from("purchases")
       .select("total_amount")
       .gte("purchase_date", startDate)
       .lte("purchase_date", endDate);
     
-    if (purError) throw purError;
+    if (purError) {
+      logger.error("DB", "Error loading purchases", purError);
+      // Don't throw, just log and continue
+    } else {
+      logger.debug("DB", "Purchases loaded", { count: purchases?.length || 0 });
+    }
     
     const totalCOGS = (purchases || []).reduce((sum, p) => sum + (p.total_amount || 0), 0);
     
@@ -8200,16 +8275,27 @@ async function loadKPIReport(startDate, endDate) {
     const expenseRatio = totalSales > 0 ? (totalExpenses / totalSales * 100) : 0;
     
     // Inventory turnover (simplified)
+    logger.debug("DB", "Loading ingredients for inventory turnover");
     const { data: ingredients } = await window.supabase
       .from("ingredients")
       .select("current_stock, cost_per_unit")
       .eq("is_active", true);
     
+    logger.debug("DB", "Ingredients loaded", { count: ingredients?.length || 0 });
     const inventoryValue = (ingredients || []).reduce((sum, ing) => {
       return sum + ((parseFloat(ing.current_stock) || 0) * (parseFloat(ing.cost_per_unit) || 0));
     }, 0);
     
     const inventoryTurnover = inventoryValue > 0 ? (totalSales / inventoryValue) : 0;
+    
+    logger.info("DB", "KPI calculations completed", {
+      totalSales,
+      totalCOGS,
+      profit,
+      profitMargin,
+      expenseRatio,
+      inventoryTurnover
+    });
     
     document.getElementById("kpi-profit-margin").textContent = `${profitMargin.toFixed(1)}%`;
     document.getElementById("kpi-inventory-turnover").textContent = `${inventoryTurnover.toFixed(2)}x`;
