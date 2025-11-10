@@ -367,47 +367,61 @@
                 </p>
             </header>
 
-            <!-- Quick Actions (Desktop only - hidden on mobile since bottom nav exists) -->
-            <!-- These are duplicates of bottom nav, so we hide them completely to avoid confusion -->
-            <div class="hidden md:grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
-                <div class="card">
-                    <h3 class="font-semibold mb-3">🛒 ขายสินค้า</h3>
-                    <button onclick="openSaleModal()" class="btn brand w-full">
-                        บันทึกการขาย
-                    </button>
+            <!-- Dashboard Stats -->
+            <div id="homepage-dashboard" class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
+                <div class="card bg-gradient-to-br from-blue-50 to-blue-100">
+                    <div class="text-sm text-gray-600 mb-1">💰 ยอดขายวันนี้</div>
+                    <div class="text-2xl font-bold text-blue-600" id="dashboard-today-sales">฿0</div>
+                    <div class="text-xs text-gray-500 mt-1" id="dashboard-today-count">0 รายการ</div>
                 </div>
-                <div class="card">
-                    <h3 class="font-semibold mb-3">📦 ซื้อวัตถุดิบ</h3>
-                    <button
-                        onclick="openPurchaseModal()"
-                        class="btn brand w-full"
-                    >
-                        บันทึกการซื้อ
-                    </button>
+                <div class="card bg-gradient-to-br from-green-50 to-green-100">
+                    <div class="text-sm text-gray-600 mb-1">📦 วัตถุดิบทั้งหมด</div>
+                    <div class="text-2xl font-bold text-green-600" id="dashboard-total-ingredients">0</div>
+                    <div class="text-xs text-gray-500 mt-1" id="dashboard-low-stock">0 ใกล้หมด</div>
                 </div>
-                <div class="card">
-                    <h3 class="font-semibold mb-3">💰 ค่าใช้จ่าย</h3>
-                    <button onclick="openExpensesHistory()" class="btn brand w-full">
-                        ดูประวัติค่าใช้จ่าย
-                    </button>
+                <div class="card bg-gradient-to-br from-purple-50 to-purple-100">
+                    <div class="text-sm text-gray-600 mb-1">🍽️ เมนูทั้งหมด</div>
+                    <div class="text-2xl font-bold text-purple-600" id="dashboard-total-menus">0</div>
+                    <div class="text-xs text-gray-500 mt-1" id="dashboard-available-menus">0 พร้อมขาย</div>
                 </div>
-                <div class="card">
-                    <h3 class="font-semibold mb-3">🍽️ เมนู</h3>
-                    <button onclick="openMenusPage()" class="btn brand w-full">
-                        ดูรายการเมนู
-                    </button>
+                <div class="card bg-gradient-to-br from-orange-50 to-orange-100">
+                    <div class="text-sm text-gray-600 mb-1">💸 ค่าใช้จ่ายเดือนนี้</div>
+                    <div class="text-2xl font-bold text-orange-600" id="dashboard-month-expenses">฿0</div>
+                    <div class="text-xs text-gray-500 mt-1" id="dashboard-expense-count">0 รายการ</div>
                 </div>
-                <div class="card">
-                    <h3 class="font-semibold mb-3">📦 สต๊อก</h3>
-                    <button onclick="openStockPage()" class="btn brand w-full">
-                        จัดการสต๊อก
-                    </button>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-6">
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openSaleModal()">
+                    <div class="text-3xl mb-2">🛒</div>
+                    <h3 class="font-semibold mb-2">ขายสินค้า</h3>
+                    <p class="text-xs text-gray-600">บันทึกการขาย</p>
                 </div>
-                <div class="card">
-                    <h3 class="font-semibold mb-3">📊 รายงาน</h3>
-                    <button onclick="showReports()" class="btn ghost w-full">
-                        ดูรายงาน
-                    </button>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openPurchaseModal()">
+                    <div class="text-3xl mb-2">📦</div>
+                    <h3 class="font-semibold mb-2">ซื้อวัตถุดิบ</h3>
+                    <p class="text-xs text-gray-600">บันทึกการซื้อ</p>
+                </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openExpensesHistory()">
+                    <div class="text-3xl mb-2">💰</div>
+                    <h3 class="font-semibold mb-2">ค่าใช้จ่าย</h3>
+                    <p class="text-xs text-gray-600">ดูประวัติค่าใช้จ่าย</p>
+                </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openMenusPage()">
+                    <div class="text-3xl mb-2">🍽️</div>
+                    <h3 class="font-semibold mb-2">เมนู</h3>
+                    <p class="text-xs text-gray-600">ดูรายการเมนู</p>
+                </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openStockPage()">
+                    <div class="text-3xl mb-2">📦</div>
+                    <h3 class="font-semibold mb-2">สต๊อก</h3>
+                    <p class="text-xs text-gray-600">จัดการสต๊อก</p>
+                </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openCostStockPage()">
+                    <div class="text-3xl mb-2">📊</div>
+                    <h3 class="font-semibold mb-2">ต้นทุน & สต๊อก</h3>
+                    <p class="text-xs text-gray-600">วิเคราะห์ต้นทุน</p>
                 </div>
             </div>
 
@@ -424,6 +438,65 @@
                 <h3 class="font-semibold mb-3">📝 ธุรกรรมล่าสุด</h3>
                 <div id="recent-transactions">
                     <div class="spinner" style="margin: 20px auto"></div>
+                </div>
+            </div>
+
+            <!-- Cost & Stock Analysis Page (Hidden by default) -->
+            <div id="cost-stock-page" class="hidden">
+                <div class="card">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <button onclick="closeCostStockPage()" class="btn ghost">← กลับ</button>
+                            <h3 class="font-semibold text-xl">📊 วิเคราะห์ต้นทุน & สต๊อก</h3>
+                        </div>
+                        <button onclick="refreshCostStockData()" class="btn ghost">🔄 รีเฟรช</button>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600 mb-1">มูลค่าสต๊อกรวม</div>
+                            <div class="text-2xl font-bold text-blue-600" id="cost-total-value">฿0</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600 mb-1">วัตถุดิบทั้งหมด</div>
+                            <div class="text-2xl font-bold text-green-600" id="cost-total-items">0</div>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600 mb-1">ใกล้หมด</div>
+                            <div class="text-2xl font-bold text-yellow-600" id="cost-low-stock">0</div>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600 mb-1">หมดสต๊อก</div>
+                            <div class="text-2xl font-bold text-red-600" id="cost-out-of-stock">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Analysis Table -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-3">📋 รายละเอียดต้นทุน</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b bg-gray-50">
+                                        <th class="text-left p-2">วัตถุดิบ</th>
+                                        <th class="text-right p-2">คงเหลือ</th>
+                                        <th class="text-right p-2">ต้นทุน/หน่วย</th>
+                                        <th class="text-right p-2">มูลค่ารวม</th>
+                                        <th class="text-right p-2">ขั้นต่ำ</th>
+                                        <th class="text-center p-2">สถานะ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cost-stock-table">
+                                    <tr>
+                                        <td colspan="6" class="text-center p-8">
+                                            <div class="spinner" style="margin: 20px auto"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 

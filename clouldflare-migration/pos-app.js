@@ -628,6 +628,8 @@ function showMainApp() {
     posApp.style.display = "block";
     // Ensure menu buttons are visible
     loadInitialData();
+    // Load dashboard stats
+    loadDashboardStats();
   }
 
   // Show navigation menus when logged in
@@ -6876,6 +6878,30 @@ async function showBackfillPanel() {
   `;
 
   document.body.appendChild(backfillModal);
+  
+  // Ensure modal is visible
+  backfillModal.style.display = 'flex';
+  
+  // Close on background click
+  backfillModal.addEventListener('click', (e) => {
+    if (e.target === backfillModal) {
+      backfillModal.remove();
+    }
+  });
+  
+  // Check if backfill functions are loaded
+  if (!window.backfillExpenses) {
+    logger.warn("UI", "Backfill functions not loaded yet, waiting...");
+    // Wait a bit for script to load
+    setTimeout(() => {
+      if (!window.backfillExpenses) {
+        const outputDiv = document.getElementById("backfill-output");
+        if (outputDiv) {
+          outputDiv.innerHTML = `<div class="text-yellow-600">⚠️ Backfill functions are loading. Please refresh the page if this persists.</div>`;
+        }
+      }
+    }, 1000);
+  }
 }
 
 function switchBackfillTab(tab) {
@@ -7083,4 +7109,178 @@ async function processOldMessages() {
     outputDiv.innerHTML = `<div class="text-red-600">❌ Error: ${error.message}</div>`;
     alert("Error processing messages: " + error.message);
   }
+}
+
+// ==================== Homepage Dashboard ====================
+
+async function loadDashboardStats() {
+  try {
+    logger.info("UI", "Loading dashboard stats...");
+    
+    // Load today's sales
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todaySales } = await window.supabase
+      .from('stock_transactions')
+      .select('total_amount')
+      .eq('transaction_type', 'sale')
+      .gte('transaction_date', today);
+    
+    const todayTotal = todaySales?.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
+    document.getElementById('dashboard-today-sales').textContent = `฿${todayTotal.toLocaleString()}`;
+    document.getElementById('dashboard-today-count').textContent = `${todaySales?.length || 0} รายการ`;
+
+    // Load ingredients stats
+    const { data: ingredients, count: ingredientCount } = await window.supabase
+      .from('ingredients')
+      .select('*', { count: 'exact' });
+    
+    const lowStockCount = ingredients?.filter(i => (i.current_stock || 0) <= (i.min_stock || 0)).length || 0;
+    document.getElementById('dashboard-total-ingredients').textContent = ingredientCount || 0;
+    document.getElementById('dashboard-low-stock').textContent = `${lowStockCount} ใกล้หมด`;
+
+    // Load menus stats
+    const { data: menus, count: menuCount } = await window.supabase
+      .from('menus')
+      .select('*', { count: 'exact' });
+    
+    const availableCount = menus?.filter(m => m.is_available !== false).length || 0;
+    document.getElementById('dashboard-total-menus').textContent = menuCount || 0;
+    document.getElementById('dashboard-available-menus').textContent = `${availableCount} พร้อมขาย`;
+
+    // Load month expenses
+    const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    const { data: monthExpenses } = await window.supabase
+      .from('expenses')
+      .select('amount')
+      .gte('expense_date', firstDay);
+    
+    const monthTotal = monthExpenses?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+    document.getElementById('dashboard-month-expenses').textContent = `฿${monthTotal.toLocaleString()}`;
+    document.getElementById('dashboard-expense-count').textContent = `${monthExpenses?.length || 0} รายการ`;
+
+    logger.info("UI", "Dashboard stats loaded successfully");
+  } catch (error) {
+    logger.error("UI", "Failed to load dashboard stats", { error: error.message });
+    console.error("Dashboard stats error:", error);
+  }
+}
+
+// ==================== Cost & Stock Page ====================
+
+function openCostStockPage() {
+  const posApp = document.getElementById("pos-app");
+  const costStockPage = document.getElementById("cost-stock-page");
+  const stockPage = document.getElementById("stock-management-page");
+  const menusPage = document.getElementById("menus-page");
+
+  if (posApp) posApp.classList.add("hidden");
+  if (stockPage) {
+    stockPage.classList.add("hidden");
+    stockPage.style.display = "none";
+  }
+  if (menusPage) {
+    menusPage.classList.add("hidden");
+    menusPage.style.display = "none";
+  }
+  if (costStockPage) {
+    costStockPage.classList.remove("hidden");
+    costStockPage.style.display = "block";
+    loadCostStockData();
+  }
+}
+
+function closeCostStockPage() {
+  const posApp = document.getElementById("pos-app");
+  const costStockPage = document.getElementById("cost-stock-page");
+
+  if (costStockPage) {
+    costStockPage.classList.add("hidden");
+    costStockPage.style.display = "none";
+  }
+  if (posApp) {
+    posApp.classList.remove("hidden");
+    posApp.style.display = "block";
+  }
+}
+
+async function loadCostStockData() {
+  const tableEl = document.getElementById("cost-stock-table");
+  if (tableEl) {
+    tableEl.innerHTML = '<tr><td colspan="6" class="text-center p-8"><div class="spinner" style="margin: 20px auto"></div></td></tr>';
+  }
+
+  try {
+    logger.info("UI", "Loading cost & stock data...");
+    
+    const { data: ingredients, error } = await window.supabase
+      .from('ingredients')
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+
+    // Calculate totals
+    let totalValue = 0;
+    let lowStockCount = 0;
+    let outOfStockCount = 0;
+
+    const rows = ingredients.map(item => {
+      const stock = Number(item.current_stock || 0);
+      const min = Number(item.min_stock || 0);
+      const cost = Number(item.cost_per_unit || 0);
+      const value = stock * cost;
+      totalValue += value;
+
+      let status = '🟢 ปกติ';
+      let statusClass = 'text-green-600';
+      
+      if (stock <= 0) {
+        status = '🔴 หมด';
+        statusClass = 'text-red-600';
+        outOfStockCount++;
+      } else if (stock <= min) {
+        status = '⚠️ ใกล้หมด';
+        statusClass = 'text-yellow-600';
+        lowStockCount++;
+      }
+
+      return `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="p-2 font-medium">${item.name || '-'}</td>
+          <td class="p-2 text-right">${stock.toFixed(2)} ${item.unit || ''}</td>
+          <td class="p-2 text-right">${cost > 0 ? `฿${cost.toFixed(2)}` : '-'}</td>
+          <td class="p-2 text-right font-semibold">${value > 0 ? `฿${value.toFixed(2)}` : '-'}</td>
+          <td class="p-2 text-right">${min > 0 ? `${min.toFixed(2)} ${item.unit || ''}` : '-'}</td>
+          <td class="p-2 text-center ${statusClass}">${status}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Update summary cards
+    document.getElementById('cost-total-value').textContent = `฿${totalValue.toFixed(2)}`;
+    document.getElementById('cost-total-items').textContent = ingredients.length;
+    document.getElementById('cost-low-stock').textContent = lowStockCount;
+    document.getElementById('cost-out-of-stock').textContent = outOfStockCount;
+
+    // Update table
+    if (tableEl) {
+      if (ingredients.length === 0) {
+        tableEl.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500">ไม่มีข้อมูล</td></tr>';
+      } else {
+        tableEl.innerHTML = rows;
+      }
+    }
+
+    logger.info("UI", "Cost & stock data loaded successfully", { count: ingredients.length });
+  } catch (error) {
+    logger.error("UI", "Failed to load cost & stock data", { error: error.message });
+    console.error("Cost stock error:", error);
+    if (tableEl) {
+      tableEl.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-600">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
+    }
+  }
+}
+
+async function refreshCostStockData() {
+  await loadCostStockData();
 }
