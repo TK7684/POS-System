@@ -706,9 +706,29 @@ Respond with JSON ONLY in this format:
 
     // Get ingredient costs
     const ingredientIds = recipes.map(r => r.ingredient_id).filter(Boolean);
-    const ingredients = await this.db.read('ingredients', {
-      filters: { id: { in: ingredientIds } }
-    });
+    
+    // Fetch ingredients one by one if array filter not supported, or use batch query
+    let ingredients = [];
+    if (ingredientIds.length > 0) {
+      // Try batch query first
+      try {
+        ingredients = await this.db.read('ingredients', {
+          filters: { id: { in: ingredientIds } }
+        });
+      } catch (error) {
+        // Fallback: fetch individually
+        log.warn('AI', 'Batch ingredient query failed, fetching individually', error);
+        for (const id of ingredientIds) {
+          const ing = await this.db.read('ingredients', {
+            filters: { id: id },
+            limit: 1
+          });
+          if (ing && ing.length > 0) {
+            ingredients.push(ing[0]);
+          }
+        }
+      }
+    }
 
     const ingredientMap = Object.fromEntries(
       ingredients.map(ing => [ing.id, ing])
@@ -942,9 +962,26 @@ Respond with JSON ONLY in this format:
       if (result.recipeItems && result.recipeItems.length > 0) {
         // Get ingredient names for display
         const ingredientIds = result.recipeItems.map(r => r.ingredient_id).filter(Boolean);
-        const ingredients = await this.db.read('ingredients', {
-          filters: { id: { in: ingredientIds } }
-        });
+        
+        // Fetch ingredients (with fallback for batch queries)
+        let ingredients = [];
+        try {
+          ingredients = await this.db.read('ingredients', {
+            filters: { id: { in: ingredientIds } }
+          });
+        } catch (error) {
+          // Fallback: fetch individually
+          for (const id of ingredientIds) {
+            const ing = await this.db.read('ingredients', {
+              filters: { id: id },
+              limit: 1
+            });
+            if (ing && ing.length > 0) {
+              ingredients.push(ing[0]);
+            }
+          }
+        }
+        
         const ingredientMap = Object.fromEntries(ingredients.map(ing => [ing.id, ing]));
         
         result.recipeItems.forEach((item, i) => {
