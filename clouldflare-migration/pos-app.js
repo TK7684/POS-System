@@ -6344,11 +6344,18 @@ function openStockPage() {
   const menusPage = document.getElementById("menus-page");
   const costStockPage = document.getElementById("cost-stock-page");
   const homepageDashboard = document.getElementById("homepage-dashboard");
+  const header = posApp?.querySelector("header");
+  const quickActions = posApp?.querySelector(".grid.grid-cols-2.md\\:grid-cols-3");
+  const lowStockCard = document.getElementById("low-stock-list")?.closest(".card");
+  const transactionsCard = document.getElementById("recent-transactions")?.closest(".card");
 
   // Hide homepage content but keep pos-app visible (pages are inside it)
-  if (homepageDashboard) {
-    homepageDashboard.style.display = "none";
-  }
+  if (homepageDashboard) homepageDashboard.style.display = "none";
+  if (header) header.style.display = "none";
+  if (quickActions) quickActions.style.display = "none";
+  if (lowStockCard) lowStockCard.style.display = "none";
+  if (transactionsCard) transactionsCard.style.display = "none";
+  
   // Hide other pages
   if (menusPage) {
     menusPage.classList.add("hidden");
@@ -7246,11 +7253,18 @@ function openCostStockPage() {
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
   const homepageDashboard = document.getElementById("homepage-dashboard");
+  const header = posApp?.querySelector("header");
+  const quickActions = posApp?.querySelector(".grid.grid-cols-2.md\\:grid-cols-3");
+  const lowStockCard = document.getElementById("low-stock-list")?.closest(".card");
+  const transactionsCard = document.getElementById("recent-transactions")?.closest(".card");
 
   // Hide homepage content but keep pos-app visible (pages are inside it)
-  if (homepageDashboard) {
-    homepageDashboard.style.display = "none";
-  }
+  if (homepageDashboard) homepageDashboard.style.display = "none";
+  if (header) header.style.display = "none";
+  if (quickActions) quickActions.style.display = "none";
+  if (lowStockCard) lowStockCard.style.display = "none";
+  if (transactionsCard) transactionsCard.style.display = "none";
+  
   // Hide other pages
   if (stockPage) {
     stockPage.classList.add("hidden");
@@ -7291,6 +7305,10 @@ function goToHomepage() {
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
   const homepageDashboard = document.getElementById("homepage-dashboard");
+  const header = posApp?.querySelector("header");
+  const quickActions = posApp?.querySelector(".grid.grid-cols-2.md\\:grid-cols-3");
+  const lowStockCard = document.getElementById("low-stock-list")?.closest(".card");
+  const transactionsCard = document.getElementById("recent-transactions")?.closest(".card");
 
   // Hide all pages
   if (costStockPage) {
@@ -7310,10 +7328,12 @@ function goToHomepage() {
   if (posApp) {
     posApp.classList.remove("hidden");
     posApp.style.display = "block";
-    // Show homepage dashboard
-    if (homepageDashboard) {
-      homepageDashboard.style.display = "grid";
-    }
+    // Show all homepage content
+    if (homepageDashboard) homepageDashboard.style.display = "grid";
+    if (header) header.style.display = "block";
+    if (quickActions) quickActions.style.display = "grid";
+    if (lowStockCard) lowStockCard.style.display = "block";
+    if (transactionsCard) transactionsCard.style.display = "block";
     // Reload dashboard stats
     loadDashboardStats();
     logger.info("UI", "Homepage displayed successfully");
