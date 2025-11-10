@@ -6652,6 +6652,366 @@ async function loadMenus() {
   }
 }
 
+// ==================== Menu Edit Functions ====================
+let currentEditingMenuId = null;
+let currentMenuRecipes = [];
+
+// Open menu edit modal
+async function openMenuEditModal(menuId) {
+  logger.info("UI", `Opening menu edit modal for menu: ${menuId}`);
+  currentEditingMenuId = menuId;
+  
+  const modal = document.getElementById("menu-edit-modal");
+  if (!modal) {
+    logger.error("UI", "Menu edit modal not found");
+    return;
+  }
+  
+  modal.classList.remove("hidden");
+  
+  try {
+    // Load menu data
+    const { data: menu, error: menuError } = await window.supabase
+      .from("menus")
+      .select("*")
+      .eq("id", menuId)
+      .single();
+    
+    if (menuError) throw menuError;
+    
+    // Populate form
+    document.getElementById("edit-menu-name").value = menu.name || "";
+    document.getElementById("edit-menu-price").value = menu.price || 0;
+    
+    // Load recipes
+    await loadMenuRecipes(menuId);
+    
+    // Calculate and display cost
+    await updateMenuCostDisplay();
+    
+  } catch (error) {
+    logger.error("UI", "Error loading menu data", error);
+    showError("ไม่สามารถโหลดข้อมูลเมนูได้: " + error.message);
+  }
+}
+
+// Load menu recipes
+async function loadMenuRecipes(menuId) {
+  try {
+    const { data: recipes, error } = await window.supabase
+      .from("menu_recipes")
+      .select(`
+        *,
+        ingredients:ingredient_id (
+          id,
+          name,
+          unit,
+          cost_per_unit
+        )
+      `)
+      .eq("menu_id", menuId);
+    
+    if (error) throw error;
+    
+    currentMenuRecipes = recipes || [];
+    renderMenuRecipes();
+    
+  } catch (error) {
+    logger.error("DB", "Error loading menu recipes", error);
+    showError("ไม่สามารถโหลดสูตรอาหารได้: " + error.message);
+  }
+}
+
+// Render menu recipes table
+function renderMenuRecipes() {
+  const tbody = document.getElementById("menu-recipe-ingredients");
+  if (!tbody) return;
+  
+  if (currentMenuRecipes.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center p-4 text-gray-500">
+          ยังไม่มีวัตถุดิบในสูตรนี้<br>
+          <button onclick="addIngredientToRecipe()" class="btn brand text-sm mt-2">+ เพิ่มวัตถุดิบแรก</button>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = currentMenuRecipes.map((recipe, index) => {
+    const ingredient = recipe.ingredients || {};
+    const quantity = parseFloat(recipe.quantity_per_serve) || 0;
+    const costPerUnit = parseFloat(ingredient.cost_per_unit || recipe.cost_per_unit || 0);
+    const totalCost = quantity * costPerUnit;
+    
+    return `
+      <tr class="border-b">
+        <td class="p-2">${ingredient.name || "ไม่ระบุ"}</td>
+        <td class="p-2 text-right">
+          <input 
+            type="number" 
+            class="input text-sm w-20" 
+            step="0.001" 
+            min="0" 
+            value="${quantity}"
+            onchange="updateRecipeQuantity(${index}, this.value)"
+          />
+        </td>
+        <td class="p-2">${recipe.unit || ingredient.unit || "-"}</td>
+        <td class="p-2 text-right">฿${costPerUnit.toFixed(2)}</td>
+        <td class="p-2 text-right font-semibold">฿${totalCost.toFixed(2)}</td>
+        <td class="p-2 text-center">
+          <button onclick="removeRecipeIngredient(${index})" class="text-red-600 hover:text-red-800 text-sm">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+  
+  // Update cost after rendering
+  updateMenuCostDisplay();
+}
+
+// Update recipe quantity
+function updateRecipeQuantity(index, newQuantity) {
+  if (currentMenuRecipes[index]) {
+    currentMenuRecipes[index].quantity_per_serve = parseFloat(newQuantity) || 0;
+    renderMenuRecipes();
+  }
+}
+
+// Remove recipe ingredient
+function removeRecipeIngredient(index) {
+  if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบวัตถุดิบนี้ออกจากสูตร?")) {
+    currentMenuRecipes.splice(index, 1);
+    renderMenuRecipes();
+  }
+}
+
+// Add ingredient to recipe
+async function addIngredientToRecipe() {
+  const modal = document.getElementById("add-ingredient-modal");
+  if (!modal) return;
+  
+  // Load ingredients
+  const { data: ingredients, error } = await window.supabase
+    .from("ingredients")
+    .select("id, name, unit, cost_per_unit")
+    .eq("is_active", true)
+    .order("name");
+  
+  if (error) {
+    showError("ไม่สามารถโหลดรายการวัตถุดิบได้: " + error.message);
+    return;
+  }
+  
+  const select = document.getElementById("add-ingredient-select");
+  select.innerHTML = '<option value="">-- เลือกวัตถุดิบ --</option>';
+  
+  // Filter out already added ingredients
+  const addedIds = currentMenuRecipes.map(r => r.ingredient_id);
+  ingredients.filter(ing => !addedIds.includes(ing.id)).forEach(ing => {
+    const option = document.createElement("option");
+    option.value = ing.id;
+    option.textContent = `${ing.name} (${ing.unit}) - ฿${(ing.cost_per_unit || 0).toFixed(2)}`;
+    option.dataset.unit = ing.unit || "";
+    option.dataset.cost = ing.cost_per_unit || 0;
+    select.appendChild(option);
+  });
+  
+  // Reset form
+  document.getElementById("add-ingredient-quantity").value = "";
+  document.getElementById("add-ingredient-unit").value = "";
+  
+  // Auto-fill unit when ingredient selected
+  select.onchange = function() {
+    const selected = select.options[select.selectedIndex];
+    if (selected.dataset.unit) {
+      document.getElementById("add-ingredient-unit").value = selected.dataset.unit;
+    }
+  };
+  
+  modal.classList.remove("hidden");
+}
+
+// Confirm add ingredient
+async function confirmAddIngredient() {
+  const select = document.getElementById("add-ingredient-select");
+  const quantity = parseFloat(document.getElementById("add-ingredient-quantity").value);
+  const unit = document.getElementById("add-ingredient-unit").value.trim();
+  
+  if (!select.value) {
+    showError("กรุณาเลือกวัตถุดิบ");
+    return;
+  }
+  
+  if (!quantity || quantity <= 0) {
+    showError("กรุณาระบุจำนวน");
+    return;
+  }
+  
+  if (!unit) {
+    showError("กรุณาระบุหน่วย");
+    return;
+  }
+  
+  // Get ingredient details
+  const selectedOption = select.options[select.selectedIndex];
+  const costPerUnit = parseFloat(selectedOption.dataset.cost) || 0;
+  
+  // Add to recipes array
+  const { data: ingredient } = await window.supabase
+    .from("ingredients")
+    .select("id, name, unit, cost_per_unit")
+    .eq("id", select.value)
+    .single();
+  
+  currentMenuRecipes.push({
+    ingredient_id: select.value,
+    quantity_per_serve: quantity,
+    unit: unit,
+    cost_per_unit: costPerUnit,
+    ingredients: ingredient
+  });
+  
+  closeAddIngredientModal();
+  renderMenuRecipes();
+}
+
+// Close add ingredient modal
+function closeAddIngredientModal() {
+  const modal = document.getElementById("add-ingredient-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+// Update menu cost display
+async function updateMenuCostDisplay() {
+  if (!currentEditingMenuId) return;
+  
+  let totalCost = 0;
+  
+  for (const recipe of currentMenuRecipes) {
+    const quantity = parseFloat(recipe.quantity_per_serve) || 0;
+    const costPerUnit = parseFloat(recipe.ingredients?.cost_per_unit || recipe.cost_per_unit || 0);
+    totalCost += quantity * costPerUnit;
+  }
+  
+  const price = parseFloat(document.getElementById("edit-menu-price").value) || 0;
+  const profit = price - totalCost;
+  
+  document.getElementById("edit-menu-cost").value = totalCost.toFixed(2);
+  document.getElementById("edit-menu-profit").value = profit.toFixed(2);
+}
+
+// Recalculate menu cost
+async function recalculateMenuCost() {
+  if (!currentEditingMenuId) return;
+  
+  showToast("กำลังคำนวณต้นทุนใหม่...");
+  
+  try {
+    // Re-fetch ingredient costs (in case they changed)
+    for (let i = 0; i < currentMenuRecipes.length; i++) {
+      const recipe = currentMenuRecipes[i];
+      if (recipe.ingredient_id) {
+        const { data: ingredient } = await window.supabase
+          .from("ingredients")
+          .select("cost_per_unit")
+          .eq("id", recipe.ingredient_id)
+          .single();
+        
+        if (ingredient) {
+          recipe.cost_per_unit = ingredient.cost_per_unit || 0;
+          if (recipe.ingredients) {
+            recipe.ingredients.cost_per_unit = ingredient.cost_per_unit || 0;
+          }
+        }
+      }
+    }
+    
+    renderMenuRecipes();
+    showToast("คำนวณต้นทุนใหม่เรียบร้อย");
+  } catch (error) {
+    logger.error("DB", "Error recalculating cost", error);
+    showError("ไม่สามารถคำนวณต้นทุนได้: " + error.message);
+  }
+}
+
+// Save menu edit
+async function saveMenuEdit() {
+  if (!currentEditingMenuId) return;
+  
+  const price = parseFloat(document.getElementById("edit-menu-price").value);
+  if (!price || price < 0) {
+    showError("กรุณาระบุราคาขายที่ถูกต้อง");
+    return;
+  }
+  
+  showToast("กำลังบันทึก...");
+  
+  try {
+    // Update menu price
+    const { error: menuError } = await window.supabase
+      .from("menus")
+      .update({
+        price: price,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", currentEditingMenuId);
+    
+    if (menuError) throw menuError;
+    
+    // Delete existing recipes
+    const { error: deleteError } = await window.supabase
+      .from("menu_recipes")
+      .delete()
+      .eq("menu_id", currentEditingMenuId);
+    
+    if (deleteError) throw deleteError;
+    
+    // Insert new recipes
+    if (currentMenuRecipes.length > 0) {
+      const recipesToInsert = currentMenuRecipes.map(recipe => ({
+        menu_id: currentEditingMenuId,
+        ingredient_id: recipe.ingredient_id,
+        quantity_per_serve: parseFloat(recipe.quantity_per_serve) || 0,
+        unit: recipe.unit || "",
+        cost_per_unit: parseFloat(recipe.cost_per_unit || recipe.ingredients?.cost_per_unit || 0)
+      }));
+      
+      const { error: insertError } = await window.supabase
+        .from("menu_recipes")
+        .insert(recipesToInsert);
+      
+      if (insertError) throw insertError;
+    }
+    
+    showToast("บันทึกเรียบร้อย");
+    closeMenuEditModal();
+    loadMenus(); // Refresh menu list
+    
+  } catch (error) {
+    logger.error("DB", "Error saving menu edit", error);
+    showError("ไม่สามารถบันทึกได้: " + error.message);
+  }
+}
+
+// Close menu edit modal
+function closeMenuEditModal() {
+  const modal = document.getElementById("menu-edit-modal");
+  if (modal) modal.classList.add("hidden");
+  currentEditingMenuId = null;
+  currentMenuRecipes = [];
+}
+
+// Watch price changes to update profit
+document.addEventListener("DOMContentLoaded", () => {
+  const priceInput = document.getElementById("edit-menu-price");
+  if (priceInput) {
+    priceInput.addEventListener("input", updateMenuCostDisplay);
+  }
+});
+
 // Expense History Page Functions
 let expensesHistoryState = {
   page: 1,
