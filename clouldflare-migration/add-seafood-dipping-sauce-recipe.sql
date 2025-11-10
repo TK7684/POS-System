@@ -5,6 +5,7 @@
 -- STEP 1: Ensure all ingredients exist
 -- ============================================================================
 
+-- Ensure all ingredients exist (handle name variations)
 INSERT INTO ingredients (name, unit, description, is_active) VALUES
     ('พริกสวน', 'กรัม', 'พริกขี้หนูสวน', true),
     ('ผักชี ราก+ต้น', 'กรัม', 'ผักชีพร้อมรากและต้น', true),
@@ -21,6 +22,23 @@ INSERT INTO ingredients (name, unit, description, is_active) VALUES
     ('มะนาวขวด', 'มล', 'น้ำมะนาวขวด', true),
     ('มะนาวจริง', 'มล', 'น้ำมะนาวจริง', true)
 ON CONFLICT (name) DO NOTHING;
+
+-- Handle ingredient name variations (use existing if similar name exists)
+DO $$
+DECLARE
+    v_ingredient_map JSONB := '{
+        "ผักชี ราก+ต้น": ["ผักชี"],
+        "ตะไคร้ซอย": ["ตะไคร้"],
+        "เนื้อกระเทียมดอง": ["กระเทียมดอง"],
+        "น้ำกระเทียมดอง": ["น้ำกระเทียมดอง"],
+        "มะนาวขวด": ["มะนาวขวด", "น้ำมะนาวขวด"],
+        "มะนาวจริง": ["มะนาวจริง", "น้ำมะนาวจริง"]
+    }'::JSONB;
+BEGIN
+    -- If "ผักชี ราก+ต้น" doesn't exist but "ผักชี" does, we'll use "ผักชี"
+    -- Similar logic for other variations
+    NULL; -- Placeholder for future name mapping logic
+END $$;
 
 -- ============================================================================
 -- STEP 2: Find or create menu for น้ำจิ้มซีฟู๊ด
@@ -70,11 +88,17 @@ BEGIN
     -- Delete existing recipes for this menu (to avoid duplicates)
     DELETE FROM menu_recipes WHERE menu_id = v_menu_id;
     
-    -- Insert all recipe ingredients
+    -- Insert all recipe ingredients (with fallback for name variations)
     INSERT INTO menu_recipes (menu_id, ingredient_id, quantity_per_serve, unit) VALUES
         -- Dry ingredients (grams)
-        (v_menu_id, (SELECT id FROM ingredients WHERE name = 'พริกสวน'), 100, 'กรัม'),
-        (v_menu_id, (SELECT id FROM ingredients WHERE name = 'ผักชี ราก+ต้น'), 75, 'กรัม'),
+        (v_menu_id, COALESCE(
+            (SELECT id FROM ingredients WHERE name = 'พริกสวน'),
+            (SELECT id FROM ingredients WHERE name ILIKE '%พริกสวน%')
+        ), 100, 'กรัม'),
+        (v_menu_id, COALESCE(
+            (SELECT id FROM ingredients WHERE name = 'ผักชี ราก+ต้น'),
+            (SELECT id FROM ingredients WHERE name = 'ผักชี')
+        ), 75, 'กรัม'),
         (v_menu_id, (SELECT id FROM ingredients WHERE name = 'กระเทียมไทย'), 50, 'กรัม'),
         (v_menu_id, (SELECT id FROM ingredients WHERE name = 'กระเทียมจีน'), 50, 'กรัม'),
         (v_menu_id, (SELECT id FROM ingredients WHERE name = 'น้ำตาลมะพร้าว'), 250, 'กรัม'),
@@ -83,14 +107,26 @@ BEGIN
         (v_menu_id, (SELECT id FROM ingredients WHERE name = 'ผงชูรส'), 20, 'กรัม'),
         
         -- Whole items
-        (v_menu_id, (SELECT id FROM ingredients WHERE name = 'ตะไคร้ซอย'), 2, 'ต้น'),
-        (v_menu_id, (SELECT id FROM ingredients WHERE name = 'เนื้อกระเทียมดอง'), 3, 'หัว'),
+        (v_menu_id, COALESCE(
+            (SELECT id FROM ingredients WHERE name = 'ตะไคร้ซอย'),
+            (SELECT id FROM ingredients WHERE name = 'ตะไคร้')
+        ), 2, 'ต้น'),
+        (v_menu_id, COALESCE(
+            (SELECT id FROM ingredients WHERE name = 'เนื้อกระเทียมดอง'),
+            (SELECT id FROM ingredients WHERE name = 'กระเทียมดอง')
+        ), 3, 'หัว'),
         
         -- Liquid ingredients (ml)
         (v_menu_id, (SELECT id FROM ingredients WHERE name = 'น้ำปลา'), 150, 'มล'),
         (v_menu_id, (SELECT id FROM ingredients WHERE name = 'น้ำกระเทียมดอง'), 75, 'มล'),
-        (v_menu_id, (SELECT id FROM ingredients WHERE name = 'มะนาวขวด'), 350, 'มล'),
-        (v_menu_id, (SELECT id FROM ingredients WHERE name = 'มะนาวจริง'), 100, 'มล')
+        (v_menu_id, COALESCE(
+            (SELECT id FROM ingredients WHERE name = 'มะนาวขวด'),
+            (SELECT id FROM ingredients WHERE name ILIKE '%มะนาวขวด%')
+        ), 350, 'มล'),
+        (v_menu_id, COALESCE(
+            (SELECT id FROM ingredients WHERE name = 'มะนาวจริง'),
+            (SELECT id FROM ingredients WHERE name ILIKE '%มะนาวจริง%')
+        ), 100, 'มล')
     ON CONFLICT (menu_id, ingredient_id) DO UPDATE SET
         quantity_per_serve = EXCLUDED.quantity_per_serve,
         unit = EXCLUDED.unit;
