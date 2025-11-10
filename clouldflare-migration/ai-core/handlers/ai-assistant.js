@@ -660,6 +660,11 @@ Common operations include:
       return result.message || result;
     }
 
+    // For read operations with data, format nicely first
+    if (intent.type === 'read' && result.data && Array.isArray(result.data)) {
+      return this._formatReadResponse(result, intent, context);
+    }
+
     const responsePrompt = `Generate a natural language response for the user based on this operation result.
 
 User Request: "${context.userInput}"
@@ -681,6 +686,132 @@ Respond in a natural, helpful tone.`;
       temperature: 0.3,
       maxTokens: 1024
     });
+  }
+
+  _formatReadResponse(result, intent, context) {
+    const { data, count } = result;
+    const entity = intent.entity;
+
+    // Don't show more than 10 items by default
+    const displayLimit = 10;
+    const hasMore = count > displayLimit;
+    const displayData = data.slice(0, displayLimit);
+
+    // Build formatted response
+    let response = `✅ **พบข้อมูล ${count} รายการ**\n\n`;
+
+    if (count === 0) {
+      return `❌ ไม่พบข้อมูลที่ค้นหา\n\n💡 ลองค้นหาด้วยคำอื่น หรือตรวจสอบว่ามีข้อมูลในระบบหรือไม่`;
+    }
+
+    // Format based on entity type
+    switch (entity) {
+      case 'ingredients':
+        response += this._formatIngredients(displayData);
+        break;
+      case 'menus':
+        response += this._formatMenus(displayData);
+        break;
+      case 'stock_transactions':
+        response += this._formatTransactions(displayData);
+        break;
+      case 'platforms':
+        response += this._formatPlatforms(displayData);
+        break;
+      default:
+        // Generic formatting
+        response += this._formatGeneric(displayData);
+    }
+
+    if (hasMore) {
+      response += `\n\n📋 *แสดง ${displayLimit} จาก ${count} รายการ*`;
+    }
+
+    return response;
+  }
+
+  _formatIngredients(items) {
+    let output = '**📦 วัตถุดิบ**\n';
+    items.forEach((item, i) => {
+      const stock = item.current_stock || 0;
+      const min = item.min_stock || 0;
+      const warning = stock < min ? ' ⚠️ ต่ำกว่าขั้นต่ำ!' : '';
+      output += `${i + 1}. **${item.name}**${warning}\n`;
+      output += `   └ คงเหลือ: ${stock} ${item.unit}`;
+      if (min > 0) output += ` | ขั้นต่ำ: ${min} ${item.unit}`;
+      if (item.cost_per_unit) output += ` | ราคา: ${item.cost_per_unit} บาท/${item.unit}`;
+      output += '\n\n';
+    });
+    return output;
+  }
+
+  _formatMenus(items) {
+    let output = '**🍽️ เมนูอาหาร**\n';
+    items.forEach((item, i) => {
+      const status = item.is_available === false ? ' 🔴 ไม่พร้อมขาย' : ' 🟢';
+      output += `${i + 1}. **${item.name}**${status}\n`;
+      output += `   └ ราคาขาย: ${item.price || 0} บาท`;
+      if (item.cost_per_unit) {
+        const profit = (item.price || 0) - (item.cost_per_unit || 0);
+        output += ` | ต้นทุน: ${item.cost_per_unit} บาท | กำไร: ${profit} บาท`;
+      }
+      output += '\n\n';
+    });
+    return output;
+  }
+
+  _formatTransactions(items) {
+    let output = '**💰 รายการล่าสุด**\n';
+    items.forEach((item, i) => {
+      const type = item.transaction_type || 'unknown';
+      const icon = type === 'sale' ? '📤' : type === 'purchase' ? '📥' : '🔄';
+      const date = item.transaction_date || item.created_at;
+      const dateStr = date ? new Date(date).toLocaleDateString('th-TH', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : '';
+      
+      output += `${i + 1}. ${icon} **${type.toUpperCase()}**\n`;
+      output += `   └ จำนวน: ${item.quantity} ${item.unit}`;
+      if (item.total_amount) output += ` | ยอด: ${item.total_amount} บาท`;
+      if (dateStr) output += ` | ${dateStr}`;
+      output += '\n\n';
+    });
+    return output;
+  }
+
+  _formatPlatforms(items) {
+    let output = '**🏪 แพลตฟอร์ม**\n';
+    items.forEach((item, i) => {
+      const active = item.is_active ? '✅' : '❌';
+      output += `${i + 1}. **${item.name}** ${active}\n`;
+      if (item.commission_rate) {
+        output += `   └ ค่าคอมมิชชั่น: ${item.commission_rate}%\n`;
+      }
+      output += '\n';
+    });
+    return output;
+  }
+
+  _formatGeneric(items) {
+    // For unknown entities, show first few fields
+    let output = '';
+    items.forEach((item, i) => {
+      const keys = Object.keys(item).filter(k => !k.includes('id') && !k.includes('created'));
+      const mainField = keys[0];
+      const value = item[mainField];
+      
+      output += `${i + 1}. ${mainField}: **${value}**\n`;
+      
+      // Show up to 3 more fields
+      keys.slice(1, 4).forEach(key => {
+        output += `   └ ${key}: ${item[key]}\n`;
+      });
+      output += '\n';
+    });
+    return output;
   }
 
   async _generateErrorSuggestion(error, userInput) {
