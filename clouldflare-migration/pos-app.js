@@ -7053,6 +7053,1093 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// ==================== Stock Reconciliation Functions ====================
+let stockReconciliationData = [];
+
+async function openStockReconciliationPage() {
+  logger.info("UI", "Opening stock reconciliation page");
+  
+  const posApp = document.getElementById("pos-app");
+  const reconPage = document.getElementById("stock-reconciliation-page");
+  const homepageDashboard = document.getElementById("homepage-dashboard");
+  const header = posApp?.querySelector("header");
+  const quickActions = posApp?.querySelector(".grid.grid-cols-2.md\\:grid-cols-3");
+
+  // Hide homepage content
+  if (homepageDashboard) homepageDashboard.style.display = "none";
+  if (header) header.style.display = "none";
+  if (quickActions) quickActions.style.display = "none";
+  
+  // Show reconciliation page
+  if (reconPage) {
+    reconPage.classList.remove("hidden");
+    reconPage.style.display = "block";
+    if (posApp) {
+      posApp.style.display = "block";
+      posApp.classList.remove("hidden");
+    }
+    await loadStockReconciliation();
+  }
+}
+
+function closeStockReconciliationPage() {
+  const reconPage = document.getElementById("stock-reconciliation-page");
+  if (reconPage) {
+    reconPage.classList.add("hidden");
+    reconPage.style.display = "none";
+  }
+  goToHomepage();
+}
+
+async function loadStockReconciliation() {
+  try {
+    logger.info("DB", "Loading ingredients for stock reconciliation");
+    
+    const { data: ingredients, error } = await window.supabase
+      .from("ingredients")
+      .select("*")
+      .eq("is_active", true)
+      .order("name");
+    
+    if (error) throw error;
+    
+    // Initialize reconciliation data
+    stockReconciliationData = ingredients.map(ing => ({
+      id: ing.id,
+      name: ing.name,
+      unit: ing.unit || "",
+      systemStock: parseFloat(ing.current_stock) || 0,
+      physicalStock: parseFloat(ing.current_stock) || 0, // Start with system stock
+      costPerUnit: parseFloat(ing.cost_per_unit) || 0,
+      counted: false,
+      variance: 0,
+      varianceValue: 0
+    }));
+    
+    renderStockReconciliation();
+    updateReconciliationStats();
+    
+  } catch (error) {
+    logger.error("DB", "Error loading stock reconciliation", error);
+    showError("ไม่สามารถโหลดข้อมูลได้: " + error.message);
+  }
+}
+
+function renderStockReconciliation() {
+  const tbody = document.getElementById("recon-table-body");
+  if (!tbody) return;
+  
+  const search = document.getElementById("recon-search")?.value.toLowerCase() || "";
+  const statusFilter = document.getElementById("recon-filter-status")?.value || "all";
+  
+  let filtered = stockReconciliationData.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(search);
+    const matchesStatus = 
+      statusFilter === "all" ||
+      (statusFilter === "pending" && !item.counted) ||
+      (statusFilter === "counted" && item.counted) ||
+      (statusFilter === "variance" && item.counted && item.variance !== 0);
+    return matchesSearch && matchesStatus;
+  });
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center p-8 text-gray-500">ไม่พบข้อมูล</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = filtered.map(item => {
+    const variance = item.physicalStock - item.systemStock;
+    const varianceValue = variance * item.costPerUnit;
+    const varianceClass = variance > 0 ? "text-green-600" : variance < 0 ? "text-red-600" : "";
+    const statusBadge = item.counted 
+      ? (variance === 0 ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">ตรงกัน</span>' 
+         : '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">แตกต่าง</span>')
+      : '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">ยังไม่นับ</span>';
+    
+    return `
+      <tr class="border-b hover:bg-gray-50">
+        <td class="p-2">${item.name}</td>
+        <td class="p-2 text-right">${item.systemStock.toFixed(2)} ${item.unit}</td>
+        <td class="p-2 text-right">
+          <input 
+            type="number" 
+            step="0.01" 
+            class="input text-sm w-24" 
+            value="${item.physicalStock}"
+            onchange="updatePhysicalStock('${item.id}', this.value)"
+          />
+        </td>
+        <td class="p-2 text-right font-semibold ${varianceClass}">
+          ${variance > 0 ? '+' : ''}${variance.toFixed(2)} ${item.unit}
+        </td>
+        <td class="p-2 text-right ${varianceClass}">
+          ${varianceValue > 0 ? '+' : ''}฿${Math.abs(varianceValue).toFixed(2)}
+        </td>
+        <td class="p-2 text-center">${statusBadge}</td>
+      </tr>
+    `;
+  }).join("");
+  
+  updateReconciliationStats();
+}
+
+function updatePhysicalStock(id, value) {
+  const item = stockReconciliationData.find(i => i.id === id);
+  if (item) {
+    item.physicalStock = parseFloat(value) || 0;
+    item.variance = item.physicalStock - item.systemStock;
+    item.varianceValue = item.variance * item.costPerUnit;
+    item.counted = true;
+    renderStockReconciliation();
+  }
+}
+
+function updateReconciliationStats() {
+  const total = stockReconciliationData.length;
+  const counted = stockReconciliationData.filter(i => i.counted).length;
+  const variances = stockReconciliationData.filter(i => i.counted && i.variance !== 0).length;
+  const totalVarianceValue = stockReconciliationData.reduce((sum, i) => sum + Math.abs(i.varianceValue), 0);
+  
+  document.getElementById("recon-total-count").textContent = total;
+  document.getElementById("recon-counted").textContent = counted;
+  document.getElementById("recon-variances").textContent = variances;
+  document.getElementById("recon-variance-value").textContent = `฿${totalVarianceValue.toFixed(2)}`;
+}
+
+async function saveStockReconciliation() {
+  if (!currentUser?.id) {
+    showError("กรุณาเข้าสู่ระบบก่อน");
+    return;
+  }
+  
+  const adjustments = stockReconciliationData
+    .filter(item => item.counted && item.variance !== 0)
+    .map(item => ({
+      ingredient_id: item.id,
+      previous_stock: item.systemStock,
+      new_stock: item.physicalStock,
+      quantity_change: item.variance,
+      unit: item.unit,
+      reason: "Stock reconciliation - Physical count",
+      adjustment_type: item.variance > 0 ? "increase" : "decrease"
+    }));
+  
+  if (adjustments.length === 0) {
+    showToast("ไม่มีรายการที่ต้องปรับปรุง");
+    return;
+  }
+  
+  showToast("กำลังบันทึกการปรับปรุงสต๊อก...");
+  
+  try {
+    for (const adj of adjustments) {
+      const { error } = await window.supabase
+        .from("stock_adjustments")
+        .insert({
+          ...adj,
+          created_by: currentUser.id
+        });
+      
+      if (error) throw error;
+    }
+    
+    showToast(`บันทึกการปรับปรุง ${adjustments.length} รายการเรียบร้อย`);
+    await loadStockReconciliation(); // Reload to refresh system stock
+    
+  } catch (error) {
+    logger.error("DB", "Error saving stock reconciliation", error);
+    showError("ไม่สามารถบันทึกได้: " + error.message);
+  }
+}
+
+// ==================== Packaging Management Functions ====================
+let packagingState = {
+  items: [],
+  search: ""
+};
+
+async function openPackagingPage() {
+  logger.info("UI", "Opening packaging management page");
+  
+  const posApp = document.getElementById("pos-app");
+  const packagingPage = document.getElementById("packaging-page");
+  const homepageDashboard = document.getElementById("homepage-dashboard");
+  const header = posApp?.querySelector("header");
+  const quickActions = posApp?.querySelector(".grid.grid-cols-2.md\\:grid-cols-3");
+
+  if (homepageDashboard) homepageDashboard.style.display = "none";
+  if (header) header.style.display = "none";
+  if (quickActions) quickActions.style.display = "none";
+  
+  if (packagingPage) {
+    packagingPage.classList.remove("hidden");
+    packagingPage.style.display = "block";
+    if (posApp) {
+      posApp.style.display = "block";
+      posApp.classList.remove("hidden");
+    }
+    await loadPackaging();
+  }
+}
+
+function closePackagingPage() {
+  const packagingPage = document.getElementById("packaging-page");
+  if (packagingPage) {
+    packagingPage.classList.add("hidden");
+    packagingPage.style.display = "none";
+  }
+  goToHomepage();
+}
+
+async function loadPackaging() {
+  try {
+    const search = document.getElementById("packaging-search")?.value || "";
+    packagingState.search = search;
+    
+    let query = window.supabase
+      .from("packaging")
+      .select("*")
+      .eq("is_active", true)
+      .order("name");
+    
+    if (search) {
+      query = query.ilike("name", `%${search}%`);
+    }
+    
+    const { data: packaging, error } = await query;
+    
+    if (error) throw error;
+    
+    packagingState.items = packaging || [];
+    renderPackaging();
+    updatePackagingStats();
+    
+  } catch (error) {
+    logger.error("DB", "Error loading packaging", error);
+    showError("ไม่สามารถโหลดข้อมูลได้: " + error.message);
+  }
+}
+
+function renderPackaging() {
+  const tbody = document.getElementById("packaging-table-body");
+  if (!tbody) return;
+  
+  if (packagingState.items.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center p-8 text-gray-500">
+          ไม่พบข้อมูลบรรจุภัณฑ์<br>
+          <button onclick="openPackagingModal()" class="btn brand text-sm mt-2">+ เพิ่มบรรจุภัณฑ์แรก</button>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = packagingState.items.map(item => {
+    const stock = parseFloat(item.current_stock) || 0;
+    const min = parseFloat(item.min_stock) || 0;
+    const cost = parseFloat(item.cost_per_unit) || 0;
+    const totalValue = stock * cost;
+    const statusClass = stock === 0 ? "text-red-600" : stock < min ? "text-yellow-600" : "text-green-600";
+    
+    return `
+      <tr class="border-b hover:bg-gray-50">
+        <td class="p-2">${item.name}</td>
+        <td class="p-2">${item.unit || "-"}</td>
+        <td class="p-2 text-right ${statusClass} font-semibold">${stock.toFixed(2)}</td>
+        <td class="p-2 text-right">${min.toFixed(2)}</td>
+        <td class="p-2 text-right">฿${cost.toFixed(2)}</td>
+        <td class="p-2 text-right font-semibold">฿${totalValue.toFixed(2)}</td>
+        <td class="p-2 text-center">
+          <button onclick="openPackagingModal('${item.id}')" class="btn ghost text-xs py-1 px-2">✏️ แก้ไข</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function updatePackagingStats() {
+  const total = packagingState.items.length;
+  const totalValue = packagingState.items.reduce((sum, item) => {
+    return sum + ((parseFloat(item.current_stock) || 0) * (parseFloat(item.cost_per_unit) || 0));
+  }, 0);
+  const low = packagingState.items.filter(item => {
+    const stock = parseFloat(item.current_stock) || 0;
+    const min = parseFloat(item.min_stock) || 0;
+    return stock > 0 && stock < min;
+  }).length;
+  const out = packagingState.items.filter(item => (parseFloat(item.current_stock) || 0) === 0).length;
+  
+  document.getElementById("packaging-total").textContent = total;
+  document.getElementById("packaging-value").textContent = `฿${totalValue.toFixed(2)}`;
+  document.getElementById("packaging-low").textContent = low;
+  document.getElementById("packaging-out").textContent = out;
+}
+
+async function openPackagingModal(id = "") {
+  const modal = document.getElementById("packaging-modal");
+  if (!modal) return;
+  
+  document.getElementById("packaging-id").value = id || "";
+  document.getElementById("packaging-modal-title").textContent = id ? "✏️ แก้ไขบรรจุภัณฑ์" : "➕ เพิ่มบรรจุภัณฑ์";
+  
+  if (id) {
+    try {
+      const { data: item, error } = await window.supabase
+        .from("packaging")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (!error && item) {
+        document.getElementById("packaging-name").value = item.name || "";
+        document.getElementById("packaging-unit").value = item.unit || "";
+        document.getElementById("packaging-stock").value = item.current_stock || "";
+        document.getElementById("packaging-min").value = item.min_stock || "";
+        document.getElementById("packaging-cost").value = item.cost_per_unit || "";
+        document.getElementById("packaging-supplier").value = item.supplier || "";
+      }
+    } catch (error) {
+      logger.error("DB", "Error loading packaging", error);
+    }
+  } else {
+    // Reset form
+    document.getElementById("packaging-name").value = "";
+    document.getElementById("packaging-unit").value = "";
+    document.getElementById("packaging-stock").value = "";
+    document.getElementById("packaging-min").value = "";
+    document.getElementById("packaging-cost").value = "";
+    document.getElementById("packaging-supplier").value = "";
+  }
+  
+  modal.classList.remove("hidden");
+}
+
+function closePackagingModal() {
+  const modal = document.getElementById("packaging-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+// Packaging form handler
+document.addEventListener("DOMContentLoaded", () => {
+  const packagingForm = document.getElementById("packaging-form");
+  if (packagingForm) {
+    packagingForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const id = document.getElementById("packaging-id").value;
+      const payload = {
+        name: document.getElementById("packaging-name").value.trim(),
+        unit: document.getElementById("packaging-unit").value.trim() || null,
+        current_stock: parseFloat(document.getElementById("packaging-stock").value) || 0,
+        min_stock: parseFloat(document.getElementById("packaging-min").value) || 0,
+        cost_per_unit: parseFloat(document.getElementById("packaging-cost").value) || 0,
+        supplier: document.getElementById("packaging-supplier").value.trim() || null,
+        updated_at: new Date().toISOString()
+      };
+      
+      try {
+        if (id) {
+          const { error } = await window.supabase
+            .from("packaging")
+            .update(payload)
+            .eq("id", id);
+          if (error) throw error;
+        } else {
+          const { error } = await window.supabase
+            .from("packaging")
+            .insert(payload);
+          if (error) throw error;
+        }
+        
+        showToast("บันทึกบรรจุภัณฑ์เรียบร้อย");
+        closePackagingModal();
+        await loadPackaging();
+      } catch (error) {
+        logger.error("DB", "Error saving packaging", error);
+        showError("ไม่สามารถบันทึกได้: " + error.message);
+      }
+    });
+  }
+});
+
+// ==================== COGS Dashboard Functions ====================
+async function openCOGSDashboard() {
+  logger.info("UI", "Opening COGS dashboard");
+  
+  const posApp = document.getElementById("pos-app");
+  const cogsPage = document.getElementById("cogs-dashboard-page");
+  const homepageDashboard = document.getElementById("homepage-dashboard");
+  const header = posApp?.querySelector("header");
+  const quickActions = posApp?.querySelector(".grid.grid-cols-2.md\\:grid-cols-3");
+
+  if (homepageDashboard) homepageDashboard.style.display = "none";
+  if (header) header.style.display = "none";
+  if (quickActions) quickActions.style.display = "none";
+  
+  if (cogsPage) {
+    cogsPage.classList.remove("hidden");
+    cogsPage.style.display = "block";
+    if (posApp) {
+      posApp.style.display = "block";
+      posApp.classList.remove("hidden");
+    }
+    
+    // Set default date range (last 30 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    
+    document.getElementById("cogs-start-date").value = startDate.toISOString().split('T')[0];
+    document.getElementById("cogs-end-date").value = endDate.toISOString().split('T')[0];
+    
+    await loadCOGSDashboard();
+  }
+}
+
+function closeCOGSDashboard() {
+  const cogsPage = document.getElementById("cogs-dashboard-page");
+  if (cogsPage) {
+    cogsPage.classList.add("hidden");
+    cogsPage.style.display = "none";
+  }
+  goToHomepage();
+}
+
+async function loadCOGSDashboard() {
+  try {
+    const startDate = document.getElementById("cogs-start-date").value;
+    const endDate = document.getElementById("cogs-end-date").value;
+    
+    if (!startDate || !endDate) {
+      showError("กรุณาเลือกช่วงวันที่");
+      return;
+    }
+    
+    logger.info("DB", "Loading COGS data", { startDate, endDate });
+    
+    // Load sales in date range
+    const { data: sales, error: salesError } = await window.supabase
+      .from("stock_transactions")
+      .select(`
+        *,
+        menus:menu_id (id, name, price, cost_price),
+        ingredients:ingredient_id (id, name, cost_per_unit)
+      `)
+      .eq("transaction_type", "sale")
+      .gte("created_at", `${startDate}T00:00:00.000Z`)
+      .lte("created_at", `${endDate}T23:59:59.999Z`);
+    
+    if (salesError) throw salesError;
+    
+    // Calculate COGS
+    const menuSales = {};
+    const menuCounts = {};
+    
+    (sales || []).forEach(sale => {
+      const menuId = sale.menu_id;
+      if (!menuId) return;
+      
+      if (!menuSales[menuId]) {
+        menuSales[menuId] = {
+          menuId: menuId,
+          menuName: sale.menus?.name || "ไม่ระบุ",
+          quantity: 0,
+          totalSales: 0,
+          ingredientCost: 0,
+          packagingCost: 0
+        };
+        menuCounts[menuId] = 0;
+      }
+      
+      menuCounts[menuId]++;
+      // Note: We'll need to calculate actual costs from menu_recipes
+    });
+    
+    // Get menu details and calculate costs
+    const menuIds = Object.keys(menuSales);
+    if (menuIds.length > 0) {
+      const { data: menus, error: menusError } = await window.supabase
+        .from("menus")
+        .select("id, name, price, cost_price")
+        .in("id", menuIds);
+      
+      if (!menusError && menus) {
+        menus.forEach(menu => {
+          if (menuSales[menu.id]) {
+            menuSales[menu.id].menuName = menu.name;
+            menuSales[menu.id].totalSales = menuCounts[menu.id] * (menu.price || 0);
+            menuSales[menu.id].ingredientCost = menuCounts[menu.id] * (menu.cost_price || 0);
+          }
+        });
+      }
+    }
+    
+    const cogsData = Object.values(menuSales);
+    
+    // Calculate totals
+    const totalSales = cogsData.reduce((sum, m) => sum + m.totalSales, 0);
+    const totalCost = cogsData.reduce((sum, m) => sum + m.ingredientCost + m.packagingCost, 0);
+    const totalProfit = totalSales - totalCost;
+    const profitMargin = totalSales > 0 ? (totalProfit / totalSales * 100) : 0;
+    
+    // Update summary
+    document.getElementById("cogs-total-sales").textContent = `฿${totalSales.toFixed(2)}`;
+    document.getElementById("cogs-total-cost").textContent = `฿${totalCost.toFixed(2)}`;
+    document.getElementById("cogs-total-profit").textContent = `฿${totalProfit.toFixed(2)}`;
+    document.getElementById("cogs-profit-margin").textContent = `${profitMargin.toFixed(1)}%`;
+    
+    // Render breakdown
+    renderCOGSBreakdown(cogsData);
+    renderCOGSTopMenus(cogsData);
+    renderCOGSTable(cogsData);
+    
+  } catch (error) {
+    logger.error("DB", "Error loading COGS dashboard", error);
+    showError("ไม่สามารถโหลดข้อมูลได้: " + error.message);
+  }
+}
+
+function renderCOGSBreakdown(data) {
+  const breakdown = document.getElementById("cogs-breakdown");
+  if (!breakdown) return;
+  
+  const ingredientCost = data.reduce((sum, m) => sum + m.ingredientCost, 0);
+  const packagingCost = data.reduce((sum, m) => sum + m.packagingCost, 0);
+  const totalCost = ingredientCost + packagingCost;
+  
+  breakdown.innerHTML = `
+    <div class="space-y-2">
+      <div class="flex justify-between items-center">
+        <span>ต้นทุนวัตถุดิบ</span>
+        <span class="font-semibold">฿${ingredientCost.toFixed(2)}</span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>ต้นทุนบรรจุภัณฑ์</span>
+        <span class="font-semibold">฿${packagingCost.toFixed(2)}</span>
+      </div>
+      <div class="border-t pt-2 flex justify-between items-center">
+        <span class="font-semibold">รวม</span>
+        <span class="font-bold text-lg">฿${totalCost.toFixed(2)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCOGSTopMenus(data) {
+  const topMenus = document.getElementById("cogs-top-menus");
+  if (!topMenus) return;
+  
+  const sorted = [...data]
+    .sort((a, b) => {
+      const profitA = a.totalSales - a.ingredientCost - a.packagingCost;
+      const profitB = b.totalSales - b.ingredientCost - b.packagingCost;
+      return profitB - profitA;
+    })
+    .slice(0, 5);
+  
+  if (sorted.length === 0) {
+    topMenus.innerHTML = '<div class="text-center text-gray-500 p-4">ไม่มีข้อมูล</div>';
+    return;
+  }
+  
+  topMenus.innerHTML = sorted.map((menu, i) => {
+    const profit = menu.totalSales - menu.ingredientCost - menu.packagingCost;
+    const margin = menu.totalSales > 0 ? (profit / menu.totalSales * 100) : 0;
+    
+    return `
+      <div class="flex justify-between items-center p-2 border-b">
+        <div>
+          <div class="font-medium">${i + 1}. ${menu.menuName}</div>
+          <div class="text-xs text-gray-500">${menu.quantity} จาน</div>
+        </div>
+        <div class="text-right">
+          <div class="font-semibold text-green-600">฿${profit.toFixed(2)}</div>
+          <div class="text-xs text-gray-500">${margin.toFixed(1)}%</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderCOGSTable(data) {
+  const tbody = document.getElementById("cogs-table-body");
+  if (!tbody) return;
+  
+  if (data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center p-8 text-gray-500">ไม่มีข้อมูลในช่วงเวลานี้</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = data.map(menu => {
+    const totalCost = menu.ingredientCost + menu.packagingCost;
+    const profit = menu.totalSales - totalCost;
+    const margin = menu.totalSales > 0 ? (profit / menu.totalSales * 100) : 0;
+    const profitClass = profit >= 0 ? "text-green-600" : "text-red-600";
+    const marginClass = margin >= 30 ? "text-green-600" : margin >= 15 ? "text-yellow-600" : "text-red-600";
+    
+    return `
+      <tr class="border-b hover:bg-gray-50">
+        <td class="p-2">${menu.menuName}</td>
+        <td class="p-2 text-right">${menu.quantity}</td>
+        <td class="p-2 text-right font-semibold">฿${menu.totalSales.toFixed(2)}</td>
+        <td class="p-2 text-right">฿${menu.ingredientCost.toFixed(2)}</td>
+        <td class="p-2 text-right">฿${menu.packagingCost.toFixed(2)}</td>
+        <td class="p-2 text-right">฿${totalCost.toFixed(2)}</td>
+        <td class="p-2 text-right font-semibold ${profitClass}">฿${profit.toFixed(2)}</td>
+        <td class="p-2 text-right font-semibold ${marginClass}">${margin.toFixed(1)}%</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function exportCOGSReport() {
+  showToast("ฟีเจอร์ส่งออกรายงานจะพร้อมใช้งานเร็วๆ นี้");
+}
+
+// ==================== Advanced Reports Dashboard Functions ====================
+let currentReportTab = 'sales';
+
+async function openReportsDashboard() {
+  logger.info("UI", "Opening reports dashboard");
+  
+  const posApp = document.getElementById("pos-app");
+  const reportsPage = document.getElementById("reports-dashboard-page");
+  const homepageDashboard = document.getElementById("homepage-dashboard");
+  const header = posApp?.querySelector("header");
+  const quickActions = posApp?.querySelector(".grid.grid-cols-2.md\\:grid-cols-3");
+
+  if (homepageDashboard) homepageDashboard.style.display = "none";
+  if (header) header.style.display = "none";
+  if (quickActions) quickActions.style.display = "none";
+  
+  if (reportsPage) {
+    reportsPage.classList.remove("hidden");
+    reportsPage.style.display = "block";
+    if (posApp) {
+      posApp.style.display = "block";
+      posApp.classList.remove("hidden");
+    }
+    
+    // Set default date range (last 30 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    
+    document.getElementById("reports-start-date").value = startDate.toISOString().split('T')[0];
+    document.getElementById("reports-end-date").value = endDate.toISOString().split('T')[0];
+    
+    showReportTab('sales');
+    await loadReports();
+  }
+}
+
+function closeReportsDashboard() {
+  const reportsPage = document.getElementById("reports-dashboard-page");
+  if (reportsPage) {
+    reportsPage.classList.add("hidden");
+    reportsPage.style.display = "none";
+  }
+  goToHomepage();
+}
+
+function showReportTab(tab) {
+  currentReportTab = tab;
+  
+  // Update tab buttons
+  ['sales', 'costs', 'inventory', 'kpi'].forEach(t => {
+    const btn = document.getElementById(`tab-${t}`);
+    const content = document.getElementById(`report-${t}`);
+    if (btn && content) {
+      if (t === tab) {
+        btn.classList.add("border-b-2", "border-blue-500", "font-semibold");
+        btn.classList.remove("text-gray-600");
+        content.classList.remove("hidden");
+      } else {
+        btn.classList.remove("border-b-2", "border-blue-500", "font-semibold");
+        btn.classList.add("text-gray-600");
+        content.classList.add("hidden");
+      }
+    }
+  });
+  
+  loadReports();
+}
+
+async function loadReports() {
+  try {
+    const startDate = document.getElementById("reports-start-date").value;
+    const endDate = document.getElementById("reports-end-date").value;
+    
+    if (!startDate || !endDate) {
+      showError("กรุณาเลือกช่วงวันที่");
+      return;
+    }
+    
+    switch (currentReportTab) {
+      case 'sales':
+        await loadSalesReport(startDate, endDate);
+        break;
+      case 'costs':
+        await loadCostsReport(startDate, endDate);
+        break;
+      case 'inventory':
+        await loadInventoryReport(startDate, endDate);
+        break;
+      case 'kpi':
+        await loadKPIReport(startDate, endDate);
+        break;
+    }
+  } catch (error) {
+    logger.error("DB", "Error loading reports", error);
+    showError("ไม่สามารถโหลดรายงานได้: " + error.message);
+  }
+}
+
+async function loadSalesReport(startDate, endDate) {
+  try {
+    // Load sales data
+    const { data: sales, error } = await window.supabase
+      .from("stock_transactions")
+      .select(`
+        *,
+        menus:menu_id (id, name, price),
+        platforms:platform_id (id, name)
+      `)
+      .eq("transaction_type", "sale")
+      .gte("created_at", `${startDate}T00:00:00.000Z`)
+      .lte("created_at", `${endDate}T23:59:59.999Z`);
+    
+    if (error) throw error;
+    
+    // Calculate totals
+    const totalSales = (sales || []).reduce((sum, s) => sum + (s.total_amount || 0), 0);
+    const orderCount = new Set(sales?.map(s => s.reference_id).filter(Boolean)).size;
+    const avgOrder = orderCount > 0 ? totalSales / orderCount : 0;
+    
+    document.getElementById("report-sales-total").textContent = `฿${totalSales.toFixed(2)}`;
+    document.getElementById("report-orders-count").textContent = orderCount;
+    document.getElementById("report-avg-order").textContent = `฿${avgOrder.toFixed(2)}`;
+    
+    // Sales by platform
+    const platformSales = {};
+    (sales || []).forEach(sale => {
+      const platformId = sale.platform_id || 'unknown';
+      const platformName = sale.platforms?.name || 'ไม่ระบุ';
+      if (!platformSales[platformId]) {
+        platformSales[platformId] = { name: platformName, total: 0 };
+      }
+      platformSales[platformId].total += sale.total_amount || 0;
+    });
+    
+    const platformList = Object.values(platformSales)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    
+    document.getElementById("report-sales-by-platform").innerHTML = platformList.length > 0
+      ? platformList.map(p => `
+          <div class="flex justify-between items-center p-2 border-b">
+            <span>${p.name}</span>
+            <span class="font-semibold">฿${p.total.toFixed(2)}</span>
+          </div>
+        `).join("")
+      : '<div class="text-center text-gray-500 p-4">ไม่มีข้อมูล</div>';
+    
+    // Top menus
+    const menuSales = {};
+    (sales || []).forEach(sale => {
+      const menuId = sale.menu_id;
+      if (!menuId) return;
+      const menuName = sale.menus?.name || "ไม่ระบุ";
+      if (!menuSales[menuId]) {
+        menuSales[menuId] = { name: menuName, count: 0, total: 0 };
+      }
+      menuSales[menuId].count++;
+      menuSales[menuId].total += sale.total_amount || sale.quantity * (sale.menus?.price || 0);
+    });
+    
+    const topMenus = Object.values(menuSales)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    
+    document.getElementById("report-top-menus").innerHTML = topMenus.length > 0
+      ? topMenus.map((m, i) => `
+          <div class="flex justify-between items-center p-2 border-b">
+            <div>
+              <div class="font-medium">${i + 1}. ${m.name}</div>
+              <div class="text-xs text-gray-500">${m.count} ครั้ง</div>
+            </div>
+            <span class="font-semibold">฿${m.total.toFixed(2)}</span>
+          </div>
+        `).join("")
+      : '<div class="text-center text-gray-500 p-4">ไม่มีข้อมูล</div>';
+    
+    // Daily sales
+    const dailySales = {};
+    (sales || []).forEach(sale => {
+      const date = sale.created_at?.split('T')[0] || '';
+      if (!dailySales[date]) {
+        dailySales[date] = 0;
+      }
+      dailySales[date] += sale.total_amount || 0;
+    });
+    
+    const dailyList = Object.entries(dailySales)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-7); // Last 7 days
+    
+    document.getElementById("report-daily-sales").innerHTML = dailyList.length > 0
+      ? dailyList.map(([date, total]) => {
+          const dateObj = new Date(date);
+          const dateStr = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+          return `
+            <div class="flex justify-between items-center p-2 border-b">
+              <span>${dateStr}</span>
+              <span class="font-semibold">฿${total.toFixed(2)}</span>
+            </div>
+          `;
+        }).join("")
+      : '<div class="text-center text-gray-500 p-4">ไม่มีข้อมูล</div>';
+    
+  } catch (error) {
+    logger.error("DB", "Error loading sales report", error);
+    throw error;
+  }
+}
+
+async function loadCostsReport(startDate, endDate) {
+  try {
+    // Load expenses
+    const { data: expenses, error: expError } = await window.supabase
+      .from("expenses")
+      .select("*")
+      .gte("expense_date", startDate)
+      .lte("expense_date", endDate);
+    
+    if (expError) throw expError;
+    
+    const totalExpenses = (expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+    
+    // Load ingredient costs (from purchases)
+    const { data: purchases, error: purError } = await window.supabase
+      .from("purchases")
+      .select("*")
+      .gte("purchase_date", startDate)
+      .lte("purchase_date", endDate);
+    
+    if (purError) throw purError;
+    
+    const ingredientCost = (purchases || []).reduce((sum, p) => sum + (p.total_amount || 0), 0);
+    
+    // Load labor costs
+    const { data: labor, error: laborError } = await window.supabase
+      .from("labor_logs")
+      .select("*")
+      .gte("date", startDate)
+      .lte("date", endDate);
+    
+    if (laborError) throw laborError;
+    
+    const laborCost = (labor || []).reduce((sum, l) => sum + (l.total_pay || 0), 0);
+    
+    document.getElementById("report-ingredient-cost").textContent = `฿${ingredientCost.toFixed(2)}`;
+    document.getElementById("report-expenses").textContent = `฿${totalExpenses.toFixed(2)}`;
+    document.getElementById("report-labor").textContent = `฿${laborCost.toFixed(2)}`;
+    
+    // Cost breakdown by category
+    const expenseByCategory = {};
+    (expenses || []).forEach(exp => {
+      const cat = exp.category || 'อื่นๆ';
+      if (!expenseByCategory[cat]) {
+        expenseByCategory[cat] = 0;
+      }
+      expenseByCategory[cat] += exp.amount || 0;
+    });
+    
+    const breakdown = Object.entries(expenseByCategory)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+    
+    document.getElementById("report-cost-breakdown").innerHTML = breakdown.length > 0
+      ? breakdown.map(([cat, amount]) => `
+          <div class="flex justify-between items-center p-2 border-b">
+            <span>${cat}</span>
+            <span class="font-semibold">฿${amount.toFixed(2)}</span>
+          </div>
+        `).join("")
+      : '<div class="text-center text-gray-500 p-4">ไม่มีข้อมูล</div>';
+    
+  } catch (error) {
+    logger.error("DB", "Error loading costs report", error);
+    throw error;
+  }
+}
+
+async function loadInventoryReport(startDate, endDate) {
+  try {
+    // Load ingredients
+    const { data: ingredients, error } = await window.supabase
+      .from("ingredients")
+      .select("*")
+      .eq("is_active", true);
+    
+    if (error) throw error;
+    
+    const inventoryValue = (ingredients || []).reduce((sum, ing) => {
+      return sum + ((parseFloat(ing.current_stock) || 0) * (parseFloat(ing.cost_per_unit) || 0));
+    }, 0);
+    
+    // Calculate turnover (simplified: sales / avg inventory)
+    const { data: sales, error: salesError } = await window.supabase
+      .from("stock_transactions")
+      .select("total_amount")
+      .eq("transaction_type", "sale")
+      .gte("created_at", `${startDate}T00:00:00.000Z`)
+      .lte("created_at", `${endDate}T23:59:59.999Z`);
+    
+    if (salesError) throw salesError;
+    
+    const totalSales = (sales || []).reduce((sum, s) => sum + (s.total_amount || 0), 0);
+    const turnover = inventoryValue > 0 ? (totalSales / inventoryValue) : 0;
+    
+    const lowStockCount = (ingredients || []).filter(ing => {
+      const stock = parseFloat(ing.current_stock) || 0;
+      const min = parseFloat(ing.min_stock) || 0;
+      return stock < min;
+    }).length;
+    
+    document.getElementById("report-inventory-value").textContent = `฿${inventoryValue.toFixed(2)}`;
+    document.getElementById("report-turnover").textContent = `${turnover.toFixed(2)}x`;
+    document.getElementById("report-low-stock-count").textContent = lowStockCount;
+    
+    // Inventory by category
+    const categoryInventory = {};
+    (ingredients || []).forEach(ing => {
+      const cat = ing.category_id || 'uncategorized';
+      const value = (parseFloat(ing.current_stock) || 0) * (parseFloat(ing.cost_per_unit) || 0);
+      if (!categoryInventory[cat]) {
+        categoryInventory[cat] = 0;
+      }
+      categoryInventory[cat] += value;
+    });
+    
+    document.getElementById("report-inventory-by-category").innerHTML = 
+      '<div class="text-center text-gray-500 p-4">กำลังพัฒนาฟีเจอร์นี้</div>';
+    
+  } catch (error) {
+    logger.error("DB", "Error loading inventory report", error);
+    throw error;
+  }
+}
+
+async function loadKPIReport(startDate, endDate) {
+  try {
+    // Load sales
+    const { data: sales, error: salesError } = await window.supabase
+      .from("stock_transactions")
+      .select("*")
+      .eq("transaction_type", "sale")
+      .gte("created_at", `${startDate}T00:00:00.000Z`)
+      .lte("created_at", `${endDate}T23:59:59.999Z`);
+    
+    if (salesError) throw salesError;
+    
+    const totalSales = (sales || []).reduce((sum, s) => sum + (s.total_amount || 0), 0);
+    const orderCount = new Set(sales?.map(s => s.reference_id).filter(Boolean)).size;
+    const avgOrderValue = orderCount > 0 ? totalSales / orderCount : 0;
+    
+    // Load costs
+    const { data: expenses, error: expError } = await window.supabase
+      .from("expenses")
+      .select("amount")
+      .gte("expense_date", startDate)
+      .lte("expense_date", endDate);
+    
+    if (expError) throw expError;
+    
+    const totalExpenses = (expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+    
+    // Calculate COGS (simplified)
+    const { data: purchases, error: purError } = await window.supabase
+      .from("purchases")
+      .select("total_amount")
+      .gte("purchase_date", startDate)
+      .lte("purchase_date", endDate);
+    
+    if (purError) throw purError;
+    
+    const totalCOGS = (purchases || []).reduce((sum, p) => sum + (p.total_amount || 0), 0);
+    
+    // Calculate KPIs
+    const profit = totalSales - totalCOGS;
+    const profitMargin = totalSales > 0 ? (profit / totalSales * 100) : 0;
+    const expenseRatio = totalSales > 0 ? (totalExpenses / totalSales * 100) : 0;
+    
+    // Inventory turnover (simplified)
+    const { data: ingredients } = await window.supabase
+      .from("ingredients")
+      .select("current_stock, cost_per_unit")
+      .eq("is_active", true);
+    
+    const inventoryValue = (ingredients || []).reduce((sum, ing) => {
+      return sum + ((parseFloat(ing.current_stock) || 0) * (parseFloat(ing.cost_per_unit) || 0));
+    }, 0);
+    
+    const inventoryTurnover = inventoryValue > 0 ? (totalSales / inventoryValue) : 0;
+    
+    document.getElementById("kpi-profit-margin").textContent = `${profitMargin.toFixed(1)}%`;
+    document.getElementById("kpi-inventory-turnover").textContent = `${inventoryTurnover.toFixed(2)}x`;
+    document.getElementById("kpi-avg-order-value").textContent = `฿${avgOrderValue.toFixed(2)}`;
+    document.getElementById("kpi-expense-ratio").textContent = `${expenseRatio.toFixed(1)}%`;
+    
+    // KPI Summary
+    document.getElementById("kpi-summary").innerHTML = `
+      <div class="space-y-2">
+        <div class="flex justify-between">
+          <span>ยอดขายรวม</span>
+          <span class="font-semibold">฿${totalSales.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>ต้นทุนรวม</span>
+          <span class="font-semibold">฿${totalCOGS.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>กำไรรวม</span>
+          <span class="font-semibold text-green-600">฿${profit.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>ค่าใช้จ่าย</span>
+          <span class="font-semibold">฿${totalExpenses.toFixed(2)}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>จำนวนออเดอร์</span>
+          <span class="font-semibold">${orderCount}</span>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById("kpi-trends").innerHTML = 
+      '<div class="text-center text-gray-500 p-4">กำลังพัฒนาฟีเจอร์นี้</div>';
+    
+  } catch (error) {
+    logger.error("DB", "Error loading KPI report", error);
+    throw error;
+  }
+}
+
+function exportReport() {
+  showToast("ฟีเจอร์ส่งออกรายงานจะพร้อมใช้งานเร็วๆ นี้");
+}
+
 // Expense History Page Functions
 let expensesHistoryState = {
   page: 1,

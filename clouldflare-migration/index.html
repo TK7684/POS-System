@@ -424,6 +424,26 @@
                     <h3 class="font-semibold mb-2">ต้นทุน & สต๊อก</h3>
                     <p class="text-xs text-gray-600">วิเคราะห์ต้นทุน</p>
                 </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openStockReconciliationPage()">
+                    <div class="text-3xl mb-2">📋</div>
+                    <h3 class="font-semibold mb-2">นับสต๊อก</h3>
+                    <p class="text-xs text-gray-600">นับสต๊อก & ปรับปรุง</p>
+                </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openPackagingPage()">
+                    <div class="text-3xl mb-2">📦</div>
+                    <h3 class="font-semibold mb-2">บรรจุภัณฑ์</h3>
+                    <p class="text-xs text-gray-600">จัดการบรรจุภัณฑ์</p>
+                </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openCOGSDashboard()">
+                    <div class="text-3xl mb-2">💰</div>
+                    <h3 class="font-semibold mb-2">COGS & กำไร</h3>
+                    <p class="text-xs text-gray-600">วิเคราะห์ต้นทุนขาย</p>
+                </div>
+                <div class="card hover:shadow-lg transition-shadow cursor-pointer" onclick="openReportsDashboard()">
+                    <div class="text-3xl mb-2">📈</div>
+                    <h3 class="font-semibold mb-2">รายงาน</h3>
+                    <p class="text-xs text-gray-600">รายงาน & วิเคราะห์</p>
+                </div>
             </div>
 
             <!-- Real-time Stock Status -->
@@ -1184,6 +1204,472 @@
                         <button onclick="closeAddIngredientModal()" class="btn ghost">ยกเลิก</button>
                         <button onclick="confirmAddIngredient()" class="btn brand">เพิ่ม</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Reconciliation Page -->
+        <div id="stock-reconciliation-page" class="container hidden" style="display: none; padding-top: 16px; padding-bottom: 80px;">
+            <header class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-3xl font-bold">📋 นับสต๊อก & ปรับปรุง</h1>
+                    <div class="flex gap-2">
+                        <button onclick="goToHomepage()" class="btn brand">🏠 หน้าแรก</button>
+                        <button onclick="closeStockReconciliationPage()" class="btn ghost">← กลับ</button>
+                    </div>
+                </div>
+                <p class="text-gray-600">นับสต๊อกจริงและเปรียบเทียบกับระบบ เพื่อปรับปรุงความถูกต้อง</p>
+            </header>
+
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div class="card">
+                    <div class="text-sm text-gray-600">รายการที่ต้องนับ</div>
+                    <div class="text-2xl font-bold" id="recon-total-count">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">นับแล้ว</div>
+                    <div class="text-2xl font-bold text-green-600" id="recon-counted">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">มีความแตกต่าง</div>
+                    <div class="text-2xl font-bold text-red-600" id="recon-variances">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">มูลค่าความแตกต่าง</div>
+                    <div class="text-2xl font-bold text-orange-600" id="recon-variance-value">฿0</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ค้นหา</label>
+                        <input type="text" id="recon-search" class="input" placeholder="ค้นหาวัตถุดิบ..." />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">สถานะ</label>
+                        <select id="recon-filter-status" class="input">
+                            <option value="all">ทั้งหมด</option>
+                            <option value="pending">ยังไม่นับ</option>
+                            <option value="counted">นับแล้ว</option>
+                            <option value="variance">มีความแตกต่าง</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="loadStockReconciliation()" class="btn brand w-full">เริ่มนับสต๊อก</button>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="saveStockReconciliation()" class="btn brand w-full">💾 บันทึกการนับ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Count Table -->
+            <div class="card">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b bg-gray-50">
+                                <th class="text-left p-2">วัตถุดิบ</th>
+                                <th class="text-right p-2">สต๊อกระบบ</th>
+                                <th class="text-right p-2">สต๊อกจริง</th>
+                                <th class="text-right p-2">ความแตกต่าง</th>
+                                <th class="text-right p-2">มูลค่า (฿)</th>
+                                <th class="text-center p-2">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recon-table-body">
+                            <tr>
+                                <td colspan="6" class="text-center p-8 text-gray-500">
+                                    คลิก "เริ่มนับสต๊อก" เพื่อเริ่มต้น
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Packaging Management Page -->
+        <div id="packaging-page" class="container hidden" style="display: none; padding-top: 16px; padding-bottom: 80px;">
+            <header class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-3xl font-bold">📦 จัดการบรรจุภัณฑ์</h1>
+                    <div class="flex gap-2">
+                        <button onclick="goToHomepage()" class="btn brand">🏠 หน้าแรก</button>
+                        <button onclick="closePackagingPage()" class="btn ghost">← กลับ</button>
+                    </div>
+                </div>
+                <p class="text-gray-600">จัดการสต๊อกบรรจุภัณฑ์ กล่อง ถุง ภาชนะ และวัสดุบรรจุภัณฑ์</p>
+            </header>
+
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div class="card">
+                    <div class="text-sm text-gray-600">บรรจุภัณฑ์ทั้งหมด</div>
+                    <div class="text-2xl font-bold" id="packaging-total">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">มูลค่ารวม</div>
+                    <div class="text-2xl font-bold text-blue-600" id="packaging-value">฿0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">ใกล้หมด</div>
+                    <div class="text-2xl font-bold text-yellow-600" id="packaging-low">0</div>
+                </div>
+                <div class="card">
+                    <div class="text-sm text-gray-600">หมดแล้ว</div>
+                    <div class="text-2xl font-bold text-red-600" id="packaging-out">0</div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card mb-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div class="flex gap-2">
+                        <input type="text" id="packaging-search" class="input" placeholder="ค้นหาบรรจุภัณฑ์..." style="min-width: 200px;" />
+                        <button onclick="loadPackaging()" class="btn ghost">🔍 ค้นหา</button>
+                    </div>
+                    <button onclick="openPackagingModal()" class="btn brand">+ เพิ่มบรรจุภัณฑ์</button>
+                </div>
+            </div>
+
+            <!-- Packaging Table -->
+            <div class="card">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b bg-gray-50">
+                                <th class="text-left p-2">ชื่อ</th>
+                                <th class="text-left p-2">หน่วย</th>
+                                <th class="text-right p-2">สต๊อกปัจจุบัน</th>
+                                <th class="text-right p-2">ขั้นต่ำ</th>
+                                <th class="text-right p-2">ราคาต่อหน่วย</th>
+                                <th class="text-right p-2">มูลค่ารวม</th>
+                                <th class="text-center p-2">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="packaging-table-body">
+                            <tr>
+                                <td colspan="7" class="text-center p-8">
+                                    <div class="spinner" style="margin: 20px auto"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- COGS Dashboard Page -->
+        <div id="cogs-dashboard-page" class="container hidden" style="display: none; padding-top: 16px; padding-bottom: 80px;">
+            <header class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-3xl font-bold">💰 ต้นทุนขาย (COGS) & กำไร</h1>
+                    <div class="flex gap-2">
+                        <button onclick="goToHomepage()" class="btn brand">🏠 หน้าแรก</button>
+                        <button onclick="closeCOGSDashboard()" class="btn ghost">← กลับ</button>
+                    </div>
+                </div>
+                <p class="text-gray-600">วิเคราะห์ต้นทุนขาย กำไร และอัตรากำไรของเมนู</p>
+            </header>
+
+            <!-- Period Selector -->
+            <div class="card mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">วันที่เริ่มต้น</label>
+                        <input type="date" id="cogs-start-date" class="input" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">วันที่สิ้นสุด</label>
+                        <input type="date" id="cogs-end-date" class="input" />
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="loadCOGSDashboard()" class="btn brand w-full">📊 วิเคราะห์</button>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="exportCOGSReport()" class="btn ghost w-full">📥 ส่งออก</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div class="card bg-blue-50">
+                    <div class="text-sm text-gray-600 mb-1">ยอดขายรวม</div>
+                    <div class="text-2xl font-bold text-blue-600" id="cogs-total-sales">฿0</div>
+                </div>
+                <div class="card bg-red-50">
+                    <div class="text-sm text-gray-600 mb-1">ต้นทุนรวม</div>
+                    <div class="text-2xl font-bold text-red-600" id="cogs-total-cost">฿0</div>
+                </div>
+                <div class="card bg-green-50">
+                    <div class="text-sm text-gray-600 mb-1">กำไรรวม</div>
+                    <div class="text-2xl font-bold text-green-600" id="cogs-total-profit">฿0</div>
+                </div>
+                <div class="card bg-purple-50">
+                    <div class="text-sm text-gray-600 mb-1">อัตรากำไร</div>
+                    <div class="text-2xl font-bold text-purple-600" id="cogs-profit-margin">0%</div>
+                </div>
+            </div>
+
+            <!-- COGS Breakdown -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="card">
+                    <h3 class="font-semibold mb-4">📊 ต้นทุนแยกตามประเภท</h3>
+                    <div id="cogs-breakdown" class="space-y-2">
+                        <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="font-semibold mb-4">🍽️ เมนูที่ทำกำไรสูงสุด</h3>
+                    <div id="cogs-top-menus" class="space-y-2">
+                        <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COGS Table -->
+            <div class="card">
+                <h3 class="font-semibold mb-4">📋 รายละเอียด COGS</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b bg-gray-50">
+                                <th class="text-left p-2">เมนู</th>
+                                <th class="text-right p-2">จำนวนขาย</th>
+                                <th class="text-right p-2">ยอดขาย</th>
+                                <th class="text-right p-2">ต้นทุนวัตถุดิบ</th>
+                                <th class="text-right p-2">ต้นทุนบรรจุภัณฑ์</th>
+                                <th class="text-right p-2">ต้นทุนรวม</th>
+                                <th class="text-right p-2">กำไร</th>
+                                <th class="text-right p-2">% กำไร</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cogs-table-body">
+                            <tr>
+                                <td colspan="8" class="text-center p-8">
+                                    <div class="spinner" style="margin: 20px auto"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Reports Dashboard -->
+        <div id="reports-dashboard-page" class="container hidden" style="display: none; padding-top: 16px; padding-bottom: 80px;">
+            <header class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-3xl font-bold">📈 รายงาน & วิเคราะห์</h1>
+                    <div class="flex gap-2">
+                        <button onclick="goToHomepage()" class="btn brand">🏠 หน้าแรก</button>
+                        <button onclick="closeReportsDashboard()" class="btn ghost">← กลับ</button>
+                    </div>
+                </div>
+                <p class="text-gray-600">รายงานและวิเคราะห์ข้อมูลยอดขาย ต้นทุน และประสิทธิภาพ</p>
+            </header>
+
+            <!-- Report Tabs -->
+            <div class="card mb-4">
+                <div class="flex flex-wrap gap-2 border-b">
+                    <button onclick="showReportTab('sales')" class="px-4 py-2 border-b-2 border-blue-500 font-semibold" id="tab-sales">📊 ยอดขาย</button>
+                    <button onclick="showReportTab('costs')" class="px-4 py-2 text-gray-600 hover:text-gray-900" id="tab-costs">💰 ต้นทุน</button>
+                    <button onclick="showReportTab('inventory')" class="px-4 py-2 text-gray-600 hover:text-gray-900" id="tab-inventory">📦 สต๊อก</button>
+                    <button onclick="showReportTab('kpi')" class="px-4 py-2 text-gray-600 hover:text-gray-900" id="tab-kpi">🎯 KPI</button>
+                </div>
+            </div>
+
+            <!-- Period Selector -->
+            <div class="card mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">วันที่เริ่มต้น</label>
+                        <input type="date" id="reports-start-date" class="input" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">วันที่สิ้นสุด</label>
+                        <input type="date" id="reports-end-date" class="input" />
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="loadReports()" class="btn brand w-full">📊 สร้างรายงาน</button>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="exportReport()" class="btn ghost w-full">📥 ส่งออก</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Report Tab -->
+            <div id="report-sales" class="report-tab">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">ยอดขายรวม</div>
+                        <div class="text-2xl font-bold text-blue-600" id="report-sales-total">฿0</div>
+                    </div>
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">จำนวนออเดอร์</div>
+                        <div class="text-2xl font-bold text-green-600" id="report-orders-count">0</div>
+                    </div>
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">ออเดอร์เฉลี่ย</div>
+                        <div class="text-2xl font-bold text-purple-600" id="report-avg-order">฿0</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="card">
+                        <h3 class="font-semibold mb-4">📊 ยอดขายตามช่องทาง</h3>
+                        <div id="report-sales-by-platform" class="space-y-2">
+                            <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 class="font-semibold mb-4">🍽️ เมนูขายดี</h3>
+                        <div id="report-top-menus" class="space-y-2">
+                            <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="font-semibold mb-4">📈 ยอดขายรายวัน</h3>
+                    <div id="report-daily-sales" class="space-y-2">
+                        <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Costs Report Tab -->
+            <div id="report-costs" class="report-tab hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">ต้นทุนวัตถุดิบ</div>
+                        <div class="text-2xl font-bold text-red-600" id="report-ingredient-cost">฿0</div>
+                    </div>
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">ค่าใช้จ่าย</div>
+                        <div class="text-2xl font-bold text-orange-600" id="report-expenses">฿0</div>
+                    </div>
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">ค่าแรง</div>
+                        <div class="text-2xl font-bold text-blue-600" id="report-labor">฿0</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="font-semibold mb-4">💰 ต้นทุนแยกตามประเภท</h3>
+                    <div id="report-cost-breakdown" class="space-y-2">
+                        <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Report Tab -->
+            <div id="report-inventory" class="report-tab hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">มูลค่าสต๊อก</div>
+                        <div class="text-2xl font-bold text-blue-600" id="report-inventory-value">฿0</div>
+                    </div>
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">อัตราหมุนเวียน</div>
+                        <div class="text-2xl font-bold text-green-600" id="report-turnover">0x</div>
+                    </div>
+                    <div class="card">
+                        <div class="text-sm text-gray-600 mb-1">วัตถุดิบใกล้หมด</div>
+                        <div class="text-2xl font-bold text-red-600" id="report-low-stock-count">0</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="font-semibold mb-4">📦 สต๊อกตามหมวดหมู่</h3>
+                    <div id="report-inventory-by-category" class="space-y-2">
+                        <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Report Tab -->
+            <div id="report-kpi" class="report-tab hidden">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div class="card bg-gradient-to-br from-blue-50 to-blue-100">
+                        <div class="text-sm text-gray-600 mb-1">อัตรากำไรรวม</div>
+                        <div class="text-2xl font-bold text-blue-600" id="kpi-profit-margin">0%</div>
+                    </div>
+                    <div class="card bg-gradient-to-br from-green-50 to-green-100">
+                        <div class="text-sm text-gray-600 mb-1">อัตราหมุนเวียนสต๊อก</div>
+                        <div class="text-2xl font-bold text-green-600" id="kpi-inventory-turnover">0x</div>
+                    </div>
+                    <div class="card bg-gradient-to-br from-purple-50 to-purple-100">
+                        <div class="text-sm text-gray-600 mb-1">ออเดอร์เฉลี่ย</div>
+                        <div class="text-2xl font-bold text-purple-600" id="kpi-avg-order-value">฿0</div>
+                    </div>
+                    <div class="card bg-gradient-to-br from-orange-50 to-orange-100">
+                        <div class="text-sm text-gray-600 mb-1">อัตราใช้จ่าย/ยอดขาย</div>
+                        <div class="text-2xl font-bold text-orange-600" id="kpi-expense-ratio">0%</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="card">
+                        <h3 class="font-semibold mb-4">📊 KPI สรุป</h3>
+                        <div id="kpi-summary" class="space-y-3">
+                            <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 class="font-semibold mb-4">📈 แนวโน้ม</h3>
+                        <div id="kpi-trends" class="space-y-3">
+                            <div class="text-center text-gray-500 p-4">กำลังโหลด...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Packaging Modal -->
+        <div id="packaging-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" onclick="if(event.target === this) closePackagingModal()">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onclick="event.stopPropagation()">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold" id="packaging-modal-title">➕ เพิ่มบรรจุภัณฑ์</h3>
+                        <button onclick="closePackagingModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                    </div>
+                    <form id="packaging-form">
+                        <input type="hidden" id="packaging-id" />
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">ชื่อบรรจุภัณฑ์</label>
+                            <input type="text" id="packaging-name" class="input" required />
+                        </div>
+                        <div class="mb-4 grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">หน่วย</label>
+                                <input type="text" id="packaging-unit" class="input" placeholder="ชิ้น, กล่อง, ถุง" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">สต๊อกปัจจุบัน</label>
+                                <input type="number" step="0.01" id="packaging-stock" class="input" />
+                            </div>
+                        </div>
+                        <div class="mb-4 grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">ขั้นต่ำ</label>
+                                <input type="number" step="0.01" id="packaging-min" class="input" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">ราคาต่อหน่วย (฿)</label>
+                                <input type="number" step="0.01" id="packaging-cost" class="input" />
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">ผู้จำหน่าย</label>
+                            <input type="text" id="packaging-supplier" class="input" />
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn brand flex-1">บันทึก</button>
+                            <button type="button" onclick="closePackagingModal()" class="btn ghost flex-1">ยกเลิก</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
