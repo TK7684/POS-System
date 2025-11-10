@@ -7608,17 +7608,17 @@ async function loadCOGSDashboard() {
     logger.debug("DB", "Transactions loaded", { count: transactions?.length || 0 });
     
     // Get unique menu IDs and ingredient IDs
-    const menuIds = [...new Set((transactions || []).map(t => t.menu_id).filter(Boolean))];
+    const transactionMenuIds = [...new Set((transactions || []).map(t => t.menu_id).filter(Boolean))];
     const ingredientIds = [...new Set((transactions || []).map(t => t.ingredient_id).filter(Boolean))];
     
     // Load menus separately
     let menuMap = {};
-    if (menuIds.length > 0) {
-      logger.debug("DB", "Loading menus", { count: menuIds.length });
+    if (transactionMenuIds.length > 0) {
+      logger.debug("DB", "Loading menus", { count: transactionMenuIds.length });
       const { data: menus, error: menusError } = await window.supabase
         .from("menus")
         .select("id, name, price, cost_price")
-        .in("id", menuIds);
+        .in("id", transactionMenuIds);
       
       if (menusError) {
         logger.error("DB", "Error loading menus", menusError);
@@ -7676,23 +7676,18 @@ async function loadCOGSDashboard() {
       // Note: We'll need to calculate actual costs from menu_recipes
     });
     
-    // Get menu details and calculate costs
-    const menuIds = Object.keys(menuSales);
-    if (menuIds.length > 0) {
-      const { data: menus, error: menusError } = await window.supabase
-        .from("menus")
-        .select("id, name, price, cost_price")
-        .in("id", menuIds);
-      
-      if (!menusError && menus) {
-        menus.forEach(menu => {
-          if (menuSales[menu.id]) {
-            menuSales[menu.id].menuName = menu.name;
-            menuSales[menu.id].totalSales = menuCounts[menu.id] * (menu.price || 0);
-            menuSales[menu.id].ingredientCost = menuCounts[menu.id] * (menu.cost_price || 0);
-          }
-        });
-      }
+    // Get menu details and calculate costs (use menuMap we already loaded)
+    const uniqueMenuIds = Object.keys(menuSales);
+    if (uniqueMenuIds.length > 0) {
+      // Use the menuMap we already loaded instead of querying again
+      uniqueMenuIds.forEach(menuId => {
+        const menu = menuMap[menuId];
+        if (menu && menuSales[menuId]) {
+          menuSales[menuId].menuName = menu.name;
+          menuSales[menuId].totalSales = menuCounts[menuId] * (menu.price || 0);
+          menuSales[menuId].ingredientCost = menuCounts[menuId] * (menu.cost_price || 0);
+        }
+      });
     }
     
     const cogsData = Object.values(menuSales);
