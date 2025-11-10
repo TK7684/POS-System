@@ -8077,38 +8077,63 @@ async function loadSalesReport(startDate, endDate) {
 
 async function loadCostsReport(startDate, endDate) {
   try {
+    logger.info("DB", "Loading costs report", { startDate, endDate });
+    
     // Load expenses
+    logger.debug("DB", "Loading expenses");
     const { data: expenses, error: expError } = await window.supabase
       .from("expenses")
       .select("*")
       .gte("expense_date", startDate)
       .lte("expense_date", endDate);
     
-    if (expError) throw expError;
+    if (expError) {
+      logger.error("DB", "Error loading expenses", expError);
+      throw expError;
+    }
     
+    logger.debug("DB", "Expenses loaded", { count: expenses?.length || 0 });
     const totalExpenses = (expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
     
     // Load ingredient costs (from purchases)
+    logger.debug("DB", "Loading purchases");
     const { data: purchases, error: purError } = await window.supabase
       .from("purchases")
       .select("*")
       .gte("purchase_date", startDate)
       .lte("purchase_date", endDate);
     
-    if (purError) throw purError;
+    if (purError) {
+      logger.error("DB", "Error loading purchases", purError);
+      // Don't throw, just log and continue
+    } else {
+      logger.debug("DB", "Purchases loaded", { count: purchases?.length || 0 });
+    }
     
     const ingredientCost = (purchases || []).reduce((sum, p) => sum + (p.total_amount || 0), 0);
     
     // Load labor costs
+    logger.debug("DB", "Loading labor logs");
     const { data: labor, error: laborError } = await window.supabase
       .from("labor_logs")
       .select("*")
       .gte("date", startDate)
       .lte("date", endDate);
     
-    if (laborError) throw laborError;
+    if (laborError) {
+      logger.error("DB", "Error loading labor logs", laborError);
+      // Don't throw, just log and continue
+    } else {
+      logger.debug("DB", "Labor logs loaded", { count: labor?.length || 0 });
+    }
     
     const laborCost = (labor || []).reduce((sum, l) => sum + (l.total_pay || 0), 0);
+    
+    logger.info("DB", "Costs report calculations completed", {
+      totalExpenses,
+      ingredientCost,
+      laborCost
+    });
     
     document.getElementById("report-ingredient-cost").textContent = `฿${ingredientCost.toFixed(2)}`;
     document.getElementById("report-expenses").textContent = `฿${totalExpenses.toFixed(2)}`;
