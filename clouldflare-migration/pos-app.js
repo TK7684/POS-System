@@ -4639,31 +4639,79 @@ function removeTypingIndicator() {
   });
 }
 
-// Enhanced add chat message function
+// Simple markdown renderer for AI responses
+function renderMarkdown(text) {
+  if (!text) return '';
+  
+  let html = text;
+  
+  // Escape HTML first
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // Headers
+  html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-4 mb-2">$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>');
+  
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 p-2 rounded my-2 overflow-x-auto"><code>$1</code></pre>');
+  html = html.replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded text-sm">$1</code>');
+  
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline" target="_blank">$1</a>');
+  
+  // Line breaks (double newline = paragraph)
+  html = html.replace(/\n\n/g, '</p><p class="mb-2">');
+  html = html.replace(/\n/g, '<br>');
+  
+  // Wrap in paragraph
+  html = '<p class="mb-2">' + html + '</p>';
+  
+  // Lists
+  html = html.replace(/^\d+\.\s+(.*)$/gm, '<li class="ml-4 mb-1">$1</li>');
+  html = html.replace(/(<li.*<\/li>)/s, '<ol class="list-decimal ml-6 mb-3">$1</ol>');
+  html = html.replace(/^[-*]\s+(.*)$/gm, '<li class="ml-4 mb-1 list-disc">$1</li>');
+  html = html.replace(/(<li.*<\/li>)/s, '<ul class="list-disc ml-6 mb-3">$1</ul>');
+  
+  // Clean up empty paragraphs
+  html = html.replace(/<p class="mb-2"><\/p>/g, '');
+  html = html.replace(/<p class="mb-2">\s*<\/p>/g, '');
+  
+  return html;
+}
+
+// Enhanced add chat message function with markdown support
 function addChatMessage(message, isUser, isTyping = false, isHTML = false) {
   const messagesContainer = document.getElementById("chat-messages");
   if (!messagesContainer) return;
 
   const messageDiv = document.createElement("div");
-  messageDiv.className = `flex items-start gap-2 ${isUser ? "justify-end" : ""} ${isTyping ? "typing-indicator" : ""}`;
+  messageDiv.className = `flex items-start gap-3 mb-4 ${isUser ? "justify-end" : ""} ${isTyping ? "typing-indicator opacity-60" : ""}`;
 
   if (!isUser) {
+    // AI message with markdown rendering
+    const renderedMessage = isHTML ? message : renderMarkdown(message);
     messageDiv.innerHTML = `
-      <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-bold">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0">
         AI
       </div>
-      <div class="flex-1 ${isHTML ? "" : "bg-white p-3 rounded-lg shadow-sm"}">
-        ${isHTML ? message : `<div class="text-gray-800">${message}</div>`}
+      <div class="flex-1 bg-white p-4 rounded-lg shadow-sm border border-gray-100 max-w-[85%]">
+        <div class="text-gray-800 leading-relaxed whitespace-pre-wrap">${renderedMessage}</div>
       </div>
     `;
   } else {
+    // User message
     messageDiv.innerHTML = `
-      <div class="flex-1 max-w-[70%]">
-        <div class="bg-blue-500 text-white p-3 rounded-lg shadow-sm">
-          <div class="text-gray-800">${message}</div>
+      <div class="flex-1 max-w-[85%] flex justify-end">
+        <div class="bg-blue-500 text-white p-4 rounded-lg shadow-sm">
+          <div class="text-white leading-relaxed">${message.replace(/\n/g, '<br>')}</div>
         </div>
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-sm flex-shrink-0">
         คุณ
       </div>
     `;

@@ -11,6 +11,8 @@ export class WebAppHandler {
     this.ai = new AIAssistant(config);
     this.initialized = false;
     this.sessionContexts = new Map();
+    // Permission system: track user permissions per session
+    this.permissions = new Map(); // sessionId -> { read: true, write: false, grantedAt: null }
   }
 
   async initialize() {
@@ -31,6 +33,27 @@ export class WebAppHandler {
     try {
       // Get or create session context
       const sessionContext = this._getOrCreateSession(sessionId, userId);
+      
+      // Get permissions for this session
+      const permissions = this._getPermissions(sessionId);
+
+      // Check if user is granting permission
+      if (this._isPermissionGrant(message)) {
+        this._grantPermissions(sessionId);
+        return {
+          success: true,
+          response: {
+            type: 'permission_granted',
+            message: '✅ **ได้รับอนุญาตแล้ว!**\n\nตอนนี้ AI สามารถอ่านและเขียนข้อมูลในฐานข้อมูลได้แล้ว\n\nคุณสามารถ:\n- อ่านข้อมูลทั้งหมด\n- สร้าง/แก้ไข/ลบข้อมูล\n- วิเคราะห์และรายงาน\n\nลองถามได้เลยครับ! 😊',
+            quickActions: [
+              { label: '📊 แสดงเมนูทั้งหมด', action: 'แสดงเมนูทั้งหมด' },
+              { label: '📦 ตรวจสต็อก', action: 'ตรวจสต็อกวัตถุดิบ' },
+              { label: '💰 ยอดขายวันนี้', action: 'ยอดขายวันนี้เท่าไหร่' }
+            ]
+          },
+          sessionId: sessionId
+        };
+      }
 
       // Add user message to history
       sessionContext.history.push({
@@ -46,11 +69,32 @@ export class WebAppHandler {
         sessionId: sessionId,
         sessionHistory: sessionContext.history,
         userPreferences: sessionContext.preferences,
+        permissions: permissions, // Pass permissions to AI
         timestamp: new Date().toISOString()
       };
 
       // Process with AI assistant
       const result = await this.ai.processRequest(message, context);
+
+      // Check if write operation needs permission
+      if (result.intent && ['create', 'update', 'delete'].includes(result.intent.type)) {
+        if (!permissions.write) {
+          return {
+            success: true,
+            response: {
+              type: 'permission_required',
+              message: `🔒 **ต้องการอนุญาตในการ${this._getOperationName(result.intent.type)}ข้อมูล**\n\nเพื่อความปลอดภัย ระบบต้องการการยืนยันจากคุณก่อนที่จะ${this._getOperationName(result.intent.type)}ข้อมูล\n\n**กรุณาพิมพ์:** "อนุญาต" หรือ "yes" หรือ "ok" เพื่อให้สิทธิ์ AI ในการ${this._getOperationName(result.intent.type)}ข้อมูล\n\n⚠️ หมายเหตุ: หลังจากอนุญาตแล้ว AI จะสามารถอ่านและเขียนข้อมูลทั้งหมดได้`,
+              requiresPermission: true,
+              operation: result.intent.type,
+              quickActions: [
+                { label: '✅ อนุญาต', action: 'อนุญาต' },
+                { label: '❌ ยกเลิก', action: 'ยกเลิก' }
+              ]
+            },
+            sessionId: sessionId
+          };
+        }
+      }
 
       // Add AI response to history
       sessionContext.history.push({
@@ -80,6 +124,44 @@ export class WebAppHandler {
         sessionId: sessionId
       };
     }
+  }
+
+  /**
+   * Permission management
+   */
+  _getPermissions(sessionId) {
+    if (!this.permissions.has(sessionId)) {
+      // Default: read only, write requires permission
+      this.permissions.set(sessionId, {
+        read: true, // Always allow read
+        write: false, // Write requires explicit permission
+        grantedAt: null
+      });
+    }
+    return this.permissions.get(sessionId);
+  }
+
+  _grantPermissions(sessionId) {
+    const perms = this._getPermissions(sessionId);
+    perms.write = true;
+    perms.read = true; // Ensure read is also true
+    perms.grantedAt = new Date().toISOString();
+    this.permissions.set(sessionId, perms);
+  }
+
+  _isPermissionGrant(message) {
+    const lower = message.toLowerCase().trim();
+    const grantKeywords = ['อนุญาต', 'yes', 'ok', 'ยืนยัน', 'confirm', 'grant', 'allow', 'ให้สิทธิ์', 'อนุมัติ'];
+    return grantKeywords.some(keyword => lower.includes(keyword));
+  }
+
+  _getOperationName(operation) {
+    const names = {
+      'create': 'สร้าง',
+      'update': 'แก้ไข',
+      'delete': 'ลบ'
+    };
+    return names[operation] || operation;
   }
 
   /**

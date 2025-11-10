@@ -756,31 +756,50 @@ Respond in a natural, helpful tone.`;
   }
 
   _formatIngredients(items) {
-    let output = '**📦 วัตถุดิบ**\n';
+    let output = '**📦 วัตถุดิบ**\n\n';
     items.forEach((item, i) => {
       const stock = item.current_stock || 0;
       const min = item.min_stock || 0;
-      const warning = stock < min ? ' ⚠️ ต่ำกว่าขั้นต่ำ!' : '';
-      output += `${i + 1}. **${item.name}**${warning}\n`;
-      output += `   └ คงเหลือ: ${stock} ${item.unit}`;
-      if (min > 0) output += ` | ขั้นต่ำ: ${min} ${item.unit}`;
-      if (item.cost_per_unit) output += ` | ราคา: ${item.cost_per_unit} บาท/${item.unit}`;
+      const warning = stock < min ? ' ⚠️ **ต่ำกว่าขั้นต่ำ!**' : '';
+      const status = stock < min ? '🔴' : stock < min * 1.5 ? '🟡' : '🟢';
+      
+      output += `**${i + 1}. ${item.name}**${warning}\n`;
+      output += `   ${status} คงเหลือ: **${stock.toLocaleString('th-TH')} ${item.unit}**`;
+      if (min > 0) output += ` | ขั้นต่ำ: ${min.toLocaleString('th-TH')} ${item.unit}`;
+      if (item.cost_per_unit) {
+        output += `\n   💰 ราคา: ฿${item.cost_per_unit.toLocaleString('th-TH')}/${item.unit}`;
+        const totalValue = stock * item.cost_per_unit;
+        output += ` | มูลค่ารวม: ฿${totalValue.toLocaleString('th-TH')}`;
+      }
       output += '\n\n';
     });
     return output;
   }
 
   _formatMenus(items) {
-    let output = '**🍽️ เมนูอาหาร**\n';
+    let output = '**🍽️ เมนูอาหาร**\n\n';
     items.forEach((item, i) => {
-      const status = item.is_available === false ? ' 🔴 ไม่พร้อมขาย' : ' 🟢';
-      output += `${i + 1}. **${item.name}**${status}\n`;
-      output += `   └ ราคาขาย: ${item.price || 0} บาท`;
-      if (item.cost_per_unit) {
-        const profit = (item.price || 0) - (item.cost_per_unit || 0);
-        output += ` | ต้นทุน: ${item.cost_per_unit} บาท | กำไร: ${profit} บาท`;
+      const status = item.is_available === false ? ' 🔴 ไม่พร้อมขาย' : ' 🟢 พร้อมขาย';
+      const price = item.price || 0;
+      const cost = item.cost_per_unit || 0;
+      const profit = price - cost;
+      
+      output += `**${i + 1}. ${item.name}**${status}\n`;
+      
+      // Price information
+      output += `   💰 ราคาขาย: **฿${price.toLocaleString('th-TH')}**\n`;
+      
+      // Cost and profit if available
+      if (cost > 0) {
+        output += `   📊 ต้นทุน: ฿${cost.toLocaleString('th-TH')} | กำไร: ฿${profit.toLocaleString('th-TH')}\n`;
       }
-      output += '\n\n';
+      
+      // Description if available
+      if (item.description) {
+        output += `   📝 ${item.description}\n`;
+      }
+      
+      output += '\n';
     });
     return output;
   }
