@@ -249,6 +249,7 @@
                         <div class="font-semibold">POS-20251106-1434</div>
                     </div>
                     <div class="flex items-center gap-2">
+                        <button onclick="goToHomepage()" class="btn ghost text-sm">🏠 หน้าแรก</button>
                         <button onclick="openSaleModal()" class="btn brand text-sm">ขาย</button>
                         <button onclick="openPurchaseModal()" class="btn ghost text-sm">ซื้อ</button>
                         <button onclick="openExpensesHistory()" class="btn ghost text-sm">ค่าใช้จ่าย</button>
@@ -566,6 +567,10 @@
         <!-- Sticky Bottom Navigation (Mobile-first, shown on all screens) -->
         <nav id="app-bottomnav" class="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 md:hidden hidden">
             <div class="grid grid-cols-5 text-xs">
+                <button onclick="goToHomepage()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
+                    <span class="text-lg">🏠</span>
+                    <span class="text-[10px] leading-tight">หน้าแรก</span>
+                </button>
                 <button onclick="openSaleModal()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
                     <span class="text-lg">🛒</span>
                     <span class="text-[10px] leading-tight">ขาย</span>
@@ -573,10 +578,6 @@
                 <button onclick="openPurchaseModal()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
                     <span class="text-lg">📦</span>
                     <span class="text-[10px] leading-tight">ซื้อ</span>
-                </button>
-                <button onclick="openCalendarModal()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
-                    <span class="text-lg">📆</span>
-                    <span class="text-[10px] leading-tight">สรุป</span>
                 </button>
                 <button onclick="openExpensesHistory()" class="py-2 flex flex-col items-center justify-center active:bg-gray-100 transition-colors">
                     <span class="text-lg">💰</span>
