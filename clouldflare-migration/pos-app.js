@@ -970,10 +970,52 @@ function setupRealtimeListeners() {
         purchaseDetails = ` ${transaction.quantity} ${transaction.unit}`;
       }
 
+      // Format datetime
+      let datetimeStr = "";
+      if (transaction.created_at) {
+        const date = new Date(transaction.created_at);
+        datetimeStr = date.toLocaleString('th-TH', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } else if (transaction.transaction_date && transaction.transaction_time) {
+        // Combine date and time
+        const dateTime = `${transaction.transaction_date} ${transaction.transaction_time}`;
+        const date = new Date(dateTime);
+        if (!isNaN(date.getTime())) {
+          datetimeStr = date.toLocaleString('th-TH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } else {
+          datetimeStr = `${transaction.transaction_date} ${transaction.transaction_time}`;
+        }
+      } else if (transaction.transaction_date) {
+        const date = new Date(transaction.transaction_date);
+        if (!isNaN(date.getTime())) {
+          datetimeStr = date.toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        } else {
+          datetimeStr = transaction.transaction_date;
+        }
+      }
+
       html += `
-                <div class="flex justify-between items-center p-2 border-b">
-                    <span>${icon} ${displayName}${purchaseDetails}</span>
-                    <span class="text-sm">฿${parseFloat(transaction.total_amount || 0).toFixed(2)}</span>
+                <div class="flex flex-col p-2 border-b hover:bg-gray-50">
+                    <div class="flex justify-between items-center">
+                        <span>${icon} ${displayName}${purchaseDetails}</span>
+                        <span class="text-sm font-semibold">฿${parseFloat(transaction.total_amount || 0).toFixed(2)}</span>
+                    </div>
+                    ${datetimeStr ? `<div class="text-xs text-gray-500 mt-1">🕐 ${datetimeStr}</div>` : ''}
                 </div>
             `;
     });

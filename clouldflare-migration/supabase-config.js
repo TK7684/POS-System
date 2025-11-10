@@ -296,6 +296,7 @@ const POS_DATABASE = {
             menu_name: null,
             transaction_date: item.purchase_date,
             transaction_time: item.purchase_time,
+            created_at: item.created_at || item.purchase_date ? `${item.purchase_date}${item.purchase_time ? ' ' + item.purchase_time : ''}` : null,
             quantity: item.quantity,  // Include quantity
             unit: item.unit,  // Include unit
           })),
@@ -306,8 +307,13 @@ const POS_DATABASE = {
             menu_name: menuMap[item.menu_id] || "Unknown Menu",
             transaction_date: item.order_date,
             transaction_time: item.order_time,
+            created_at: item.created_at || item.order_date ? `${item.order_date}${item.order_time ? ' ' + item.order_time : ''}` : null,
           }))
         ].sort((a, b) => {
+          // Sort by created_at if available, otherwise by transaction_date/time
+          if (a.created_at && b.created_at) {
+            return new Date(b.created_at) - new Date(a.created_at);
+          }
           const dateCompare = (b.transaction_date || "").localeCompare(a.transaction_date || "");
           if (dateCompare !== 0) return dateCompare;
           return (b.transaction_time || "").localeCompare(a.transaction_time || "");
