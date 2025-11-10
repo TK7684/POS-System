@@ -6306,39 +6306,57 @@ function openMenusPage() {
   const posApp = document.getElementById("pos-app");
   const menusPage = document.getElementById("menus-page");
   const stockPage = document.getElementById("stock-management-page");
+  const costStockPage = document.getElementById("cost-stock-page");
 
-  if (posApp) posApp.classList.add("hidden");
-  if (menusPage) {
-    menusPage.classList.remove("hidden");
-    menusPage.style.display = "block";
+  // Hide all other pages
+  if (posApp) {
+    posApp.classList.add("hidden");
+    posApp.style.display = "none";
   }
   if (stockPage) {
     stockPage.classList.add("hidden");
     stockPage.style.display = "none";
   }
-  loadMenus();
+  if (costStockPage) {
+    costStockPage.classList.add("hidden");
+    costStockPage.style.display = "none";
+  }
+  
+  // Show menus page
+  if (menusPage) {
+    menusPage.classList.remove("hidden");
+    menusPage.style.display = "block";
+    loadMenus();
+  } else {
+    logger.error("UI", "Menus page element not found");
+  }
 }
 
 function closeMenusPage() {
-  const menusPage = document.getElementById("menus-page");
-  const posApp = document.getElementById("pos-app");
-
-  if (menusPage) {
-    menusPage.classList.add("hidden");
-    menusPage.style.display = "none";
-  }
-  if (posApp) {
-    posApp.classList.remove("hidden");
-    posApp.style.display = "block";
-  }
+  goToHomepage();
 }
 
 function openStockPage() {
   const posApp = document.getElementById("pos-app");
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
+  const costStockPage = document.getElementById("cost-stock-page");
 
-  if (posApp) posApp.classList.add("hidden");
+  // Hide all other pages
+  if (posApp) {
+    posApp.classList.add("hidden");
+    posApp.style.display = "none";
+  }
+  if (menusPage) {
+    menusPage.classList.add("hidden");
+    menusPage.style.display = "none";
+  }
+  if (costStockPage) {
+    costStockPage.classList.add("hidden");
+    costStockPage.style.display = "none";
+  }
+  
+  // Show stock page
   if (stockPage) {
     stockPage.classList.remove("hidden");
     stockPage.style.display = "block";
@@ -6346,25 +6364,13 @@ function openStockPage() {
     if (stockState.items.length === 0) {
       loadStockPage(1);
     }
-  }
-  if (menusPage) {
-    menusPage.classList.add("hidden");
-    menusPage.style.display = "none";
+  } else {
+    logger.error("UI", "Stock page element not found");
   }
 }
 
 function closeStockPage() {
-  const stockPage = document.getElementById("stock-management-page");
-  const posApp = document.getElementById("pos-app");
-
-  if (stockPage) {
-    stockPage.classList.add("hidden");
-    stockPage.style.display = "none";
-  }
-  if (posApp) {
-    posApp.classList.remove("hidden");
-    posApp.style.display = "block";
-  }
+  goToHomepage();
 }
 
 let menuSearchTimeout;
@@ -7228,7 +7234,11 @@ function openCostStockPage() {
   const stockPage = document.getElementById("stock-management-page");
   const menusPage = document.getElementById("menus-page");
 
-  if (posApp) posApp.classList.add("hidden");
+  // Hide all other pages
+  if (posApp) {
+    posApp.classList.add("hidden");
+    posApp.style.display = "none";
+  }
   if (stockPage) {
     stockPage.classList.add("hidden");
     stockPage.style.display = "none";
@@ -7237,24 +7247,50 @@ function openCostStockPage() {
     menusPage.classList.add("hidden");
     menusPage.style.display = "none";
   }
+  
+  // Show cost stock page
   if (costStockPage) {
     costStockPage.classList.remove("hidden");
     costStockPage.style.display = "block";
     loadCostStockData();
+  } else {
+    logger.error("UI", "Cost stock page element not found");
   }
 }
 
 function closeCostStockPage() {
+  goToHomepage();
+}
+
+// Go to homepage - hide all pages and show main app
+function goToHomepage() {
   const posApp = document.getElementById("pos-app");
   const costStockPage = document.getElementById("cost-stock-page");
+  const stockPage = document.getElementById("stock-management-page");
+  const menusPage = document.getElementById("menus-page");
 
+  // Hide all pages
   if (costStockPage) {
     costStockPage.classList.add("hidden");
     costStockPage.style.display = "none";
   }
+  if (stockPage) {
+    stockPage.classList.add("hidden");
+    stockPage.style.display = "none";
+  }
+  if (menusPage) {
+    menusPage.classList.add("hidden");
+    menusPage.style.display = "none";
+  }
+  
+  // Show main app (homepage)
   if (posApp) {
     posApp.classList.remove("hidden");
     posApp.style.display = "block";
+    // Reload dashboard stats
+    loadDashboardStats();
+  } else {
+    logger.error("UI", "Main app element not found");
   }
 }
 
