@@ -123,31 +123,69 @@ class SupabaseQuery {
 // Database operations helper
 class DatabaseHelper {
   constructor(supabaseUrl, supabaseKey) {
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Database configuration missing: URL and key required');
+    }
     this.supabase = new SupabaseClient(supabaseUrl, supabaseKey);
   }
 
   async read(table, filters = {}, limit = 50) {
-    const result = await this.supabase.query('GET', table, { filters, select: '*' });
-    if (result.error) throw result.error;
-    return (result.data || []).slice(0, limit);
+    try {
+      const result = await this.supabase.query('GET', table, { filters, select: '*' });
+      if (result.error) {
+        log.error('Database read error', { table, error: result.error.message || result.error });
+        throw result.error;
+      }
+      const data = Array.isArray(result.data) ? result.data : [];
+      return data.slice(0, limit);
+    } catch (error) {
+      log.error('Database read failed', { table, error: error.message });
+      throw error;
+    }
   }
 
   async create(table, data) {
-    const result = await this.supabase.query('POST', table, { data });
-    if (result.error) throw result.error;
-    return result.data;
+    try {
+      // Handle single object or array
+      const records = Array.isArray(data) ? data : [data];
+      const result = await this.supabase.query('POST', table, { data: records[0] });
+      if (result.error) {
+        log.error('Database create error', { table, error: result.error.message || result.error });
+        throw result.error;
+      }
+      return Array.isArray(result.data) ? result.data : [result.data];
+    } catch (error) {
+      log.error('Database create failed', { table, error: error.message });
+      throw error;
+    }
   }
 
   async update(table, data, filters) {
-    const result = await this.supabase.query('PATCH', table, { data, filters });
-    if (result.error) throw result.error;
-    return result.data;
+    try {
+      const result = await this.supabase.query('PATCH', table, { data, filters });
+      if (result.error) {
+        log.error('Database update error', { table, error: result.error.message || result.error });
+        throw result.error;
+      }
+      return Array.isArray(result.data) ? result.data : [result.data];
+    } catch (error) {
+      log.error('Database update failed', { table, error: error.message });
+      throw error;
+    }
   }
 
   async delete(table, filters) {
-    const result = await this.supabase.query('DELETE', table, { filters });
-    if (result.error) throw result.error;
-    return result.data;
+    try {
+      const result = await this.supabase.query('DELETE', table, { filters });
+      if (result.error) {
+        log.error('Database delete error', { table, error: result.error.message || result.error });
+        throw result.error;
+      }
+      return Array.isArray(result.data) ? result.data : [];
+    } catch (error) {
+      log.error('Database delete failed', { table, error: error.message });
+      throw error;
+    }
   }
 }
 
@@ -228,33 +266,57 @@ async function executeOperation(intent, dbHelper) {
   const { type, entity, parameters } = intent;
   
   try {
+    // Map common entity names to actual table names
+    const tableMap = {
+      'menus': 'menus',
+      'menu': 'menus',
+      'ingredients': 'ingredients',
+      'ingredient': 'ingredients',
+      'stock': 'ingredients',
+      'inventory': 'ingredients',
+      'transactions': 'stock_transactions',
+      'transaction': 'stock_transactions',
+      'sales': 'stock_transactions',
+      'purchases': 'stock_transactions',
+      'platforms': 'platforms',
+      'platform': 'platforms',
+      'recipes': 'menu_recipes',
+      'recipe': 'menu_recipes'
+    };
+    
+    const actualTable = tableMap[entity?.toLowerCase()] || entity;
+    
     switch (type) {
       case 'read':
         if (!entity) {
           return { success: false, error: 'No entity specified' };
         }
-        const data = await dbHelper.read(entity, parameters.filters || {}, parameters.limit || 20);
+        log.info('Reading from table', { table: actualTable });
+        const data = await dbHelper.read(actualTable, parameters.filters || {}, parameters.limit || 20);
         return { success: true, data, count: data.length };
         
       case 'create':
         if (!entity || !parameters.data) {
           return { success: false, error: 'Missing entity or data' };
         }
-        const created = await dbHelper.create(entity, parameters.data);
+        log.info('Creating in table', { table: actualTable });
+        const created = await dbHelper.create(actualTable, parameters.data);
         return { success: true, data: created, count: created.length };
         
       case 'update':
         if (!entity || !parameters.filters || !parameters.data) {
           return { success: false, error: 'Missing entity, filters, or data' };
         }
-        const updated = await dbHelper.update(entity, parameters.data, parameters.filters);
+        log.info('Updating table', { table: actualTable });
+        const updated = await dbHelper.update(actualTable, parameters.data, parameters.filters);
         return { success: true, data: updated, count: updated.length };
         
       case 'delete':
         if (!entity || !parameters.filters) {
           return { success: false, error: 'Missing entity or filters' };
         }
-        const deleted = await dbHelper.delete(entity, parameters.filters);
+        log.info('Deleting from table', { table: actualTable });
+        const deleted = await dbHelper.delete(actualTable, parameters.filters);
         return { success: true, data: deleted, count: deleted.length };
         
       case 'analyze':
@@ -265,7 +327,12 @@ async function executeOperation(intent, dbHelper) {
         return { success: true, data: null, conversation: true };
     }
   } catch (error) {
-    log.error('Operation execution failed', error);
+    log.error('Operation execution failed', { 
+      type, 
+      entity, 
+      error: error.message,
+      stack: error.stack 
+    });
     return { success: false, error: error.message };
   }
 }
@@ -436,10 +503,19 @@ async function processLineEvent(event, config) {
   });
 
   try {
+    // Validate required config
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Database configuration missing');
+    }
+    
+    if (!GOOGLE_CLOUD_API_KEY) {
+      throw new Error('AI API key missing');
+    }
+
     // Initialize database helper
     const dbHelper = new DatabaseHelper(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
-    // Store message in database
+    // Store message in database (non-blocking)
     try {
       await dbHelper.create('line_messages', {
         user_id: userId,
@@ -451,26 +527,49 @@ async function processLineEvent(event, config) {
       });
       log.info('Message stored in database');
     } catch (dbError) {
-      log.warn('Failed to store message in database', dbError);
+      log.warn('Failed to store message in database', { error: dbError.message });
+      // Continue processing even if message storage fails
     }
 
     // Process with AI - Analyze intent
     log.info('→ Analyzing user intent...');
-    const intent = await analyzeIntent(userMessage, GOOGLE_CLOUD_API_KEY, dbHelper);
-    log.info('✓ Intent analyzed', { type: intent.type, entity: intent.entity });
+    let intent;
+    try {
+      intent = await analyzeIntent(userMessage, GOOGLE_CLOUD_API_KEY, dbHelper);
+      log.info('✓ Intent analyzed', { type: intent.type, entity: intent.entity });
+    } catch (intentError) {
+      log.error('Intent analysis failed, using fallback', { error: intentError.message });
+      intent = { type: 'conversation', entity: null, parameters: { query: userMessage } };
+    }
 
     // Execute operation
     let operationResult = { success: true, data: null };
-    if (intent.type !== 'conversation') {
-      log.info('→ Executing database operation...', { type: intent.type, entity: intent.entity });
-      operationResult = await executeOperation(intent, dbHelper);
-      log.info('✓ Operation completed', { success: operationResult.success, count: operationResult.count });
+    if (intent.type !== 'conversation' && intent.entity) {
+      try {
+        log.info('→ Executing database operation...', { type: intent.type, entity: intent.entity });
+        operationResult = await executeOperation(intent, dbHelper);
+        log.info('✓ Operation completed', { success: operationResult.success, count: operationResult.count || 0 });
+      } catch (opError) {
+        log.error('Operation execution failed', { error: opError.message });
+        operationResult = { success: false, error: opError.message, data: null };
+      }
     }
 
     // Generate AI response
     log.info('→ Generating AI response...');
-    const aiResponse = await generateResponse(userMessage, intent, operationResult, GOOGLE_CLOUD_API_KEY);
-    log.info('✓ Response generated', { length: aiResponse.length });
+    let aiResponse;
+    try {
+      aiResponse = await generateResponse(userMessage, intent, operationResult, GOOGLE_CLOUD_API_KEY);
+      log.info('✓ Response generated', { length: aiResponse.length });
+    } catch (responseError) {
+      log.error('Response generation failed', { error: responseError.message });
+      // Fallback response
+      if (operationResult.success && operationResult.data && operationResult.data.length > 0) {
+        aiResponse = `พบข้อมูล ${operationResult.count} รายการ:\n\n${JSON.stringify(operationResult.data.slice(0, 3), null, 2)}`;
+      } else {
+        aiResponse = 'ขอบคุณสำหรับข้อความค่ะ ฉันพร้อมช่วยคุณจัดการข้อมูลร้านอาหาร';
+      }
+    }
 
     // Send reply to LINE
     await replyLineMessage(replyToken, aiResponse, LINE_CHANNEL_ACCESS_TOKEN);
@@ -478,17 +577,33 @@ async function processLineEvent(event, config) {
     return { success: true, replied: true, intent: intent.type };
 
   } catch (error) {
-    log.error('Event processing error', error);
+    log.error('Event processing error', { 
+      error: error.message, 
+      stack: error.stack,
+      userId: userId?.substring(0, 8) + '...',
+      message: userMessage?.substring(0, 50)
+    });
     
-    // Try to send error message to user
+    // Try to send error message to user with more details
+    let errorMessage = 'ขออภัยค่ะ เกิดข้อผิดพลาดในการประมวลผล';
+    
+    // Provide more helpful error messages
+    if (error.message.includes('Database configuration')) {
+      errorMessage = 'ขออภัยค่ะ ระบบฐานข้อมูลยังไม่พร้อมใช้งาน';
+    } else if (error.message.includes('API key')) {
+      errorMessage = 'ขออภัยค่ะ ระบบ AI ยังไม่พร้อมใช้งาน';
+    } else if (error.message.includes('table') || error.message.includes('column')) {
+      errorMessage = 'ขออภัยค่ะ ไม่พบข้อมูลที่ต้องการ กรุณาลองใหม่อีกครั้ง';
+    }
+    
     try {
       await replyLineMessage(
         replyToken,
-        'ขออภัยค่ะ เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้ง',
+        errorMessage + '\n\nกรุณาลองใหม่อีกครั้งหรือติดต่อผู้ดูแลระบบ',
         LINE_CHANNEL_ACCESS_TOKEN
       );
     } catch (replyError) {
-      log.error('Failed to send error reply', replyError);
+      log.error('Failed to send error reply', { error: replyError.message });
     }
 
     return { success: false, error: error.message };
