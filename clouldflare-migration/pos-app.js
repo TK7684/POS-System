@@ -6632,6 +6632,9 @@ async function loadMenus() {
             <td class="p-2 text-sm text-right font-semibold ${profitMarginClass}">${profitMargin.toFixed(1)}%</td>
             <td class="p-2 text-sm text-center ${availableClass}">${availableDisplay}</td>
             <td class="p-2 text-sm text-center">${statusBadge}</td>
+            <td class="p-2 text-sm text-center">
+              <button onclick="openMenuEditModal('${menu.id}')" class="btn ghost text-xs py-1 px-2">✏️ แก้ไข</button>
+            </td>
           </tr>
         `;
         })
@@ -6641,7 +6644,7 @@ async function loadMenus() {
     console.error("Error loading menus:", error);
     tableBody.innerHTML = `
       <tr>
-        <td colspan="8" class="text-center p-8 text-red-500">
+        <td colspan="9" class="text-center p-8 text-red-500">
           เกิดข้อผิดพลาด: ${error.message}
         </td>
       </tr>

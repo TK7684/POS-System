@@ -1049,16 +1049,117 @@
                                 <th class="text-right p-2 text-sm font-semibold">% กำไร</th>
                                 <th class="text-center p-2 text-sm font-semibold">ทำได้ (จาน)</th>
                                 <th class="text-center p-2 text-sm font-semibold">สถานะ</th>
+                                <th class="text-center p-2 text-sm font-semibold">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody id="menus-table">
                             <tr>
-                                <td colspan="8" class="text-center p-8">
+                                <td colspan="9" class="text-center p-8">
                                     <div class="spinner" style="margin: 20px auto"></div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Edit Modal -->
+        <div id="menu-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" onclick="if(event.target === this) closeMenuEditModal()">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold">✏️ แก้ไขเมนู</h2>
+                        <button onclick="closeMenuEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                    </div>
+
+                    <!-- Menu Basic Info -->
+                    <div class="card mb-4">
+                        <h3 class="font-semibold mb-4">ข้อมูลพื้นฐาน</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">ชื่อเมนู</label>
+                                <input type="text" id="edit-menu-name" class="input" readonly />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">ราคาขาย (฿)</label>
+                                <input type="number" id="edit-menu-price" class="input" step="0.01" min="0" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">ต้นทุน (฿) - คำนวณอัตโนมัติ</label>
+                                <input type="number" id="edit-menu-cost" class="input" step="0.01" min="0" readonly />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">กำไร (฿)</label>
+                                <input type="number" id="edit-menu-profit" class="input" step="0.01" readonly />
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button onclick="recalculateMenuCost()" class="btn brand text-sm">🔄 คำนวณต้นทุนใหม่</button>
+                        </div>
+                    </div>
+
+                    <!-- Ingredients/Recipe Section -->
+                    <div class="card mb-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold">📋 สูตรอาหาร (วัตถุดิบ)</h3>
+                            <button onclick="addIngredientToRecipe()" class="btn brand text-sm">+ เพิ่มวัตถุดิบ</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b bg-gray-50">
+                                        <th class="text-left p-2">วัตถุดิบ</th>
+                                        <th class="text-right p-2">จำนวน</th>
+                                        <th class="text-left p-2">หน่วย</th>
+                                        <th class="text-right p-2">ราคา/หน่วย</th>
+                                        <th class="text-right p-2">รวม (฿)</th>
+                                        <th class="text-center p-2">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="menu-recipe-ingredients">
+                                    <tr>
+                                        <td colspan="6" class="text-center p-4 text-gray-500">กำลังโหลด...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 justify-end">
+                        <button onclick="closeMenuEditModal()" class="btn ghost">ยกเลิก</button>
+                        <button onclick="saveMenuEdit()" class="btn brand">💾 บันทึก</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Ingredient to Recipe Modal -->
+        <div id="add-ingredient-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50" onclick="if(event.target === this) closeAddIngredientModal()">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onclick="event.stopPropagation()">
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4">➕ เพิ่มวัตถุดิบ</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">เลือกวัตถุดิบ</label>
+                            <select id="add-ingredient-select" class="input">
+                                <option value="">-- เลือกวัตถุดิบ --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">จำนวน</label>
+                            <input type="number" id="add-ingredient-quantity" class="input" step="0.001" min="0" placeholder="0.000" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">หน่วย</label>
+                            <input type="text" id="add-ingredient-unit" class="input" placeholder="กรัม, ตัว, ช้อน..." />
+                        </div>
+                    </div>
+                    <div class="flex gap-2 justify-end mt-6">
+                        <button onclick="closeAddIngredientModal()" class="btn ghost">ยกเลิก</button>
+                        <button onclick="confirmAddIngredient()" class="btn brand">เพิ่ม</button>
+                    </div>
                 </div>
             </div>
         </div>
